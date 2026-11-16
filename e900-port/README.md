@@ -73,7 +73,7 @@ bash scripts/docker.sh export identify
 | `hdmi` | identify + 可选 HDMI 寄存器传输 |
 | `decoder` | hdmi + 实验性解码时钟注册 |
 
-每个 profile 使用独立源码及编译目录，共用下载目录；同一卷禁止并发构建。修改补丁后若该 profile 已有编译目录，脚本会要求清理相关包或换新卷，避免误用旧产物。
+每个 profile 使用独立源码及编译目录，共用下载和 ccache 目录；同一卷禁止并发构建。修改补丁后，本地默认拒绝直接复用已有编译树；CI 显式开启受控增量更新，只清理受影响的内核/媒体包，保留兼容工具链。详见 [缓存说明](CLOUD.md#增量缓存)。
 
 可以用 `E900_JOBS=2` 降低单包编译并行度；`E900_THREADS` 默认 1，避免同时编译多个大包。不同测试卷可以用 `E900_BUILD_VOLUME` 指定，不能把它当作清理旧卷的命令。
 
@@ -85,8 +85,11 @@ bash scripts/docker.sh export identify
 
 ```sh
 python3 tests/check-local.py
+python3 tests/check-build-cache.py
 ```
 
 检查了四个补丁按顺序应用、真实 CPU 头文件的 C 测试、从补丁后源码提取的 HDMI 映射/分流函数的 C 测试，以及补丁安装器的版本及本地修改保护。测试中的 MMIO 使用模拟函数，只验证代码分流，不验证硬件地址是否能实际工作。
+
+缓存检查覆盖宿主/profile/路径隔离、相同状态重用、补丁变化后的选择性清理、失败清理的重试，以及从实际 CoreELEC 目录层级导出内核与模块。GitHub 远端缓存上传/恢复仍需工作流运行验证。
 
 完整 ARM64 内核、媒体模块、Docker 镜像和盒子启动测试仍待执行。

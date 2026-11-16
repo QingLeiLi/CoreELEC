@@ -30,7 +30,8 @@ jobs:
       PORT_ROOT: ${{ github.workspace }}/e900-port
       E900_PORT_ROOT: ${{ github.workspace }}/e900-port
       E900_WORK_ROOT: ${{ github.workspace }}/.e900-work
-      E900_AUDIT_ROOT: ${{ github.workspace }}/.e900-fixtures
+      E900_AUDIT_ROOT: ${{ github.workspace }}/.e900-work/downloads/.e900-fixtures
+      E900_INCREMENTAL_REUSE: '1'
       PROFILE: ${{ inputs.profile }}
       BUILD_TARGET: ${{ inputs.target }}
       CONCURRENCY_MAKE_LEVEL: '4'
@@ -64,8 +65,22 @@ jobs:
           fi
           mkdir -p "$E900_WORK_ROOT/downloads"
 
+      - name: Restore dependency deb packages
+        id: debs
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/apt/*.deb
+          key: e900-debs-v1-ubuntu22-${{ hashFiles('e900-port/scripts/ci-dependencies.sh') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            e900-debs-v1-ubuntu22-${{ hashFiles('e900-port/scripts/ci-dependencies.sh') }}-
+            e900-debs-v1-ubuntu22-
+
       - name: Install native build dependencies
         run: bash "$PORT_ROOT/scripts/ci-dependencies.sh"
+
+      - name: Compute host and patch cache identities
+        id: cache-keys
+        run: python3 "$PORT_ROOT/scripts/build-cache.py" keys
 
       - name: Restore download cache
         id: downloads
@@ -76,7 +91,27 @@ jobs:
           restore-keys: |
             e900-downloads-${{ hashFiles('e900-port/pins.json') }}-
 
+      - name: Restore compiler object cache
+        id: compiler-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/ccache
+          key: e900-ccache-v1-${{ steps.cache-keys.outputs.compiler }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            e900-ccache-v1-${{ steps.cache-keys.outputs.compiler }}-
+
+      - name: Restore source checkout toolchain and incremental build state
+        id: build-state
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/CoreELEC-${{ inputs.profile }}
+          key: e900-state-v1-${{ steps.cache-keys.outputs.compat }}-${{ steps.cache-keys.outputs.state }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            e900-state-v1-${{ steps.cache-keys.outputs.compat }}-${{ steps.cache-keys.outputs.state }}-
+            e900-state-v1-${{ steps.cache-keys.outputs.compat }}-
+
       - name: Prepare pinned upstream source and patches
+        id: prepare
         run: bash "$PORT_ROOT/scripts/build.sh" prepare "$PROFILE"
 
       - name: Fetch verified public test fixtures
@@ -88,20 +123,51 @@ jobs:
         run: |
           export E900_CE_REFERENCE="$E900_WORK_ROOT/CoreELEC-$PROFILE"
           python3 "$PORT_ROOT/tests/check-local.py"
+          python3 "$PORT_ROOT/tests/check-build-cache.py"
 
       - name: Compile selected target
+        id: compile
         shell: bash
         run: |
           # Reserve time for logs and artifact upload within GitHub's six-hour job limit.
           timeout --signal=TERM --kill-after=60s 300m \
             bash "$PORT_ROOT/scripts/build.sh" "$BUILD_TARGET" "$PROFILE"
 
+      - name: Save toolchain and incremental build state even after compile failure
+        if: always() && !cancelled() && steps.prepare.outcome == 'success'
+        timeout-minutes: 20
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/CoreELEC-${{ inputs.profile }}
+          key: ${{ steps.build-state.outputs.cache-primary-key }}
+
+      - name: Save compiler object cache
+        if: always() && !cancelled() && steps.compiler-cache.outputs.cache-primary-key != ''
+        timeout-minutes: 10
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/ccache
+          key: ${{ steps.compiler-cache.outputs.cache-primary-key }}
+
       - name: Save source download cache
         if: always() && !cancelled() && steps.downloads.outputs.cache-primary-key != ''
+        timeout-minutes: 10
+        continue-on-error: true
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ${{ env.E900_WORK_ROOT }}/downloads
           key: ${{ steps.downloads.outputs.cache-primary-key }}
+
+      - name: Save dependency deb packages
+        if: always() && !cancelled() && steps.debs.outputs.cache-primary-key != ''
+        timeout-minutes: 5
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/apt/*.deb
+          key: ${{ steps.debs.outputs.cache-primary-key }}
 
       - name: Upload experimental binaries and logs
         if: always()
@@ -124,5 +190,8 @@ jobs:
             echo "Profile: $PROFILE; target: $BUILD_TARGET"
             echo 'Compilation is separate from hardware validation.'
             echo 'E900V21C board DTB is not integrated; artifacts are not ready to flash.'
+            echo "Build checkpoint: ${{ steps.build-state.outputs.cache-matched-key }}"
+            echo "Compiler cache: ${{ steps.compiler-cache.outputs.cache-matched-key }}"
+            echo 'Matching checkpoints retain the toolchain, completed package stamps and partial build directories.'
             df -h "$RUNNER_TEMP"
           } >> "$GITHUB_STEP_SUMMARY"

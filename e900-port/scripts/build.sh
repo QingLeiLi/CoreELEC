@@ -19,6 +19,10 @@ if ! flock -n 9; then
 fi
 export PROJECT=Amlogic-ce DEVICE=Amlogic-ng ARCH=arm
 export SOURCES_DIR="$WORK_ROOT/downloads"
+# Use one bounded cache for host and target compiler invocations.
+export CCACHE_DIR="${CCACHE_DIR:-$WORK_ROOT/ccache}"
+export LOCAL_CCACHE_DIR="${LOCAL_CCACHE_DIR:-$CCACHE_DIR}"
+export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-1G}"
 export CONCURRENCY_MAKE_LEVEL=${CONCURRENCY_MAKE_LEVEL:-4}
 export THREADCOUNT=${THREADCOUNT:-1}
 export TERM=${TERM:-xterm}
@@ -43,6 +47,7 @@ if ! git -C "$repo" rev-parse --verify HEAD >/dev/null 2>&1; then
 fi
 python3 "$PORT_ROOT/scripts/install-patches.py" "$repo" "$profile"
 cd "$repo"
+python3 "$PORT_ROOT/scripts/build-cache.py" invalidate "$repo"
 finish() {
   result=$?
   trap - EXIT

@@ -20,8 +20,8 @@ state["last_action"] = sys.argv[3]
 state["last_action_exit_code"] = int(sys.argv[4])
 artifacts = []
 paths = list((repo / "target").glob("*"))
-paths.extend(repo.glob("build.*/media_modules-aml-*/drivers/**/*.ko"))
-for build in repo.glob("build.*/linux-*"):
+paths.extend(repo.glob("build.*/build/media_modules-aml-*/drivers/**/*.ko"))
+for build in repo.glob("build.*/build/linux-*"):
     paths.extend(build.glob("arch/arm64/boot/Image*"))
     paths.extend(build.glob(".config"))
 for source in paths:

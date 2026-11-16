@@ -2,6 +2,7 @@
 """Install a version-checked patch profile into a dedicated CoreELEC checkout."""
 import hashlib
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -18,6 +19,22 @@ PROFILES = {
 }
 PROFILES["hdmi"] = PROFILES["identify"] + ["linux/0002-gxlx2-opt-in-hdmi-transport.patch"]
 PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-registration.patch"]
+
+
+def invalidated_packages(previous, state):
+    if previous["pins"] != state["pins"] or previous["profile"] != state["profile"]:
+        raise RuntimeError("Incompatible cached pins or profile")
+    old = {entry["source"]: entry["sha256"] for entry in previous["patches"]}
+    new = {entry["source"]: entry["sha256"] for entry in state["patches"]}
+    changed = {name for name in old.keys() | new.keys() if old.get(name) != new.get(name)}
+    packages = set()
+    if any(name.startswith("linux/") for name in changed):
+        packages.update(["linux", "media_modules-aml"])
+    if any(name.startswith("media/") for name in changed):
+        packages.add("media_modules-aml")
+    if previous.get("source_downloads") != state.get("source_downloads"):
+        packages.add("keyutils")
+    return sorted(packages)
 
 
 def validate_packages(repo):
@@ -74,9 +91,12 @@ def install(repo, profile):
                  status="uncompiled-unvalidated-board-dtb-not-integrated")
     marker = repo / ".e900-profile.json"
     previous = json.loads(marker.read_text()) if marker.exists() else None
+    invalidate = []
     if previous and previous != state and any(repo.glob("build.*")):
-        raise RuntimeError("Patch profile changed after building. Use a fresh build volume "
-                           "or explicitly clean the affected packages before updating patches.")
+        if os.environ.get("E900_INCREMENTAL_REUSE") != "1":
+            raise RuntimeError("Patch profile changed after building. Use a fresh build volume "
+                               "or explicitly enable checked incremental reuse.")
+        invalidate = invalidated_packages(previous, state)
     # Do not overwrite a user's edits, even in files this script installed before.
     for entry in (previous or {}).get("patches", []):
         dest = repo / entry["destination"]
@@ -94,6 +114,11 @@ def install(repo, profile):
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes((PORT / "patches" / entry["source"]).read_bytes())
     (repo / source_path).write_text(source_content)
+    if invalidate:
+        pending = repo / ".e900-invalidate.json"
+        existing = json.loads(pending.read_text()) if pending.exists() else []
+        pending.write_text(json.dumps(sorted(set(existing) | set(invalidate))) + "\n")
+        print("Incremental update: rebuild " + ", ".join(invalidate) + "; toolchain preserved")
     marker.write_text(json.dumps(state, indent=2) + "\n")
     print(f"Profile {profile}: {len(entries)} candidate patches installed; no board DTB installed.")
 

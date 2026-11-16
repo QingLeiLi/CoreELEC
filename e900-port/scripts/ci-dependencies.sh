@@ -5,7 +5,10 @@ if [ "${GITHUB_ACTIONS:-}" != true ]; then
   exit 1
 fi
 sudo apt-get update
-sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+deb_cache="$E900_WORK_ROOT/apt"
+sudo install -d -m 0755 "$deb_cache" "$deb_cache/partial"
+sudo env DEBIAN_FRONTEND=noninteractive apt-get -o "Dir::Cache::archives=$deb_cache" \
+  -o APT::Keep-Downloaded-Packages=true install -y --no-install-recommends \
   ca-certificates locales sudo wget curl bash bc gcc-12 g++-12 clang sed patch \
   util-linux patchutils tar bzip2 gzip xz-utils zstd perl gawk gperf zip unzip \
   diffutils lzop make file xfonts-utils xsltproc default-jre-headless python3 \
