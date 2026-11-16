@@ -157,7 +157,9 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
                      "packages/sysutils/keyutils/package.mk",
                      "packages/sysutils/usbutils/package.mk",
-                     "packages/network/connman/package.mk"]:
+                     "packages/network/connman/package.mk",
+                     "packages/network/wireguard-linux-compat/package.mk",
+                     "packages/network/wireguard-tools/package.mk"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)
@@ -176,6 +178,15 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         assert 'PKG_VERSION="1.43"' in connman
         assert 'PKG_SHA256="b8f5ab5d109d033edebe5b0564d20c9b7b9546a607195cdadc6754eb328b6f6e"' in connman
         assert connman.count('PKG_SOURCE_NAME="connman-${PKG_VERSION}-release.tar.gz"') == 1
+        wireguard = (checkout / "packages/network/wireguard-linux-compat/package.mk").read_text()
+        assert 'PKG_VERSION="1.0.20220627"' in wireguard
+        assert 'PKG_SHA256="362d412693c8fe82de00283435818d5c5def7f15e2433a07a9fe99d0518f63c0"' in wireguard
+        assert wireguard.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"') == 1
+        assert 'PKG_URL="https://sources.buildroot.net/wireguard-linux-compat/wireguard-linux-compat-${PKG_VERSION}.tar.xz"' in wireguard
+        wireguard_tools = (checkout / "packages/network/wireguard-tools/package.mk").read_text()
+        assert 'PKG_VERSION="1.0.20210914"' in wireguard_tools
+        assert 'PKG_SHA256="97ff31489217bb265b7ae850d3d0f335ab07d2652ba1feec88b734bc96bd05ac"' in wireguard_tools
+        assert wireguard_tools.count('PKG_SOURCE_NAME="wireguard-tools-${PKG_VERSION}-buildroot.tar.xz"') == 1
         marker = json.loads((checkout / ".e900-profile.json").read_text())
         managed = checkout / marker["patches"][0]["destination"]
         managed.write_text(managed.read_text() + "\nlocal user edit\n")
@@ -259,5 +270,41 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
             raise AssertionError("ConnMan override accepted source drift")
     connman_path.write_text(saved_connman)
     print("PASS: ConnMan release override pins version/checksum and isolates its cache filename")
+    wireguard_path = checkout / "packages/network/wireguard-linux-compat/package.mk"
+    saved_wireguard = wireguard_path.read_text()
+    for content in [
+        saved_wireguard.replace('PKG_VERSION="1.0.20220627"', 'PKG_VERSION="0.0"'),
+        saved_wireguard.replace('PKG_SHA256="362d', 'PKG_SHA256="462d'),
+        saved_wireguard.replace('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"',
+                                'PKG_SOURCE_NAME="changed.tar.xz"'),
+        saved_wireguard.replace("https://sources.buildroot.net/", "https://example.invalid/"),
+    ]:
+        wireguard_path.write_text(content)
+        try:
+            installer.wireguard_download_fix(checkout)
+        except RuntimeError as exc:
+            assert "WireGuard source" in str(exc)
+        else:
+            raise AssertionError("WireGuard override accepted source drift")
+    wireguard_path.write_text(saved_wireguard)
+    print("PASS: WireGuard mirror preserves version/checksum/cache filename and rejects source drift")
+    tools_path = checkout / "packages/network/wireguard-tools/package.mk"
+    saved_tools = tools_path.read_text()
+    for content in [
+        saved_tools.replace('PKG_VERSION="1.0.20210914"', 'PKG_VERSION="0.0"'),
+        saved_tools.replace('PKG_SHA256="97ff', 'PKG_SHA256="a7ff'),
+        saved_tools.replace('PKG_SOURCE_NAME="wireguard-tools-${PKG_VERSION}-buildroot.tar.xz"',
+                            'PKG_SOURCE_NAME="wireguard-tools-${PKG_VERSION}.tar.xz"'),
+        saved_tools.replace("https://sources.buildroot.net/", "https://example.invalid/"),
+    ]:
+        tools_path.write_text(content)
+        try:
+            installer.wireguard_tools_download_fix(checkout)
+        except RuntimeError as exc:
+            assert "WireGuard tools source" in str(exc)
+        else:
+            raise AssertionError("WireGuard tools override accepted source drift")
+    tools_path.write_text(saved_tools)
+    print("PASS: WireGuard tools pins Buildroot archive checksum and distinct cache filename")
 
 print("HOST CHECKS PASSED. Full ARM64 kernel/module compilation and hardware tests remain pending.")

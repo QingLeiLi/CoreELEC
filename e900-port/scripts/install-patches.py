@@ -38,7 +38,7 @@ def invalidated_packages(previous, state):
     new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
     changed_sources = {name for name in old_sources.keys() | new_sources.keys()
                        if old_sources.get(name) != new_sources.get(name)}
-    if changed_sources - {"keyutils", "usbutils", "connman"}:
+    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools"}:
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
     if previous.get("build_options") != state.get("build_options"):
@@ -136,6 +136,57 @@ def connman_download_fix(repo):
     return relative, content, metadata
 
 
+def wireguard_download_fix(repo):
+    relative = "packages/network/wireguard-linux-compat/package.mk"
+    original = (repo / relative).read_text()
+    digest = "362d412693c8fe82de00283435818d5c5def7f15e2433a07a9fe99d0518f63c0"
+    upstream = "https://git.zx2c4.com/wireguard-linux-compat/snapshot/wireguard-linux-compat-$PKG_VERSION.tar.xz"
+    mirror = "https://sources.buildroot.net/wireguard-linux-compat/wireguard-linux-compat-${PKG_VERSION}.tar.xz"
+    source_name = 'PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"'
+    if (re.findall(r'^PKG_VERSION="([^"]*)"$', original, re.M) != ["1.0.20220627"]
+            or re.findall(r'^PKG_SHA256="([^"]*)"$', original, re.M) != [digest]
+            or re.findall(r'^PKG_URL="([^"]*)"$', original, re.M) not in [[upstream], [mirror]]):
+        raise RuntimeError("Unexpected WireGuard source configuration; refusing download override")
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if names and names != [source_name]:
+        raise RuntimeError("Unexpected WireGuard source filename")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    metadata = dict(package="wireguard-linux-compat", version="1.0.20220627", archive_sha256=digest,
+                    url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
+def wireguard_tools_download_fix(repo):
+    relative = "packages/network/wireguard-tools/package.mk"
+    original = (repo / relative).read_text()
+    old_digest = "69de713458a887cddb46b2fd1d43bf20548f693136af95792e65ec925538c770"
+    digest = "97ff31489217bb265b7ae850d3d0f335ab07d2652ba1feec88b734bc96bd05ac"
+    upstream = "https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-v${PKG_VERSION}.tar.xz"
+    mirror = "https://sources.buildroot.net/wireguard-tools/wireguard-tools-${PKG_VERSION}.tar.xz"
+    source_name = 'PKG_SOURCE_NAME="wireguard-tools-${PKG_VERSION}-buildroot.tar.xz"'
+    versions = re.findall(r'^PKG_VERSION="([^"]*)"$', original, re.M)
+    urls = re.findall(r'^PKG_URL="([^"]*)"$', original, re.M)
+    digests = re.findall(r'^PKG_SHA256="([^"]*)"$', original, re.M)
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if versions != ["1.0.20210914"] or not (
+            (urls == [upstream] and digests == [old_digest] and not names)
+            or (urls == [mirror] and digests == [digest] and names == [source_name])):
+        raise RuntimeError("Unexpected WireGuard tools source configuration")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    content = re.sub(r'^PKG_SHA256="[^"]*"$', f'PKG_SHA256="{digest}"', content, flags=re.M)
+    metadata = dict(package="wireguard-tools", version="1.0.20210914", archive_sha256=digest,
+                    original_archive_sha256=old_digest, url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -143,7 +194,8 @@ def install(repo, profile):
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
-    source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo)]
+    source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
+                    wireguard_download_fix(repo), wireguard_tools_download_fix(repo)]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"

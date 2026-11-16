@@ -23,6 +23,7 @@
    为避开 keyutils 原站连接超时及旧备用镜像 404，安装脚本将其下载地址改为 Debian 的原始源码镜像；仍固定 1.6.3、保留原 SHA-256 和缓存文件名。已实际下载并核对镜像包与原校验值完全相同。此覆盖作用于实际构建的独立源码树，而非仅修改 fork 顶层包配置。
    usbutils 017 的原 HTTP 下载也已改为 kernel.org 官方 HTTPS 镜像 `https://mirrors.edge.kernel.org/pub/linux/utils/usb/usbutils/`。已实际下载 `usbutils-017.tar.xz`，SHA-256 与固定值 `a6a25ffdcf9103e38d7a44732aca17073f4e602b92e4ae55625231a82702e05b` 一致；保留原版本、归档文件名和校验值。
    ConnMan 1.43 则从 Git 快照切换为 kernel.org 官方发布包，版本不变。发布包含生成的 autotools 文件，与快照是不同归档，因此固定发布包 SHA-256 `b8f5ab5d109d033edebe5b0564d20c9b7b9546a607195cdadc6754eb328b6f6e`，另用 `connman-1.43-release.tar.gz` 缓存名。已下载两包，309 个共有常规文件的内容及可执行标志一致，现有 5 个 CE 补丁均可应用；完整差异名单见 `tests/connman-source-audit.json`。
+   WireGuard 两个包改用 Buildroot 固定源码镜像。`wireguard-linux-compat` 仍为 1.0.20220627，归档 SHA-256 与原固定值完全相同；`wireguard-tools` 仍为 1.0.20210914，采用 Buildroot 公布的 `97ff31489217bb265b7ae850d3d0f335ab07d2652ba1feec88b734bc96bd05ac` 并使用独立的 `-buildroot.tar.xz` 缓存名。当前原站快照的哈希与旧配置不同，但镜像与当前上游快照的 122 个常规文件内容及可执行标志完全一致；记录见 `tests/wireguard-source-audit.json`。
 4. 从公开仓库获取固定测试源码，核对 Git blob SHA-1 和 SHA-256，运行补丁应用及本地 C 检查。
 5. 编译所选目标；`decoder` 额外验证编译出的 DTB，`decoder/image` 使用宿主 mtools 直接修改普通镜像文件的 FAT 分区，放入本板 DTB 与临时启动脚本，随后读回校验。脚本不执行 `defenv`/`saveenv`，失败返回时恢复原内存变量，不改写现存启动环境。单次编译超时为 300 分钟，job 上限为 360 分钟，留出上传日志的时间。
 6. 分层恢复并保存源码下载包、已安装工具链与完整编译目录、ccache、依赖 deb 包。测试源码也保存在下载缓存中。兼容性匹配时，失败后重跑可复用已完成包的构建标记和中间产物。
@@ -49,7 +50,7 @@
 
 完整编译状态按上游 pin、宿主系统/关键工具包版本、构建脚本、profile 及绝对编译路径隔离。`linux`、`media`、`image` 目标可以复用同一 profile 的兼容状态；不同 profile 的编译路径不同，不直接搬用已安装工具链。
 
-优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，板级构建选项变化清理内核及媒体模块，下载配置按包比较，变化仅清理对应的 keyutils/usbutils/connman，不影响其他已完成包。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
+优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，板级构建选项变化清理内核及媒体模块，下载配置按包比较，变化仅清理对应的 keyutils/usbutils/connman/WireGuard 包，不影响其他已完成包。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
 
 每次 run/attempt 使用新缓存键，正常失败或编译阶段超时后也尝试保存部分状态；缓存上传失败不覆盖原编译错误。手动取消、runner 被强制回收或整个 job 硬超时，不能保证最后的保存步骤执行。先前未保存过的工具链无法从已销毁的 runner 找回。
 

@@ -1,0 +1,20 @@
+{
+  "compat": {
+    "version": "1.0.20220627",
+    "mirror_url": "https://sources.buildroot.net/wireguard-linux-compat/wireguard-linux-compat-1.0.20220627.tar.xz",
+    "sha256": "362d412693c8fe82de00283435818d5c5def7f15e2433a07a9fe99d0518f63c0",
+    "matches_original_coreelec_sha256": true
+  },
+  "tools": {
+    "version": "1.0.20210914",
+    "original_coreelec_expected_sha256": "69de713458a887cddb46b2fd1d43bf20548f693136af95792e65ec925538c770",
+    "observed_current_upstream_sha256": "04af1ce7b9856b986dad23f7ebd47de7d4e2f48ced32eab058f648d96b801820",
+    "mirror_url": "https://sources.buildroot.net/wireguard-tools/wireguard-tools-1.0.20210914.tar.xz",
+    "mirror_sha256": "97ff31489217bb265b7ae850d3d0f335ab07d2652ba1feec88b734bc96bd05ac",
+    "hash_publication_url": "https://raw.githubusercontent.com/buildroot/buildroot/2025.02/package/wireguard-tools/wireguard-tools.hash",
+    "compared_files": 122,
+    "file_content_and_executable_modes_identical": true,
+    "file_manifest_sha256": "35a6ce573a7f2a4bad8059cf35a904850b47e3eefee1f3206d91cc75c205594e"
+  },
+  "cloud_build": "pending"
+}

@@ -55,7 +55,9 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
                      "packages/sysutils/keyutils/package.mk",
                      "packages/sysutils/usbutils/package.mk",
-                     "packages/network/connman/package.mk"]:
+                     "packages/network/connman/package.mk",
+                     "packages/network/wireguard-linux-compat/package.mk",
+                     "packages/network/wireguard-tools/package.mk"]:
         target = repo / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, target)
@@ -68,6 +70,20 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
         # An unchanged resumed build must not schedule any clean operation.
         installer.install(repo, "identify")
         assert not (repo / ".e900-invalidate.json").exists()
+
+        marker = repo / ".e900-profile.json"
+        previous_state = json.loads(marker.read_text())
+        previous_state["source_downloads"] = [entry for entry in previous_state["source_downloads"]
+                                              if entry["package"] not in {"wireguard-linux-compat", "wireguard-tools"}]
+        marker.write_text(json.dumps(previous_state))
+        with mock.patch.dict(os.environ, {"E900_INCREMENTAL_REUSE": "1"}):
+            installer.install(repo, "identify")
+        assert json.loads((repo / ".e900-invalidate.json").read_text()) == ["wireguard-linux-compat", "wireguard-tools"]
+        with mock.patch.object(cache.subprocess, "run") as cleaner:
+            cache.invalidate(repo)
+            assert [call.args[0][-1] for call in cleaner.call_args_list] == ["wireguard-linux-compat", "wireguard-tools"]
+        assert sentinel.read_text() == "installed cross compiler"
+        print("PASS: WireGuard source migration cleans only its two packages, retaining kernel/toolchain")
 
         marker = repo / ".e900-profile.json"
         previous_state = json.loads(marker.read_text())
