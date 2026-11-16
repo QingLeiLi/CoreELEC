@@ -38,7 +38,7 @@ def invalidated_packages(previous, state):
     new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
     changed_sources = {name for name in old_sources.keys() | new_sources.keys()
                        if old_sources.get(name) != new_sources.get(name)}
-    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools"}:
+    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools", "megatools"}:
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
     if previous.get("build_options") != state.get("build_options"):
@@ -211,6 +211,30 @@ def u_boot_tools_download_fix(repo):
     return relative, content, metadata
 
 
+def megatools_download_fix(repo):
+    relative = "packages/tools/megatools/package.mk"
+    original = (repo / relative).read_text()
+    digest = "8dc1ca348633fd49de7eb832b323e8dc295f1c55aefb484d30e6475218558bdb"
+    upstream = "https://megatools.megous.com/builds/megatools-${PKG_VERSION}.tar.gz"
+    mirror = "https://deb.debian.org/debian/pool/main/m/megatools/megatools_${PKG_VERSION}.orig.tar.gz"
+    source_name = 'PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"'
+    if (re.findall(r'^PKG_VERSION="([^"]*)"$', original, re.M) != ["1.10.3"]
+            or re.findall(r'^PKG_SHA256="([^"]*)"$', original, re.M) != [digest]
+            or re.findall(r'^PKG_URL="([^"]*)"$', original, re.M) not in [[upstream], [mirror]]):
+        raise RuntimeError("Unexpected megatools source configuration; refusing download override")
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if names and names != [source_name]:
+        raise RuntimeError("Unexpected megatools source filename")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    metadata = dict(package="megatools", version="1.10.3", archive_sha256=digest,
+                    url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -220,7 +244,7 @@ def install(repo, profile):
     validate_packages(repo)
     source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
                     wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
-                    u_boot_tools_download_fix(repo)]
+                    u_boot_tools_download_fix(repo), megatools_download_fix(repo)]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"

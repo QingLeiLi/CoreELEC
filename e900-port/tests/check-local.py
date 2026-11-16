@@ -160,7 +160,8 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
                      "packages/network/connman/package.mk",
                      "packages/network/wireguard-linux-compat/package.mk",
                      "packages/network/wireguard-tools/package.mk",
-                     "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk"]:
+                     "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk",
+                     "packages/tools/megatools/package.mk"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)
@@ -193,6 +194,11 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         assert 'PKG_SHA256="e49337262ecac44dbdeac140f2c6ebd1eba345e0162b0464172e7f05583ed7bb"' in uboot_tools
         assert 'PKG_URL="https://sources.buildroot.net/u-boot-${PKG_VERSION}.tar.bz2"' in uboot_tools
         assert uboot_tools.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.bz2"') == 1
+        megatools = (checkout / "packages/tools/megatools/package.mk").read_text()
+        assert 'PKG_VERSION="1.10.3"' in megatools
+        assert 'PKG_SHA256="8dc1ca348633fd49de7eb832b323e8dc295f1c55aefb484d30e6475218558bdb"' in megatools
+        assert 'PKG_URL="https://deb.debian.org/debian/pool/main/m/megatools/megatools_${PKG_VERSION}.orig.tar.gz"' in megatools
+        assert megatools.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"') == 1
         marker = json.loads((checkout / ".e900-profile.json").read_text())
         managed = checkout / marker["patches"][0]["destination"]
         managed.write_text(managed.read_text() + "\nlocal user edit\n")
@@ -330,5 +336,23 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
             raise AssertionError("u-boot-tools override accepted source drift")
     uboot_path.write_text(saved_uboot)
     print("PASS: Amlogic u-boot-tools mirror keeps the original version/checksum/cache filename")
+    megatools_path = checkout / "packages/tools/megatools/package.mk"
+    saved_megatools = megatools_path.read_text()
+    for content in [
+        saved_megatools.replace('PKG_VERSION="1.10.3"', 'PKG_VERSION="1.11.0"'),
+        saved_megatools.replace('PKG_SHA256="8dc1', 'PKG_SHA256="9dc1'),
+        saved_megatools.replace('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"',
+                                'PKG_SOURCE_NAME="changed.tar.gz"'),
+        saved_megatools.replace("https://deb.debian.org/", "https://example.invalid/"),
+    ]:
+        megatools_path.write_text(content)
+        try:
+            installer.megatools_download_fix(checkout)
+        except RuntimeError as exc:
+            assert "megatools source" in str(exc)
+        else:
+            raise AssertionError("megatools override accepted source drift")
+    megatools_path.write_text(saved_megatools)
+    print("PASS: megatools mirror preserves version/checksum/cache filename and rejects source drift")
 
 print("HOST CHECKS PASSED. Full ARM64 kernel/module compilation and hardware tests remain pending.")

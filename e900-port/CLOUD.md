@@ -25,6 +25,7 @@
    ConnMan 1.43 则从 Git 快照切换为 kernel.org 官方发布包，版本不变。发布包含生成的 autotools 文件，与快照是不同归档，因此固定发布包 SHA-256 `b8f5ab5d109d033edebe5b0564d20c9b7b9546a607195cdadc6754eb328b6f6e`，另用 `connman-1.43-release.tar.gz` 缓存名。已下载两包，309 个共有常规文件的内容及可执行标志一致，现有 5 个 CE 补丁均可应用；完整差异名单见 `tests/connman-source-audit.json`。
    WireGuard 两个包改用 Buildroot 固定源码镜像。`wireguard-linux-compat` 仍为 1.0.20220627，归档 SHA-256 与原固定值完全相同；`wireguard-tools` 仍为 1.0.20210914，采用 Buildroot 公布的 `97ff31489217bb265b7ae850d3d0f335ab07d2652ba1feec88b734bc96bd05ac` 并使用独立的 `-buildroot.tar.xz` 缓存名。当前原站快照的哈希与旧配置不同，但镜像与当前上游快照的 122 个常规文件内容及可执行标志完全一致；记录见 `tests/wireguard-source-audit.json`。
    Amlogic 覆盖包 `projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk` 的 FTP 原站改为 `https://sources.buildroot.net/u-boot-${PKG_VERSION}.tar.bz2`。已实际下载 2016.03 原始包（11076762 字节），SHA-256 与固定值 `e49337262ecac44dbdeac140f2c6ebd1eba345e0162b0464172e7f05583ed7bb` 相同；保留 `u-boot-tools-2016.03.tar.bz2` 缓存名和全部 CE 补丁。标准备用路径按包名组成 `u-boot-tools/`，不等于归档本身不存在。
+   megatools 1.10.3 改用 Debian 原始源码镜像 `https://deb.debian.org/debian/pool/main/m/megatools/megatools_${PKG_VERSION}.orig.tar.gz`。已实际下载 196361 字节并核对 SHA-256 与原值 `8dc1ca348633fd49de7eb832b323e8dc295f1c55aefb484d30e6475218558bdb` 相同，保留原版本和 `megatools-1.10.3.tar.gz` 缓存文件名。
 4. 从公开仓库获取固定测试源码，核对 Git blob SHA-1 和 SHA-256，运行补丁应用及本地 C 检查。
 5. 编译所选目标；`decoder` 额外验证编译出的 DTB，`decoder/image` 使用宿主 mtools 直接修改普通镜像文件的 FAT 分区，放入本板 DTB 与临时启动脚本，随后读回校验。脚本不执行 `defenv`/`saveenv`，失败返回时恢复原内存变量，不改写现存启动环境。单次编译超时为 300 分钟，job 上限为 360 分钟，留出上传日志的时间。
 6. 分层恢复并保存源码下载包、已安装工具链与完整编译目录、ccache、依赖 deb 包。测试源码也保存在下载缓存中。兼容性匹配时，失败后重跑可复用已完成包的构建标记和中间产物。
@@ -51,7 +52,7 @@
 
 完整编译状态按上游 pin、宿主系统/关键工具包版本、构建脚本、profile 及绝对编译路径隔离。`linux`、`media`、`image` 目标可以复用同一 profile 的兼容状态；不同 profile 的编译路径不同，不直接搬用已安装工具链。
 
-优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，板级构建选项变化清理内核及媒体模块，下载配置按包比较，变化仅清理对应的 keyutils/usbutils/connman/WireGuard/u-boot-tools 包，不影响其他已完成包。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
+优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，板级构建选项变化清理内核及媒体模块，下载配置按包比较，变化仅清理对应的 keyutils/usbutils/connman/WireGuard/u-boot-tools/megatools 包，不影响其他已完成包。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
 
 每次 run/attempt 使用新缓存键，正常失败或编译阶段超时后也尝试保存部分状态；缓存上传失败不覆盖原编译错误。手动取消、runner 被强制回收或整个 job 硬超时，不能保证最后的保存步骤执行。先前未保存过的工具链无法从已销毁的 runner 找回。
 
