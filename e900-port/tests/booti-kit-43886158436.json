@@ -1,0 +1,18 @@
+{
+  "source_run": "43886158436",
+  "source_container_sha256": "def12c3f399458293bbd091ef7f19ee7c5d252499ec18c4d35903a6fe760f0fe",
+  "kernel_sha256": "7fb0bec24765a79267a30420b817c9d9063a1043eba04b3fe77ac98d6c1be6cf",
+  "dtb_sha256": "a6d547b1f883a42ce0fdab84946b18d01a7915b8e2cff4f2b1c8f371907708fd",
+  "initramfs_cpio_sha256": "4fc9c4036c03d6ed64366957cb690e554eb87cffacc8e406d1546e48881951e2",
+  "image_text_offset": 17301504,
+  "method": "booti with legacy ARM64 gzip ramdisk; panic=0",
+  "hardware_tested": false,
+  "changed": "USB loader path and panic/log settings; same kernel, DTB, initramfs and SYSTEM",
+  "observation": {
+    "without_usb": "Android boots normally",
+    "with_original_ce_usb": "Android logo, black screen, Android logo again; under 5 seconds",
+    "power": "independent power supply"
+  },
+  "fat_roundtrip": "six files written to a copy of the real CE image and read back byte-for-byte",
+  "diagnostic_hardware_result": "pending"
+}

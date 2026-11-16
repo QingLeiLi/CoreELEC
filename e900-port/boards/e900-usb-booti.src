@@ -1,0 +1,17 @@
+echo "E900V21C diagnostic booti: same CE kernel/DTB/SYSTEM, external initramfs"
+usb start
+setenv e900_saved_bootargs "${bootargs}"
+setenv kernel_addr_r 0x11000000
+setenv ramdisk_addr_r 0x15000000
+setenv fdt_addr_r 0x01000000
+if fatload usb 0:1 ${kernel_addr_r} e900-Image; then
+  if fatload usb 0:1 ${ramdisk_addr_r} e900-uInitrd; then
+    if fatload usb 0:1 ${fdt_addr_r} dtb.img; then
+      setenv bootargs "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 ssh panic=0 loglevel=8 ignore_loglevel"
+      fdt addr ${fdt_addr_r}
+      booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
+    fi
+  fi
+fi
+setenv bootargs "${e900_saved_bootargs}"
+echo "E900 diagnostic booti returned; existing bootloader fallback may continue"
