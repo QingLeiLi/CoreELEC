@@ -2,7 +2,7 @@
 
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。
 
-当前是第一批源码补丁和构建工具，不是已经适配完成的刷机包。未编译完整内核，未实机验证；完整板级 DTB 尚未接入。工作区脚本不连接盒子、不写入磁盘设备，也不执行 eMMC 安装。
+当前是实验性源码补丁和构建工具，不是已经适配完成的刷机包。已完成 Linux 4.9.269 内核与 28 个 AArch64 媒体模块的云端编译，并核对 31 项产物哈希；尚未实机验证，完整板级 DTB 尚未接入。工作区脚本不连接盒子、不写入磁盘设备，也不执行 eMMC 安装。
 
 现在优先使用 [GitHub Actions 云编译](CLOUD.md)，无需本地 Docker。下面保留 Docker 入口作为本地备用方案。
 
@@ -24,10 +24,10 @@ docker pull --platform linux/amd64 ubuntu:22.04
 
 | 文件 | 行为 | 状态 |
 |---|---|---|
-| `patches/linux/0001-gxlx2-identity.patch` | 内核增加真实 CPU ID 0x2a 及独立判断函数 | 本地 C 头文件测试通过，内核未编译 |
-| `patches/media/0001-gxlx2-identity-and-firmware-trace.patch` | 补解码器 DT 匹配、型号名称、实际取用微码的日志 | 应用检查通过，模块未编译 |
-| `patches/linux/0002-gxlx2-opt-in-hdmi-transport.patch` | 用独立 DT 属性启用 DWC/TOP 直接访问，保留 GXL PHY 配置 | 本地映射/分流测试通过，硬件未验证 |
-| `patches/media/0002-gxlx2-experimental-clock-registration.patch` | 将 GXLX2 加入现有共享时钟注册列表 | 仅补入口；能力分支尚未完整审查 |
+| `patches/linux/0001-gxlx2-identity.patch` | 内核增加真实 CPU ID 0x2a 及独立判断函数 | 本地 C 测试及云端内核编译通过，硬件未验证 |
+| `patches/media/0001-gxlx2-identity-and-firmware-trace.patch` | 补解码器 DT 匹配、型号名称、实际取用微码的日志 | 应用检查及云端模块编译通过，硬件未验证 |
+| `patches/linux/0002-gxlx2-opt-in-hdmi-transport.patch` | 用独立 DT 属性启用 DWC/TOP 直接访问，保留 GXL PHY 配置 | 本地映射/分流测试及云端内核编译通过，硬件未验证 |
+| `patches/media/0002-gxlx2-experimental-clock-registration.patch` | 将 GXLX2 加入现有共享时钟注册列表 | 入口已编译通过；能力分支尚未完整审查 |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
@@ -92,4 +92,6 @@ python3 tests/check-build-cache.py
 
 缓存检查覆盖宿主/profile/路径隔离、相同状态重用、补丁变化后的选择性清理、失败清理的重试，以及从实际 CoreELEC 目录层级导出内核与模块。GitHub 远端缓存上传/恢复仍需工作流运行验证。
 
-完整 ARM64 内核、媒体模块、Docker 镜像和盒子启动测试仍待执行。
+ARM64 内核和媒体模块已完成编译验证；Docker 镜像、本板启动、显示、音频和硬解实测仍待执行。
+
+首次通过的 [GitHub Actions 运行](https://github.com/QingLeiLi/CoreELEC/actions/runs/43807610508)，提交 `e92f2c5`：内核版本 4.9.269，28 个模块的 ELF 架构为 AArch64，vermagic 均匹配该内核；HDMI 诊断与固件选择日志字符串已在二进制中找到。此结论不能代替本板运行验证。
