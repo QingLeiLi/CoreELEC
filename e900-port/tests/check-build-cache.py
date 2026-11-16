@@ -167,6 +167,23 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
         assert sentinel.exists()
         print("PASS: cache invalidation rejects toolchain removal")
 
+    # Exercise the CLI in distinct processes: set ordering changes with hash seeds.
+    cleaner_script = repo / "scripts/clean"
+    cleaner_script.parent.mkdir(exist_ok=True)
+    cleaner_script.write_text('printf \'%s\\n\' "$1" >> e900-clean-order.txt\n')
+    clean_log = repo / "e900-clean-order.txt"
+    for seed in ["0", "1", "2", "3", "42", "123", "random"]:
+        pending = repo / ".e900-invalidate.json"
+        pending.write_text(json.dumps(["wireguard-tools", "linux", "media_modules-aml",
+                                       "wireguard-linux-compat", "wireguard-tools"]))
+        clean_log.unlink(missing_ok=True)
+        subprocess.run([sys.executable, str(PORT / "scripts/build-cache.py"), "invalidate", str(repo)],
+                       env=dict(os.environ, PYTHONHASHSEED=seed), check=True)
+        assert clean_log.read_text().splitlines() == ["media_modules-aml", "wireguard-linux-compat",
+                                                       "wireguard-tools", "linux"], seed
+        assert not pending.exists() and sentinel.exists()
+    print("PASS: CLI cleanup is deterministic across seven hash seeds, deduplicates and keeps Linux last")
+
     # Exercise the real CoreELEC build/build/<package> layout, not a simplified path.
     build = repo / "build.test/build"
     kernel = build / "linux-amlogic-4.9-test"

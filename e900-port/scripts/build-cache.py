@@ -59,7 +59,8 @@ def invalidate(repo):
                                            for name in packages):
         raise ValueError("Unexpected package in cache invalidation plan")
     # Use the buildsystem's cleaner; never remove the shared toolchain directory.
-    for package in sorted(set(packages), key=lambda name: name == "linux"):
+    # Keep Linux last, and make other packages independent of set/hash order.
+    for package in sorted(set(packages), key=lambda name: (name == "linux", name)):
         subprocess.run(["bash", "./scripts/clean", package], cwd=repo, check=True)
     pending.unlink()
 
