@@ -99,3 +99,39 @@ Integration with pre-handoff checkpoints and retained-RAM entry results remains
 pending successful hardware validation. Parser bounds and script guards have
 host tests; local image mapping and the actual USB file/sector mapping were
 checked. usb06 deployed and hashes verified; hardware write result pending.
+
+Hardware usb06 result: `e9probe=usb06 e9_write=passed`; E9LOG.TXT has the
+expected replacement contents and SHA256, identical to E9NEXT.BIN. The guarded
+USB block-write checkpoint path is confirmed on this device.
+
+## Persistent kernel boot ledger (ledger07)
+
+`scripts/make-usb-ledger-boot.py VERIFIED_SLOT_JSON OUTPUT --mkimage PATH`
+requires an explicitly hardware-verified slot. It expands the exact usb06
+write/readback guard into the entry05 script at 19 diagnostic positions,
+including before each RAM reader, file loads, booti, failures and retained
+entry observations. Generated 512-byte E9Sxxx.BIN payloads contain the stage
+description and the slot nonce. The single E9LOG.TXT keeps the latest written
+checkpoint; it is not a complete chronological log.
+
+Before deploying, the live FAT allocation and current evidence bytes must be
+revalidated against the slot. Upload the stage payloads and three script
+aliases without replacing E9LOG.TXT or changing its allocation. Keep the
+entry05 trace Image, diagnostic DTB, seed and verified initramfs. If a
+checkpoint cannot be verified, the script suppresses the kernel call. A
+before_booti record proves preparation reached that point, not that the CPU
+entered Linux. An entry observation still depends on retained RAM; there is
+no direct USB driver available to the injected entry instructions.
+
+On a stalled attempt, wait 60 seconds. If Android does not return, power off,
+remove USB and boot Android; then reinsert this same drive and read E9LOG.TXT
+without overwriting it. Unlike the RAM trace, persisted checkpoints can
+survive that recovery. Do not use these generated scripts on a different
+drive or after reallocating the evidence file.
+
+Host checks ran the actual generated shell source with command stubs for
+both readers, missing reader, warm markers, file load failures, block-write
+failures and comparison failures. Shell syntax and legacy script CRC passed.
+The live allocation was revalidated and all 26 deployed file hashes matched.
+ledger07 hardware boot result remains pending; no eMMC change or reboot was
+performed during deployment.
