@@ -26,7 +26,8 @@ def identities(port, profile, work_root, host):
     if profile not in installer.PROFILES:
         raise ValueError("Unknown profile")
     pins = json.loads((port / "pins.json").read_text())
-    compatibility = dict(schema=1, pins=pins, host=host, profile=profile,
+    compatibility = dict(schema=2, pins=pins, host=host, profile=profile,
+                         host_codegen=installer.HOST_CODEGEN,
                          source_root=str((work_root / ("CoreELEC-" + profile)).resolve()),
                          project="Amlogic-ce", device="Amlogic-ng", arch="arm",
                          build_script=file_hash(port / "scripts/build.sh"),
@@ -37,7 +38,7 @@ def identities(port, profile, work_root, host):
                  board_options=file_hash(port / "boards/usb-build.options") if profile == "decoder" else None,
                  cache_protocol=file_hash(port / "scripts/build-cache.py"))
     return dict(compat=digest(compatibility), state=digest(state),
-                compiler=digest(dict(schema=1, pins=pins, host=host)),
+                compiler=digest(dict(schema=2, pins=pins, host=host, host_codegen=installer.HOST_CODEGEN)),
                 details=compatibility)
 
 
@@ -72,6 +73,16 @@ def main():
     elif command == "keys":
         work = pathlib.Path(os.environ["E900_WORK_ROOT"])
         result = identities(PORT, os.environ["PROFILE"], work, host_identity())
+        # CPU diagnostics are deliberately outside the key: host objects now use
+        # a fixed generic ISA, so different runner CPU models may share them.
+        cpuinfo = pathlib.Path("/proc/cpuinfo")
+        observed_cpu = {}
+        if cpuinfo.exists():
+            for line in cpuinfo.read_text().splitlines():
+                key, separator, value = line.partition(":")
+                if separator and key.strip() in {"vendor_id", "model name", "flags"}:
+                    observed_cpu.setdefault(key.strip(), value.strip())
+        result["observed_cpu"] = observed_cpu
         work.mkdir(parents=True, exist_ok=True)
         (work / "cache-identity.json").write_text(json.dumps(result, indent=2) + "\n")
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:

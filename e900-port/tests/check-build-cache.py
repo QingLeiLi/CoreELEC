@@ -30,6 +30,17 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
     shutil.copy2(PORT / "pins.json", port / "pins.json")
     host = dict(os_release="Ubuntu 22.04", machine="x86_64", packages="gcc-12=12.3;libc6=2.35")
     first = cache.identities(port, "identify", root / "work", host)
+    legacy = dict(first["details"], schema=1)
+    legacy.pop("host_codegen")
+    assert first["compat"] != cache.digest(legacy)
+    assert first["compiler"] != cache.digest(dict(schema=1, pins=legacy["pins"], host=host))
+    policy_source = port / "scripts/install-patches.py"
+    policy_content = policy_source.read_text()
+    policy_source.write_text(policy_content.replace("-march=x86-64 -mtune=generic", "-march=x86-64-v2 -mtune=generic"))
+    different_isa = cache.identities(port, "identify", root / "work", host)
+    assert first["compat"] != different_isa["compat"] and first["compiler"] != different_isa["compiler"]
+    policy_source.write_text(policy_content)
+    print("PASS: legacy native caches and a different host ISA cannot restore into the portable policy")
     assert first == cache.identities(port, "identify", root / "work", host)
     assert first["compat"] != cache.identities(port, "identify", root / "other-work", host)["compat"]
     assert first["compat"] != cache.identities(port, "hdmi", root / "work", host)["compat"]
@@ -59,7 +70,8 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
                      "packages/network/wireguard-linux-compat/package.mk",
                      "packages/network/wireguard-tools/package.mk",
                      "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk",
-                     "packages/tools/megatools/package.mk"]:
+                     "packages/tools/megatools/package.mk",
+                     "config/optimize"]:
         target = repo / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, target)
@@ -69,6 +81,31 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
         sentinel = repo / "build.test/toolchain/keep-me"
         sentinel.parent.mkdir(parents=True)
         sentinel.write_text("installed cross compiler")
+        optimize = repo / "config/optimize"
+        portable_optimize = optimize.read_text()
+        optimize.write_text(portable_optimize.replace(installer.HOST_CODEGEN["cflags"], "-march=native"))
+        try:
+            installer.install(repo, "identify")
+        except RuntimeError as exc:
+            assert "Locally edited host optimization" in str(exc)
+        else:
+            raise AssertionError("Native flags restored beneath a portable cache marker were accepted")
+        optimize.write_text(portable_optimize)
+        state_path = repo / ".e900-profile.json"
+        portable_state = json.loads(state_path.read_text())
+        unsafe_state = dict(portable_state)
+        unsafe_state.pop("host_codegen")
+        state_path.write_text(json.dumps(unsafe_state))
+        with mock.patch.dict(os.environ, {"E900_INCREMENTAL_REUSE": "1"}):
+            try:
+                installer.install(repo, "identify")
+            except RuntimeError as exc:
+                assert "host binary cache" in str(exc)
+            else:
+                raise AssertionError("Unknown native binaries accepted for incremental reuse")
+        assert sentinel.exists() and not (repo / ".e900-invalidate.json").exists()
+        state_path.write_text(json.dumps(portable_state))
+        print("PASS: installer refuses unsafe legacy host binaries without deleting the old build")
         # An unchanged resumed build must not schedule any clean operation.
         installer.install(repo, "identify")
         assert not (repo / ".e900-invalidate.json").exists()

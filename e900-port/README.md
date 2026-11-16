@@ -90,6 +90,7 @@ bash scripts/docker.sh export identify
 python3 tests/check-local.py
 python3 tests/check-build-cache.py
 python3 tests/check-usb-image.py
+python3 tests/check-host-policy.py
 ```
 
 检查了五个补丁按顺序应用、真实 CPU 头文件的 C 测试、从补丁后源码提取的 HDMI 映射/分流函数的 C 测试，以及补丁安装器的版本及本地修改保护。测试中的 MMIO 使用模拟函数，只验证代码分流，不验证硬件地址是否能实际工作。
@@ -107,3 +108,5 @@ python3 tests/check-usb-roundtrip.py <本板编译后DTB> <mtools所在目录> <
 ```
 
 已使用 GNU mtools 4.0.43 和与 CE 同版本并应用其补丁的 U-Boot mkimage 2016.03，通过真实 FAT 写入/回读、镜像导出及失败重试清理检查。该测试的内核/SYSTEM 是合成占位文件，只验证打包链路；实际 CoreELEC SYSTEM、内核启动及硬件仍需后续验证。
+
+宿主工具现固定使用通用 x86-64 参数，以支持不同 runner CPU 共享后续缓存；旧 native 构建状态和 ccache 已隔离，首次切换需较大重编译。详见 [宿主 SIGILL 与可移植缓存](CLOUD.md#宿主-sigill-与可移植缓存)。这属于宿主构建策略调整，目标 ARM 指令集配置未变化。

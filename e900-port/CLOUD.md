@@ -9,7 +9,7 @@
 - profile：`decoder`，包含五个候选补丁及本板 USB DTS。
 - target：`image`，构建完整 SYSTEM/Kodi 并准备 E900 外置 USB 测试镜像。
 
-先手动推送本地分支，再选择同一分支运行工作流。兼容的旧状态仍可恢复；增加内核 DTS 会清理并重编译内核及媒体模块，工具链保留。SYSTEM/Kodi 等此前未构建的依赖仍需首次编译，可能明显长于单独的媒体模块增量构建。
+先手动推送本地分支，再选择同一分支运行工作流。兼容的新宿主策略状态可以恢复；旧 `-march=native` 二进制状态已隔离，首次切换通用宿主策略需重建。后续增加内核 DTS 时仅清理并重编译内核及媒体模块，兼容工具链保留。SYSTEM/Kodi 等此前未构建的依赖仍需首次编译，可能明显长于单独的媒体模块增量构建。
 
 成功后下载 artifact，使用 `target/*-E900V21C-USB-TEST.img.gz` 及对应 `.sha256`。核对 `build-metadata.json` 中 `last_action_exit_code=0`、`usb_image_prepared=true`，不要使用裸 `Image`/`.ko` 或通用镜像代替完整测试镜像。此阶段只测试 USB，eMMC 已在候选 DTB 禁用，硬件适配仍待实测。
 
@@ -50,7 +50,7 @@
 | ccache | 同宿主兼容环境的编译对象缓存，host/target 共用目录，上限 1G |
 | debs | 安装编译依赖时下载的 deb 文件；每台新 runner 仍需执行 apt 安装，但可少下载 |
 
-完整编译状态按上游 pin、宿主系统/关键工具包版本、构建脚本、profile 及绝对编译路径隔离。`linux`、`media`、`image` 目标可以复用同一 profile 的兼容状态；不同 profile 的编译路径不同，不直接搬用已安装工具链。
+完整编译状态按上游 pin、宿主系统/关键工具包版本、宿主代码生成策略、构建脚本、profile 及绝对编译路径隔离。`linux`、`media`、`image` 目标可以复用同一 profile 的兼容状态；不同 profile 的编译路径不同，不直接搬用已安装工具链。
 
 优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，板级构建选项变化清理内核及媒体模块，下载配置按包比较，变化仅清理对应的 keyutils/usbutils/connman/WireGuard/u-boot-tools/megatools 包，不影响其他已完成包。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
 
@@ -61,3 +61,13 @@ GitHub 默认缓存容量为每仓库 10GB；本工作流不调整容量或计�
 ## kernel.org 下载核对
 
 已检查本基线中 kernel.org 相关包配置：keyutils 与 ConnMan 使用 Git 快照端点，已分别处理；usbutils 使用旧 HTTP，已替换。dtc 也使用 Git 快照，但它是 `linux -> aml-dtbtools -> dtc` 的既有依赖，本次成功内核构建已经过这一依赖，保留兼容缓存即可。libgpiod 和 mmc-utils 的快照地址位于 addon 依赖中，不主动更改或清理这些包；其余相关地址主要是 HTTPS 发布归档。此核对不能保证后续每个下载站一直可达。
+
+## 宿主 SIGILL 与可移植缓存
+
+任务 `43871738949` 的真正失败是 `gobject-introspection:host` 生成 `GLib-2.0.gir` 时出现 `Illegal instruction (core dumped)`。日志同时证实宿主参数使用 `-march=native`，GLib/Python/libffi/pcre2 则直接复用了先前任务的构建状态。此前缓存键没有区分 native CPU 指令集，这是一个明确的兼容隐患；仅凭现有日志尚不能证明 SIGILL 一定由它引起。
+
+安装器现在只把固定 `config/optimize` 中的宿主参数改为 `-march=x86-64 -mtune=generic`；目标 ARM 参数不变。固定原文件哈希并保护本地编辑。构建状态和 ccache 的兼容键包含新的宿主策略和 schema，旧 native 二进制不会通过 fallback 恢复；源码下载、已校验的归档及 deb 缓存继续复用。这次必须进行一次较大重编译，后续通用宿主二进制才可跨 runner CPU 共享。手动指向旧编译树时，安装器会拒绝混用并保留旧目录，不自动删除它。
+
+工作流记录当前 CPU 型号/特性供诊断，这些观察值不参与通用 ISA 缓存键。新增 `check-host-policy.py` 检查宿主编译宏不启用 AVX/AVX2/AVX-512、目标参数未变化，以及旧缓存隔离与配置编辑保护。
+
+编译失败后，若存在宿主 GI 构建目录，自动运行诊断：Python/ctypes smoke、解释器动态库列表，并在 GDB 下重跑 Ninja 生成的 GLib scanner 命令，记录 SIGILL 指令、线程调用栈和共享库。输出位于 artifact 的 `logs/host-scanner-diagnostic.log`。诊断不替代原失败状态，也不宣称完整云端编译或硬件验证已经通过。

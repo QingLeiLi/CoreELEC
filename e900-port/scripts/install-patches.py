@@ -21,11 +21,15 @@ PROFILES["hdmi"] = PROFILES["identify"] + ["linux/0002-gxlx2-opt-in-hdmi-transpo
 PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-registration.patch",
                                          "linux/0003-e900v21c-usb-board.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
+HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
+                    upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")
 
 
 def invalidated_packages(previous, state):
     if previous["pins"] != state["pins"] or previous["profile"] != state["profile"]:
         raise RuntimeError("Incompatible cached pins or profile")
+    if previous.get("host_codegen") != state.get("host_codegen"):
+        raise RuntimeError("Incompatible host code generation policy; use a fresh binary build cache")
     old = {entry["source"]: entry["sha256"] for entry in previous["patches"]}
     new = {entry["source"]: entry["sha256"] for entry in state["patches"]}
     changed = {name for name in old.keys() | new.keys() if old.get(name) != new.get(name)}
@@ -235,6 +239,21 @@ def megatools_download_fix(repo):
     return relative, content, metadata
 
 
+def host_codegen_fix(repo):
+    relative = "config/optimize"
+    original = (repo / relative).read_text()
+    native = 'HOST_CFLAGS="-march=native -O2 -Wall -pipe -I$TOOLCHAIN/include"'
+    portable = 'HOST_CFLAGS="' + HOST_CODEGEN["cflags"] + ' -O2 -Wall -pipe -I$TOOLCHAIN/include"'
+    normalized = original.replace(portable, native)
+    if (hashlib.sha256(normalized.encode()).hexdigest() != HOST_CODEGEN["upstream_optimize_sha256"]
+            or normalized.count(native) != 1):
+        raise RuntimeError("Unexpected host optimization config; refusing to overwrite local edits")
+    content = normalized.replace(native, portable)
+    metadata = dict(HOST_CODEGEN, destination=relative,
+                    file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -242,6 +261,7 @@ def install(repo, profile):
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
+    host_path, host_content, host_metadata = host_codegen_fix(repo)
     source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
                     wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
                     u_boot_tools_download_fix(repo), megatools_download_fix(repo)]
@@ -258,10 +278,17 @@ def install(repo, profile):
                             sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
     state = dict(profile=profile, pins=PINS, patches=entries,
                  source_downloads=[entry[2] for entry in source_fixes],
+                 host_codegen=host_metadata,
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
                  status="experimental-unvalidated")
     marker = repo / ".e900-profile.json"
     previous = json.loads(marker.read_text()) if marker.exists() else None
+    old_host = (previous or {}).get("host_codegen")
+    if old_host and hashlib.sha256((repo / host_path).read_bytes()).hexdigest() != old_host["file_sha256"]:
+        raise RuntimeError("Locally edited host optimization config; refusing binary cache reuse")
+    if any(repo.glob("build.*")) and (previous or {}).get("host_codegen") != host_metadata:
+        raise RuntimeError("Incompatible native/unknown host binary cache; use a fresh build tree. "
+                           "Source downloads can still be reused.")
     old_options = (previous or {}).get("build_options")
     if option_destination.exists():
         if not old_options or hashlib.sha256(option_destination.read_bytes()).hexdigest() != old_options["sha256"]:
@@ -290,6 +317,7 @@ def install(repo, profile):
         dest.write_bytes((PORT / "patches" / entry["source"]).read_bytes())
     for source_path, source_content, _ in source_fixes:
         (repo / source_path).write_text(source_content)
+    (repo / host_path).write_text(host_content)
     if option_content:
         option_destination.parent.mkdir(exist_ok=True)
         option_destination.write_text(option_content)

@@ -126,6 +126,11 @@ jobs:
           python3 "$PORT_ROOT/tests/check-build-cache.py"
           python3 "$PORT_ROOT/tests/check-usb-image.py"
 
+      - name: Check portable host optimization policy
+        run: |
+          E900_CE_REFERENCE="$E900_WORK_ROOT/CoreELEC-$PROFILE" python3 "$PORT_ROOT/tests/check-host-policy.py"
+          cat "$E900_WORK_ROOT/cache-identity.json"
+
       - name: Compile selected target
         id: compile
         shell: bash
@@ -133,6 +138,12 @@ jobs:
           # Reserve time for logs and artifact upload within GitHub's six-hour job limit.
           timeout --signal=TERM --kill-after=60s 300m \
             bash "$PORT_ROOT/scripts/build.sh" "$BUILD_TARGET" "$PROFILE"
+
+      - name: Diagnose failed host introspection scanner
+        if: failure() && steps.compile.outcome == 'failure'
+        timeout-minutes: 5
+        continue-on-error: true
+        run: python3 "$PORT_ROOT/scripts/diagnose-host-crash.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE"
 
       - name: Validate compiled E900 board DTB
         if: inputs.profile == 'decoder'
