@@ -34,6 +34,7 @@ def identities(port, profile, work_root, host):
     state = dict(patches={name: file_hash(port / "patches" / name)
                           for name in installer.PROFILES[profile]},
                  installer=file_hash(port / "scripts/install-patches.py"),
+                 board_options=file_hash(port / "boards/usb-build.options") if profile == "decoder" else None,
                  cache_protocol=file_hash(port / "scripts/build-cache.py"))
     return dict(compat=digest(compatibility), state=digest(state),
                 compiler=digest(dict(schema=1, pins=pins, host=host)),

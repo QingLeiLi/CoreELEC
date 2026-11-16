@@ -10,7 +10,7 @@ on:
         default: decoder
         options: [baseline, identify, hdmi, decoder]
       target:
-        description: Compile kernel, kernel plus media modules, or a generic image
+        description: Compile kernel, media modules, or USB test image (decoder profile)
         type: choice
         default: media
         options: [linux, media, image]
@@ -124,6 +124,7 @@ jobs:
           export E900_CE_REFERENCE="$E900_WORK_ROOT/CoreELEC-$PROFILE"
           python3 "$PORT_ROOT/tests/check-local.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"
+          python3 "$PORT_ROOT/tests/check-usb-image.py"
 
       - name: Compile selected target
         id: compile
@@ -132,6 +133,16 @@ jobs:
           # Reserve time for logs and artifact upload within GitHub's six-hour job limit.
           timeout --signal=TERM --kill-after=60s 300m \
             bash "$PORT_ROOT/scripts/build.sh" "$BUILD_TARGET" "$PROFILE"
+
+      - name: Validate compiled E900 board DTB
+        if: inputs.profile == 'decoder'
+        run: python3 "$PORT_ROOT/scripts/validate-board.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE"
+
+      - name: Prepare and read back E900 USB test image
+        if: inputs.profile == 'decoder' && inputs.target == 'image'
+        run: |
+          python3 "$PORT_ROOT/scripts/prepare-usb-image.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE"
+          python3 "$PORT_ROOT/scripts/export-artifacts.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE" "$PROFILE" image 0
 
       - name: Save toolchain and incremental build state even after compile failure
         if: always() && !cancelled() && steps.prepare.outcome == 'success'
@@ -189,7 +200,9 @@ jobs:
             echo '### Experimental CoreELEC build'
             echo "Profile: $PROFILE; target: $BUILD_TARGET"
             echo 'Compilation is separate from hardware validation.'
-            echo 'E900V21C board DTB is not integrated; artifacts are not ready to flash.'
+            echo 'Decoder profile integrates an experimental E900V21C DTB; hardware tests remain pending.'
+            echo 'Only a prepared *-E900V21C-USB-TEST.img.gz is intended for external USB testing.'
+            echo 'Check build-metadata.json: usb_image_prepared must be true; never install these artifacts to eMMC.'
             echo "Build checkpoint: ${{ steps.build-state.outputs.cache-matched-key }}"
             echo "Compiler cache: ${{ steps.compiler-cache.outputs.cache-matched-key }}"
             echo 'Matching checkpoints retain the toolchain, completed package stamps and partial build directories.'

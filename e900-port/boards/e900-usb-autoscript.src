@@ -1,0 +1,17 @@
+echo "E900V21C experimental CoreELEC USB boot (volatile environment only)"
+usb start
+setenv e900_saved_bootargs "${bootargs}"
+setenv e900_saved_loadaddr "${loadaddr}"
+setenv e900_saved_dtb_mem_addr "${dtb_mem_addr}"
+setenv loadaddr 0x20000000
+setenv dtb_mem_addr 0x01000000
+if fatload usb 0:1 ${loadaddr} kernel.img; then
+  if fatload usb 0:1 ${dtb_mem_addr} dtb.img; then
+    setenv bootargs "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 ssh"
+    bootm ${loadaddr}
+  fi
+fi
+setenv bootargs "${e900_saved_bootargs}"
+setenv loadaddr "${e900_saved_loadaddr}"
+setenv dtb_mem_addr "${e900_saved_dtb_mem_addr}"
+echo "E900 USB boot returned; existing bootloader fallback may continue"

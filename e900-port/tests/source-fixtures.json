@@ -254,5 +254,13 @@
     "git_blob_sha1": "7dd840a686772c8b06d6bd1bfefd847696586795",
     "sha256": "53f799aa83a23f06c6078b04baddc498e90180296e80aa1ee7b61c2d81f53004",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "arch/arm64/boot/dts/amlogic/Makefile",
+    "git_blob_sha1": "551b1e02f7c8bcff7b72168f0481218f1067ffb5",
+    "sha256": "42928617bbbb10389bde230bc4cea99d7c318172481850dcff19fc0715dae2d9",
+    "verified": true
   }
 ]

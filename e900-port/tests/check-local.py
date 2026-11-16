@@ -52,7 +52,7 @@ with tempfile.TemporaryDirectory(prefix="e900-port-check-") as directory:
         for patch in sorted((ROOT / "patches" / package).glob("*.patch")):
             run(["git", "apply", "--check", patch], fixtures[package])
             run(["git", "apply", patch], fixtures[package])
-    print("PASS: four patches apply sequentially to verified pinned source files")
+    print("PASS: five patches apply sequentially to verified pinned source files")
 
     compiler = shutil.which("clang") or shutil.which("cc")
     assert compiler, "A host C compiler is needed"
@@ -183,6 +183,27 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         else:
             raise AssertionError("Unpinned checkout accepted")
     print("PASS: installer is repeatable and refuses local edits/unpinned revisions")
+    # Separate checkout: exercise actual decoder board overlay and user edit guard.
+    decoder = work / "decoder"
+    shutil.copytree(checkout, decoder)
+    (decoder / ".e900-profile.json").unlink()
+    for patch in decoder.rglob("9000-e900-*.patch"):
+        patch.unlink()
+    with mock.patch.object(installer.subprocess, "check_output", return_value=installer.PINS["coreelec"]):
+        installer.install(decoder, "decoder")
+        installer.install(decoder, "decoder")
+        state = json.loads((decoder / ".e900-profile.json").read_text())
+        assert state["board_dtb"] == "gxlx2_p291_1g_e900v21c" and len(state["patches"]) == 5
+        options = decoder / ".coreelec/options"
+        assert options.read_bytes() == (ROOT / "boards/usb-build.options").read_bytes()
+        options.write_text(options.read_text() + "# user edit\n")
+        try:
+            installer.install(decoder, "decoder")
+        except RuntimeError as exc:
+            assert "locally edited" in str(exc)
+        else:
+            raise AssertionError("Local board option edits were overwritten")
+    print("PASS: decoder installs board patch/options and protects local options")
     bad_source = checkout / "packages/sysutils/keyutils/package.mk"
     bad_source.write_text(bad_source.read_text().replace('PKG_VERSION="1.6.3"', 'PKG_VERSION="0.0"'))
     try:

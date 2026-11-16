@@ -18,7 +18,9 @@ PROFILES = {
                  "media/0001-gxlx2-identity-and-firmware-trace.patch"],
 }
 PROFILES["hdmi"] = PROFILES["identify"] + ["linux/0002-gxlx2-opt-in-hdmi-transport.patch"]
-PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-registration.patch"]
+PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-registration.patch",
+                                         "linux/0003-e900v21c-usb-board.patch"]
+BOARD = "gxlx2_p291_1g_e900v21c"
 
 
 def invalidated_packages(previous, state):
@@ -34,6 +36,8 @@ def invalidated_packages(previous, state):
         packages.add("media_modules-aml")
     if previous.get("source_downloads") != state.get("source_downloads"):
         packages.add("keyutils")
+    if previous.get("build_options") != state.get("build_options"):
+        packages.update(["linux", "media_modules-aml"])
     return sorted(packages)
 
 
@@ -80,6 +84,10 @@ def install(repo, profile):
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
     source_path, source_content, source_metadata = keyutils_download_fix(repo)
+    options = PORT / "boards/usb-build.options"
+    option_content = options.read_text() if profile == "decoder" else None
+    option_destination = repo / ".coreelec/options"
+    option_metadata = dict(destination=".coreelec/options", sha256=hashlib.sha256(option_content.encode()).hexdigest()) if option_content else None
     entries = []
     for relative in PROFILES[profile]:
         source = PORT / "patches" / relative
@@ -88,9 +96,14 @@ def install(repo, profile):
         entries.append(dict(source=relative, destination=str(destination.relative_to(repo)),
                             sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
     state = dict(profile=profile, pins=PINS, patches=entries, source_downloads=[source_metadata],
-                 status="uncompiled-unvalidated-board-dtb-not-integrated")
+                 build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
+                 status="experimental-unvalidated")
     marker = repo / ".e900-profile.json"
     previous = json.loads(marker.read_text()) if marker.exists() else None
+    old_options = (previous or {}).get("build_options")
+    if option_destination.exists():
+        if not old_options or hashlib.sha256(option_destination.read_bytes()).hexdigest() != old_options["sha256"]:
+            raise RuntimeError("Unmanaged or locally edited .coreelec/options")
     invalidate = []
     if previous and previous != state and any(repo.glob("build.*")):
         if os.environ.get("E900_INCREMENTAL_REUSE") != "1":
@@ -114,13 +127,18 @@ def install(repo, profile):
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes((PORT / "patches" / entry["source"]).read_bytes())
     (repo / source_path).write_text(source_content)
+    if option_content:
+        option_destination.parent.mkdir(exist_ok=True)
+        option_destination.write_text(option_content)
+    elif old_options:
+        option_destination.unlink(missing_ok=True)
     if invalidate:
         pending = repo / ".e900-invalidate.json"
         existing = json.loads(pending.read_text()) if pending.exists() else []
         pending.write_text(json.dumps(sorted(set(existing) | set(invalidate))) + "\n")
         print("Incremental update: rebuild " + ", ".join(invalidate) + "; toolchain preserved")
     marker.write_text(json.dumps(state, indent=2) + "\n")
-    print(f"Profile {profile}: {len(entries)} candidate patches installed; no board DTB installed.")
+    print(f"Profile {profile}: {len(entries)} candidate patches installed; board DTB: {state['board_dtb'] or 'none'}.")
 
 
 if __name__ == "__main__":

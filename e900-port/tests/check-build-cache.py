@@ -25,7 +25,7 @@ cache = load("build_cache_test", PORT / "scripts/build-cache.py")
 with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
     root = pathlib.Path(temporary)
     port = root / "port"
-    for name in ["scripts", "patches"]:
+    for name in ["scripts", "patches", "boards"]:
         shutil.copytree(PORT / name, port / name, ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy2(PORT / "pins.json", port / "pins.json")
     host = dict(os_release="Ubuntu 22.04", machine="x86_64", packages="gcc-12=12.3;libc6=2.35")
@@ -36,7 +36,20 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
     assert first["compat"] != cache.identities(port, "identify", root / "work", dict(host, packages="gcc-12=12.4"))["compat"]
     print("PASS: host, absolute build root and profile isolate incompatible toolchains")
 
+    decoder_identity = cache.identities(port, "decoder", root / "work", host)
+    options = port / "boards/usb-build.options"
+    original_options = options.read_bytes()
+    options.write_bytes(original_options + b"\n# test option revision\n")
+    updated_identity = cache.identities(port, "decoder", root / "work", host)
+    assert decoder_identity["compat"] == updated_identity["compat"]
+    assert decoder_identity["state"] != updated_identity["state"]
+    options.write_bytes(original_options)
+    print("PASS: board option changes alter build state without discarding compatible toolchains")
+
     installer = load("cache_installer_test", port / "scripts/install-patches.py")
+    previous = dict(pins=installer.PINS, profile="decoder", patches=[], build_options=None)
+    updated = dict(previous, build_options=dict(sha256="new-options"))
+    assert installer.invalidated_packages(previous, updated) == ["linux", "media_modules-aml"]
     repo = root / "work/CoreELEC-identify"
     for relative in ["projects/Amlogic-ce/packages/linux/package.mk",
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",

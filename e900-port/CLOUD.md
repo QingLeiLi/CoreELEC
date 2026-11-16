@@ -2,14 +2,18 @@
 
 此工作流用于 CoreELEC 官方仓库的 fork。基线固定为 21.3-Omega 的 `fc61125e8900ab0c2593a29b615980ed0cd5b939`，本目录应放在 fork 根目录的 `e900-port/`；工作流放在 `.github/workflows/e900-coreelec.yml`。
 
-## 首轮运行
+## 下一轮运行
 
-在 fork 的 Actions 页面选择 **E900 CoreELEC experimental build**，手动运行：
+上一轮 `decoder/media` 已完成 Linux 4.9.269 与 28 个媒体模块编译。这次在 fork 的 Actions 页面选择 **E900 CoreELEC experimental build**：
 
-- profile：`decoder`，编译检查当前全部四个候选补丁。
-- target：`media`，构建内核及媒体模块。
+- profile：`decoder`，包含五个候选补丁及本板 USB DTS。
+- target：`image`，构建完整 SYSTEM/Kodi 并准备 E900 外置 USB 测试镜像。
 
-首轮目的是获得编译结果和修复报错，不代表硬件适配完成。完整板级 DTB 尚未接入，云端产物目前不能用于试刷。工作流支持 `baseline`、`identify`、`hdmi` 配置，便于隔离补丁问题；`image` 入口留给后续集成验证。
+先手动推送本地分支，再选择同一分支运行工作流。兼容的旧状态仍可恢复；增加内核 DTS 会清理并重编译内核及媒体模块，工具链保留。SYSTEM/Kodi 等此前未构建的依赖仍需首次编译，可能明显长于单独的媒体模块增量构建。
+
+成功后下载 artifact，使用 `target/*-E900V21C-USB-TEST.img.gz` 及对应 `.sha256`。核对 `build-metadata.json` 中 `last_action_exit_code=0`、`usb_image_prepared=true`，不要使用裸 `Image`/`.ko` 或通用镜像代替完整测试镜像。此阶段只测试 USB，eMMC 已在候选 DTB 禁用，硬件适配仍待实测。
+
+`baseline`、`identify`、`hdmi` 用于隔离补丁问题，仅导出内核/模块等诊断产物，不生成本板 USB 测试包。
 
 ## 工作流行为
 
@@ -18,7 +22,7 @@
 3. 下载独立的固定上游源码，按选择的 profile 安装补丁。fork 的变更只提供构建工具和候选补丁，不会绕过版本检查。
    为避开 keyutils 原站连接超时及旧备用镜像 404，安装脚本将其下载地址改为 Debian 的原始源码镜像；仍固定 1.6.3、保留原 SHA-256 和缓存文件名。已实际下载并核对镜像包与原校验值完全相同。此覆盖作用于实际构建的独立源码树，而非仅修改 fork 顶层包配置。
 4. 从公开仓库获取固定测试源码，核对 Git blob SHA-1 和 SHA-256，运行补丁应用及本地 C 检查。
-5. 编译所选目标。单次编译超时为 300 分钟，job 上限为 360 分钟，留出上传日志的时间。
+5. 编译所选目标；`decoder` 额外验证编译出的 DTB，`decoder/image` 使用宿主 mtools 直接修改普通镜像文件的 FAT 分区，放入本板 DTB 与临时启动脚本，随后读回校验。脚本不执行 `defenv`/`saveenv`，失败返回时恢复原内存变量，不改写现存启动环境。单次编译超时为 300 分钟，job 上限为 360 分钟，留出上传日志的时间。
 6. 分层恢复并保存源码下载包、已安装工具链与完整编译目录、ccache、依赖 deb 包。测试源码也保存在下载缓存中。兼容性匹配时，失败后重跑可复用已完成包的构建标记和中间产物。
 7. 无论编译成功或失败，都尝试上传日志及已有产物，保留 7 天。查看 artifact 内的 `build-metadata.json`、最后动作退出码和完整日志；较早留下的二进制不能代替本次成功结果。
 
@@ -43,7 +47,7 @@
 
 完整编译状态按上游 pin、宿主系统/关键工具包版本、构建脚本、profile 及绝对编译路径隔离。`linux`、`media`、`image` 目标可以复用同一 profile 的兼容状态；不同 profile 的编译路径不同，不直接搬用已安装工具链。
 
-优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，下载配置变化仅清理 keyutils。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
+优先恢复补丁完全匹配的最近状态；没有精确补丁匹配时，可以恢复相同宿主/固定基线/profile 的旧状态。CI 显式启用 `E900_INCREMENTAL_REUSE=1`：内核补丁变化会通过 CoreELEC 的 `scripts/clean` 清理内核和媒体模块，媒体补丁变化仅清理媒体模块，板级构建选项变化清理内核及媒体模块，下载配置变化仅清理 keyutils。工具链不随这些变动一起清理。其他内核相关包继续由 CoreELEC 的 `LINUX_DEPENDS` 内容校验判定失效。
 
 每次 run/attempt 使用新缓存键，正常失败或编译阶段超时后也尝试保存部分状态；缓存上传失败不覆盖原编译错误。手动取消、runner 被强制回收或整个 job 硬超时，不能保证最后的保存步骤执行。先前未保存过的工具链无法从已销毁的 runner 找回。
 

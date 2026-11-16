@@ -1,0 +1,5 @@
+# E900V21C USB test image: generic boot files and wired networking.
+# These options affect selected image packages, not the cross-toolchain ABI.
+SUBDEVICES=""
+ADDITIONAL_DRIVERS="gpu-aml media_modules-aml"
+FIRMWARE=""

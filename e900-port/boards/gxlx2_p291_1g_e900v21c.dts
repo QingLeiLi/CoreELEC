@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/* Experimental E900V21C 5800-2ATA411, GXLX2, 1GB. USB boot only. */
+#include "gxl_p212_1g.dts"
+
+/ {
+	model = "Skyworth E900V21C (GXLX2, experimental USB)";
+	/* Keep the legacy spelling used by CoreELEC's Mali-450 library selector. */
+	compatible = "skyworth,e900v21c", "amlogic,gxlx2", "amlogic, Gxl";
+	amlogic-dt-id = "gxlx2_p291_1g";
+	coreelec-dt-id = "gxlx2_p291_1g_e900v21c";
+
+	cpu_ver_name {
+		compatible = "amlogic, cpu-major-id-gxlx2";
+	};
+
+	reserved-memory {
+		/* Preserve the old Android boot firmware's fixed secure carveout.
+		 * Keep CE's separate secmon CMA pool: its driver allocates 3MiB there.
+		 */
+		firmware_secmon@10000000 {
+			reg = <0x0 0x10000000 0x0 0x00200000>;
+			no-map;
+		};
+
+		/* The old boot firmware uses 0x3dc00000 for its framebuffer. */
+		linux,meson-fb {
+			size = <0x0 0x02400000>;
+			alignment = <0x0 0x00400000>;
+			alloc-ranges = <0x0 0x3dc00000 0x0 0x02400000>;
+		};
+	};
+
+	meson-fb {
+		logo_addr = "0x3dc00000";
+	};
+
+	/* Board GPIO peripherals are deliberately outside the first USB test. */
+	gpioleds { status = "disabled"; };
+	gpio_keypad { status = "disabled"; };
+	openvfd { status = "disabled"; };
+	wifi { status = "disabled"; };
+	bt-dev { status = "disabled"; };
+};
+
+&usb2_phy {
+	portnum = <2>;
+};
+
+&usb3_phy {
+	portnum = <0>;
+};
+
+/* Prevent Linux from probing internal storage or unverified SDIO wiring. */
+&sd_emmc_c { status = "disabled"; };
+&sd_emmc_b { status = "disabled"; };
+&sd_emmc_a { status = "disabled"; };
+
+&amhdmitx {
+	/* GXL PHY/clock profile, separate direct DWC/TOP register transport. */
+	ic_type = <3>;
+	amlogic,gxlx2-direct-hdmi;
+};
+
+&ethmac {
+	internal_phy = <1>;
+	phy-mode = "rmii";
+	mc_val_internal_phy = <0x1800>;
+	/* No external PHY reset or strap GPIOs on this board. */
+	/delete-property/ rst_pin-gpios;
+	/delete-property/ GPIOZ4_pin-gpios;
+	/delete-property/ GPIOZ5_pin-gpios;
+	/* Internal RMII needs no external RGMII pin mux. */
+	pinctrl-names = "internal_eth_pins";
+	pinctrl-0 = <>;
+};

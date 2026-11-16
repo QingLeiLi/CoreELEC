@@ -3,10 +3,11 @@
 import difflib
 import hashlib
 import json
+import os
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-AUDIT = ROOT.parent / "coreelec-audit"
+AUDIT = pathlib.Path(os.environ.get("E900_AUDIT_ROOT", ROOT.parent / "coreelec-audit"))
 SOURCES = AUDIT / "sources"
 MANIFEST = {row["path"]: row for row in json.loads(
     (AUDIT / "source-manifest.json").read_text())}
