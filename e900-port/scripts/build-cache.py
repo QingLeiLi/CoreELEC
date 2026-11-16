@@ -55,7 +55,7 @@ def invalidate(repo):
         return
     packages = json.loads(pending.read_text())
     if not isinstance(packages, list) or any(name not in {"linux", "media_modules-aml", "keyutils", "usbutils", "connman",
-                                                        "wireguard-linux-compat", "wireguard-tools"}
+                                                        "wireguard-linux-compat", "wireguard-tools", "u-boot-tools"}
                                            for name in packages):
         raise ValueError("Unexpected package in cache invalidation plan")
     # Use the buildsystem's cleaner; never remove the shared toolchain directory.

@@ -38,7 +38,7 @@ def invalidated_packages(previous, state):
     new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
     changed_sources = {name for name in old_sources.keys() | new_sources.keys()
                        if old_sources.get(name) != new_sources.get(name)}
-    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools"}:
+    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools"}:
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
     if previous.get("build_options") != state.get("build_options"):
@@ -187,6 +187,30 @@ def wireguard_tools_download_fix(repo):
     return relative, content, metadata
 
 
+def u_boot_tools_download_fix(repo):
+    relative = "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk"
+    original = (repo / relative).read_text()
+    digest = "e49337262ecac44dbdeac140f2c6ebd1eba345e0162b0464172e7f05583ed7bb"
+    upstream = "ftp://ftp.denx.de/pub/u-boot/u-boot-$PKG_VERSION.tar.bz2"
+    mirror = "https://sources.buildroot.net/u-boot-${PKG_VERSION}.tar.bz2"
+    source_name = 'PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.bz2"'
+    if (re.findall(r'^PKG_VERSION="([^"]*)"$', original, re.M) != ["2016.03"]
+            or re.findall(r'^PKG_SHA256="([^"]*)"$', original, re.M) != [digest]
+            or re.findall(r'^PKG_URL="([^"]*)"$', original, re.M) not in [[upstream], [mirror]]):
+        raise RuntimeError("Unexpected u-boot-tools source configuration; refusing download override")
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if names and names != [source_name]:
+        raise RuntimeError("Unexpected u-boot-tools source filename")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    metadata = dict(package="u-boot-tools", version="2016.03", archive_sha256=digest,
+                    url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -195,7 +219,8 @@ def install(repo, profile):
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
     source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
-                    wireguard_download_fix(repo), wireguard_tools_download_fix(repo)]
+                    wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
+                    u_boot_tools_download_fix(repo)]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"

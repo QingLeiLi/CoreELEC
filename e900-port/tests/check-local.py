@@ -159,7 +159,8 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
                      "packages/sysutils/usbutils/package.mk",
                      "packages/network/connman/package.mk",
                      "packages/network/wireguard-linux-compat/package.mk",
-                     "packages/network/wireguard-tools/package.mk"]:
+                     "packages/network/wireguard-tools/package.mk",
+                     "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)
@@ -187,6 +188,11 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         assert 'PKG_VERSION="1.0.20210914"' in wireguard_tools
         assert 'PKG_SHA256="97ff31489217bb265b7ae850d3d0f335ab07d2652ba1feec88b734bc96bd05ac"' in wireguard_tools
         assert wireguard_tools.count('PKG_SOURCE_NAME="wireguard-tools-${PKG_VERSION}-buildroot.tar.xz"') == 1
+        uboot_tools = (checkout / "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk").read_text()
+        assert 'PKG_VERSION="2016.03"' in uboot_tools
+        assert 'PKG_SHA256="e49337262ecac44dbdeac140f2c6ebd1eba345e0162b0464172e7f05583ed7bb"' in uboot_tools
+        assert 'PKG_URL="https://sources.buildroot.net/u-boot-${PKG_VERSION}.tar.bz2"' in uboot_tools
+        assert uboot_tools.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.bz2"') == 1
         marker = json.loads((checkout / ".e900-profile.json").read_text())
         managed = checkout / marker["patches"][0]["destination"]
         managed.write_text(managed.read_text() + "\nlocal user edit\n")
@@ -306,5 +312,23 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
             raise AssertionError("WireGuard tools override accepted source drift")
     tools_path.write_text(saved_tools)
     print("PASS: WireGuard tools pins Buildroot archive checksum and distinct cache filename")
+    uboot_path = checkout / "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk"
+    saved_uboot = uboot_path.read_text()
+    for content in [
+        saved_uboot.replace('PKG_VERSION="2016.03"', 'PKG_VERSION="2017.03"'),
+        saved_uboot.replace('PKG_SHA256="e493', 'PKG_SHA256="f493'),
+        saved_uboot.replace('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.bz2"',
+                            'PKG_SOURCE_NAME="changed.tar.bz2"'),
+        saved_uboot.replace("https://sources.buildroot.net/", "https://example.invalid/"),
+    ]:
+        uboot_path.write_text(content)
+        try:
+            installer.u_boot_tools_download_fix(checkout)
+        except RuntimeError as exc:
+            assert "u-boot-tools source" in str(exc)
+        else:
+            raise AssertionError("u-boot-tools override accepted source drift")
+    uboot_path.write_text(saved_uboot)
+    print("PASS: Amlogic u-boot-tools mirror keeps the original version/checksum/cache filename")
 
 print("HOST CHECKS PASSED. Full ARM64 kernel/module compilation and hardware tests remain pending.")

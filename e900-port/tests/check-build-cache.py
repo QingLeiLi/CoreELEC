@@ -57,7 +57,8 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
                      "packages/sysutils/usbutils/package.mk",
                      "packages/network/connman/package.mk",
                      "packages/network/wireguard-linux-compat/package.mk",
-                     "packages/network/wireguard-tools/package.mk"]:
+                     "packages/network/wireguard-tools/package.mk",
+                     "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk"]:
         target = repo / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, target)
@@ -70,6 +71,20 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
         # An unchanged resumed build must not schedule any clean operation.
         installer.install(repo, "identify")
         assert not (repo / ".e900-invalidate.json").exists()
+
+        marker = repo / ".e900-profile.json"
+        previous_state = json.loads(marker.read_text())
+        previous_state["source_downloads"] = [entry for entry in previous_state["source_downloads"]
+                                              if entry["package"] != "u-boot-tools"]
+        marker.write_text(json.dumps(previous_state))
+        with mock.patch.dict(os.environ, {"E900_INCREMENTAL_REUSE": "1"}):
+            installer.install(repo, "identify")
+        assert json.loads((repo / ".e900-invalidate.json").read_text()) == ["u-boot-tools"]
+        with mock.patch.object(cache.subprocess, "run") as cleaner:
+            cache.invalidate(repo)
+            cleaner.assert_called_once_with(["bash", "./scripts/clean", "u-boot-tools"], cwd=repo, check=True)
+        assert sentinel.read_text() == "installed cross compiler"
+        print("PASS: u-boot-tools source migration cleans only its host/target package state")
 
         marker = repo / ".e900-profile.json"
         previous_state = json.loads(marker.read_text())
