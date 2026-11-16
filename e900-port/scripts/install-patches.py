@@ -38,7 +38,7 @@ def invalidated_packages(previous, state):
     new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
     changed_sources = {name for name in old_sources.keys() | new_sources.keys()
                        if old_sources.get(name) != new_sources.get(name)}
-    if changed_sources - {"keyutils", "usbutils"}:
+    if changed_sources - {"keyutils", "usbutils", "connman"}:
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
     if previous.get("build_options") != state.get("build_options"):
@@ -106,6 +106,36 @@ def usbutils_download_fix(repo):
     return relative, content, metadata
 
 
+def connman_download_fix(repo):
+    relative = "packages/network/connman/package.mk"
+    original = (repo / relative).read_text()
+    snapshot_digest = "22acfe9d5958d7983090232334a692eee66a12f3077e09e4f360276608156738"
+    release_digest = "b8f5ab5d109d033edebe5b0564d20c9b7b9546a607195cdadc6754eb328b6f6e"
+    upstream = "https://git.kernel.org/pub/scm/network/connman/connman.git/snapshot/connman-${PKG_VERSION}.tar.gz"
+    mirror = "https://mirrors.edge.kernel.org/pub/linux/network/connman/connman-${PKG_VERSION}.tar.gz"
+    source_name = 'PKG_SOURCE_NAME="connman-${PKG_VERSION}-release.tar.gz"'
+    versions = re.findall(r'^PKG_VERSION="([^"]*)"$', original, re.M)
+    urls = re.findall(r'^PKG_URL="([^"]*)"$', original, re.M)
+    digests = re.findall(r'^PKG_SHA256="([^"]*)"$', original, re.M)
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    # The release archive has identical common source files plus autotools output.
+    # It is a different archive, with its own checksum and distinct cache filename.
+    if versions != ["1.43"] or not (
+            (urls == [upstream] and digests == [snapshot_digest] and not names)
+            or (urls == [mirror] and digests == [release_digest] and names == [source_name])):
+        raise RuntimeError("Unexpected connman source configuration; refusing release archive override")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    content = re.sub(r'^PKG_SHA256="[^"]*"$', f'PKG_SHA256="{release_digest}"', content, flags=re.M)
+    metadata = dict(package="connman", version="1.43", archive_sha256=release_digest,
+                    original_snapshot_sha256=snapshot_digest, archive_kind="official-release",
+                    url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -113,7 +143,7 @@ def install(repo, profile):
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
-    source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo)]
+    source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo)]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"

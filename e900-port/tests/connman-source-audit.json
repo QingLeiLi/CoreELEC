@@ -1,0 +1,76 @@
+{
+  "version": "1.43",
+  "snapshot": {
+    "url": "https://git.kernel.org/pub/scm/network/connman/connman.git/snapshot/connman-1.43.tar.gz",
+    "sha256": "22acfe9d5958d7983090232334a692eee66a12f3077e09e4f360276608156738",
+    "regular_files": 319
+  },
+  "release": {
+    "url": "https://mirrors.edge.kernel.org/pub/linux/network/connman/connman-1.43.tar.gz",
+    "sha256": "b8f5ab5d109d033edebe5b0564d20c9b7b9546a607195cdadc6754eb328b6f6e",
+    "regular_files": 326
+  },
+  "common_regular_files": 309,
+  "content_or_executable_mode_differences": [],
+  "common_manifest_sha256": "f098fb7d79125307d61f1b631f8ae45684e5cae92dbdba1c92e9bc58db6988a6",
+  "snapshot_only": [
+    ".gitignore",
+    ".mailmap",
+    "HACKING",
+    "bootstrap",
+    "bootstrap-configure",
+    "doc/valgrind.suppressions",
+    "gdhcp/ipv4ll.c",
+    "test/set-timezone",
+    "tools/dnsproxy-simple-test",
+    "vpn/connman-vpn.conf"
+  ],
+  "release_only": [
+    "Makefile.in",
+    "aclocal.m4",
+    "compile",
+    "config.guess",
+    "config.h.in",
+    "config.sub",
+    "configure",
+    "depcomp",
+    "install-sh",
+    "ltmain.sh",
+    "m4/libtool.m4",
+    "m4/ltoptions.m4",
+    "m4/ltsugar.m4",
+    "m4/ltversion.m4",
+    "m4/lt~obsolete.m4",
+    "missing",
+    "test-driver"
+  ],
+  "coreelec_revision": "fc61125e8900ab0c2593a29b615980ed0cd5b939",
+  "patches": [
+    {
+      "name": "connman-01-do-not-cleanup-routes.patch",
+      "sha256": "90815b4be9c0bdb0450014cd1a3ae0670f92869d9a6ac8aa5b524985dd6fb640",
+      "apply_check": "passed"
+    },
+    {
+      "name": "connman-04-ipv6-disabled-by-default.patch",
+      "sha256": "6d7ac2994e90e96fe01733bbb8736f0d679de61bb579931bc82210abe0273778",
+      "apply_check": "passed"
+    },
+    {
+      "name": "connman-05_link-against-ncurses.patch",
+      "sha256": "78a45c521d0846ea528c262b9f01adb61802e106bf965e71572e6ca068ed7460",
+      "apply_check": "passed"
+    },
+    {
+      "name": "connman-06-Revert-Don-t-add-route-for-invalid-dst-and-gateway-a.patch",
+      "sha256": "286283b6fcec60b8f97c90b7bced9562c222a5867aba6ae29fa61b497e18b5a0",
+      "apply_check": "passed"
+    },
+    {
+      "name": "connman-07-connman_gateway_add-fix-calculation-of-is_vpn6.patch",
+      "sha256": "612dca51bbfd29c43cfd4f58300d8910b373ca9186cf8dd45aa9d61a7bf825f3",
+      "apply_check": "passed"
+    }
+  ],
+  "full_target_build": "pending"
+}

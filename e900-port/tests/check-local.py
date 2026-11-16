@@ -156,7 +156,8 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
     for relative in ["projects/Amlogic-ce/packages/linux/package.mk",
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
                      "packages/sysutils/keyutils/package.mk",
-                     "packages/sysutils/usbutils/package.mk"]:
+                     "packages/sysutils/usbutils/package.mk",
+                     "packages/network/connman/package.mk"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)
@@ -171,6 +172,10 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         assert 'PKG_URL="https://mirrors.edge.kernel.org/pub/linux/utils/usb/usbutils/${PKG_NAME}-${PKG_VERSION}.tar.xz"' in usbutils
         assert usbutils.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"') == 1
         assert 'PKG_SHA256="a6a25ffdcf9103e38d7a44732aca17073f4e602b92e4ae55625231a82702e05b"' in usbutils
+        connman = (checkout / "packages/network/connman/package.mk").read_text()
+        assert 'PKG_VERSION="1.43"' in connman
+        assert 'PKG_SHA256="b8f5ab5d109d033edebe5b0564d20c9b7b9546a607195cdadc6754eb328b6f6e"' in connman
+        assert connman.count('PKG_SOURCE_NAME="connman-${PKG_VERSION}-release.tar.gz"') == 1
         marker = json.loads((checkout / ".e900-profile.json").read_text())
         managed = checkout / marker["patches"][0]["destination"]
         managed.write_text(managed.read_text() + "\nlocal user edit\n")
@@ -236,5 +241,23 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
             raise AssertionError("usbutils override accepted source drift")
     usbutils_path.write_text(saved_usbutils)
     print("PASS: usbutils mirror keeps the pinned checksum/cache filename and rejects source drift")
+    connman_path = checkout / "packages/network/connman/package.mk"
+    saved_connman = connman_path.read_text()
+    for content in [
+        saved_connman.replace('PKG_VERSION="1.43"', 'PKG_VERSION="1.44"'),
+        saved_connman.replace('PKG_SHA256="b8f', 'PKG_SHA256="c8f'),
+        saved_connman.replace('PKG_SOURCE_NAME="connman-${PKG_VERSION}-release.tar.gz"',
+                              'PKG_SOURCE_NAME="connman-${PKG_VERSION}.tar.gz"'),
+        saved_connman.replace("https://mirrors.edge.kernel.org/", "https://example.invalid/"),
+    ]:
+        connman_path.write_text(content)
+        try:
+            installer.connman_download_fix(checkout)
+        except RuntimeError as exc:
+            assert "source configuration" in str(exc)
+        else:
+            raise AssertionError("ConnMan override accepted source drift")
+    connman_path.write_text(saved_connman)
+    print("PASS: ConnMan release override pins version/checksum and isolates its cache filename")
 
 print("HOST CHECKS PASSED. Full ARM64 kernel/module compilation and hardware tests remain pending.")

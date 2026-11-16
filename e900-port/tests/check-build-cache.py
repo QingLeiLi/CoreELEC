@@ -54,7 +54,8 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
     for relative in ["projects/Amlogic-ce/packages/linux/package.mk",
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
                      "packages/sysutils/keyutils/package.mk",
-                     "packages/sysutils/usbutils/package.mk"]:
+                     "packages/sysutils/usbutils/package.mk",
+                     "packages/network/connman/package.mk"]:
         target = repo / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, target)
@@ -67,6 +68,20 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
         # An unchanged resumed build must not schedule any clean operation.
         installer.install(repo, "identify")
         assert not (repo / ".e900-invalidate.json").exists()
+
+        marker = repo / ".e900-profile.json"
+        previous_state = json.loads(marker.read_text())
+        previous_state["source_downloads"] = [entry for entry in previous_state["source_downloads"]
+                                              if entry["package"] != "connman"]
+        marker.write_text(json.dumps(previous_state))
+        with mock.patch.dict(os.environ, {"E900_INCREMENTAL_REUSE": "1"}):
+            installer.install(repo, "identify")
+        assert json.loads((repo / ".e900-invalidate.json").read_text()) == ["connman"]
+        with mock.patch.object(cache.subprocess, "run") as cleaner:
+            cache.invalidate(repo)
+            cleaner.assert_called_once_with(["bash", "./scripts/clean", "connman"], cwd=repo, check=True)
+        assert sentinel.read_text() == "installed cross compiler"
+        print("PASS: ConnMan source switch cleans only connman and preserves the toolchain")
 
         # Resume the real previous schema (only keyutils had a download override).
         marker = repo / ".e900-profile.json"
