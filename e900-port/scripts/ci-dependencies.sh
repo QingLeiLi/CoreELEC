@@ -12,10 +12,12 @@ sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommen
   libc6-dev libncurses5-dev libjson-perl libxml-parser-perl libparse-yapp-perl \
   rdfind golang-1.22-go git openssh-client rsync
 sudo locale-gen en_US.UTF-8
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 \
-  --slave /usr/bin/cpp cpp /usr/bin/cpp-12 \
-  --slave /usr/bin/g++ g++ /usr/bin/g++-12 \
-  --slave /usr/bin/gcov gcov /usr/bin/gcov-12
-printf '/usr/lib/go-1.22/bin\n' >> "$GITHUB_PATH"
-gcc --version
+# Keep the runner's existing alternatives groups intact.
+toolbin="$RUNNER_TEMP/e900-host-bin"
+mkdir -p "$toolbin"
+for tool in gcc g++ cpp gcov; do
+  ln -sf "/usr/bin/$tool-12" "$toolbin/$tool"
+done
+printf '%s\n' "$toolbin" /usr/lib/go-1.22/bin >> "$GITHUB_PATH"
+"$toolbin/gcc" --version
 df -h
