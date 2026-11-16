@@ -58,12 +58,14 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
         media_patch.write_text(media_patch.read_text() + "\n")
         changed = cache.identities(port, "identify", root / "work", host)
         assert first["compat"] == changed["compat"] and first["state"] != changed["state"]
-        try:
-            installer.install(repo, "identify")
-        except RuntimeError as exc:
-            assert "incremental reuse" in str(exc)
-        else:
-            raise AssertionError("Unapproved local incremental update accepted")
+        # CI enables reuse globally; this rejection case must explicitly disable it.
+        with mock.patch.dict(os.environ, {"E900_INCREMENTAL_REUSE": "0"}):
+            try:
+                installer.install(repo, "identify")
+            except RuntimeError as exc:
+                assert "incremental reuse" in str(exc)
+            else:
+                raise AssertionError("Unapproved local incremental update accepted")
         with mock.patch.dict(os.environ, {"E900_INCREMENTAL_REUSE": "1"}):
             installer.install(repo, "identify")
         assert json.loads((repo / ".e900-invalidate.json").read_text()) == ["media_modules-aml"]
