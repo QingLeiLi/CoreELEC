@@ -50,3 +50,5 @@
 解压诊断 ZIP，将根目录六个文件 `e900-Image`、`e900-uInitrd`、`dtb.img`、`aml_autoscript`、`s905_autoscript`、`cfgload` 覆盖到已有 COREELEC FAT 分区。保留 SYSTEM、kernel.img 和 STORAGE；不写 eMMC，不改保存的启动环境。回退时将 `rollback/` 中三个脚本复制回 FAT 根目录。
 
 已验证 legacy header CRC、ramdisk 解压与原 CPIO 完全一致、源内核/DTB 哈希，以及六个文件在真实镜像副本中的 FAT 写入/回读。此验证不能代替实机启动。记录见 `tests/booti-kit-43886158436.json`。
+
+后续实测：booti 诊断入口仍约 5 秒复位，第二次安卓标出现后 U 盘不再闪烁；用户报告 SoC 异常烫手，测试时未安装散热片。当前暂停 CE 上电测试，先恢复原散热结构并建立 Android 温度基线。不能由此认定是过压、热关机、看门狗或单纯加载地址错误；切换 booti 并未验证成功。

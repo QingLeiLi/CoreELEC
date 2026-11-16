@@ -14,5 +14,12 @@
     "power": "independent power supply"
   },
   "fat_roundtrip": "six files written to a copy of the real CE image and read back byte-for-byte",
-  "diagnostic_hardware_result": "pending"
+  "diagnostic_hardware_result": "failed: logo -> black screen -> logo after about 5 seconds; USB activity only on first pass",
+  "thermal_observation": {
+    "reported": "SoC extremely hot",
+    "heatsink": "not installed during test",
+    "supply": "independent power supply; electrical rating not recorded",
+    "action": "power off, restore original cooling, establish Android temperature baseline before further CE tests",
+    "cause": "not established"
+  }
 }
