@@ -135,3 +135,41 @@ failures and comparison failures. Shell syntax and legacy script CRC passed.
 The live allocation was revalidated and all 26 deployed file hashes matched.
 ledger07 hardware boot result remains pending; no eMMC change or reboot was
 performed during deployment.
+
+Hardware ledger07 result: the saved file exactly matches checkpoint 012,
+`before_booti`. File loads and RAM marker readback succeeded; no return
+checkpoint was recorded. This bounds the failure to the boot command or what
+it executes, but does not establish that Linux entry was reached. The file
+was preserved privately before preparing the next test.
+
+## Isolated entry/reset payload (reset08)
+
+This is a bootloader-handoff test, **not a usable CE boot**. The original
+pinned Image header, text offset, size, load addresses, DTB and initramfs are
+retained. The initial branch now targets a 64-byte appended ARM64 payload
+which writes `0xe9080001` to the trace address, issues a barrier and invokes
+SMC `0x84000009` with x1..x3 zero. It does not branch back to Linux. If the
+reset call returns, it waits in a WFE loop. The live working Android DT
+explicitly declares `/aml_restart/sys_reset = 0x84000009` and the SMC method;
+the firmware reset identifier was not guessed.
+
+Build with `scripts/make-reset-entry-image.py ORIGINAL_IMAGE IMAGE_OUTPUT`,
+then `scripts/make-usb-ledger-boot.py VERIFIED_SLOT LEDGER_OUTPUT --mkimage PATH
+--mode reset`. Upload the image, seed, E9Rxxx.BIN payloads and script aliases,
+keeping the existing diagnostic DTB and initramfs. Revalidate the file-slot
+mapping and deployed hashes as for ledger07.
+
+All reset08 records share a 64-byte attempted prefix with the slot nonce.
+The script compares this prefix before writing any new checkpoint. If it
+already matches, it suppresses another payload launch regardless of RAM
+retention, checks the reset-entry marker and returns to Android. This is a
+persistent no-repeat guard; it does not guarantee that a reset reexecutes
+the USB script or that the marker survives reset. A positive observed marker
+proves ARM64 payload entry. A missing marker remains inconclusive. Preserve
+E9LOG.TXT after an attempt; do not reset the guard before collecting results.
+
+Host checks verify the assembled payload bytes, unchanged original code and
+header (apart from the initial branch), append bounds, SMC arguments, guard
+ordering before writes, cold attempt, warm result, power-loss/no-marker path,
+unsupported RAM reader, file-load failures and checkpoint-write failures.
+ledger07 generation was regression tested. Hardware reset08 result pending.

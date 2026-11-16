@@ -1,0 +1,68 @@
+echo "E900 isolated ARM64 entry/reset test, one attempt recorded on USB"
+setenv e9_saved_bootargs "${bootargs}"
+setenv e9_attempt unknown
+usb start
+if usb dev 0; then
+  if fatload usb 0:1 0x04000000 E9LOG.TXT; then
+    if fatload usb 0:1 0x04001000 @ATTEMPTED_FILE@; then
+      setenv e9_attempt no
+      if cmp.b 0x04000000 0x04001000 0x40; then
+        setenv e9_attempt yes
+      fi
+    fi
+  fi
+fi
+@START_CHECKPOINT@
+if test "${e9_attempt}" = "yes"; then
+  setenv e9_stage unknown
+  if itest.l *0x074ff000 == 0xe9080001; then
+    setenv e9_stage e9080001
+  else
+    if setexpr e9_stage *0x074ff000 + 0; then
+      echo "E900 reset marker read completed"
+    fi
+  fi
+  if test "${e9_stage}" = "e9080001"; then
+    setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_entry=reached"
+  else
+    setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=attempt_not_repeated_entry_unconfirmed"
+  fi
+else
+  if test "${e9_attempt}" = "no"; then
+    if fatload usb 0:1 0x11000000 e900-Image-reset; then
+      if fatload usb 0:1 0x15000000 e900-uInitrd; then
+        if fatload usb 0:1 0x18000000 e900-trace.dtb; then
+          if fatload usb 0:1 0x074ff000 E9RSEED.BIN; then
+            setenv e9_readback no
+            if itest.l *0x074ff000 == 0xe9080000; then
+              setenv e9_readback yes
+            else
+              if setexpr e9_stage *0x074ff000 + 0; then
+                if test "${e9_stage}" = "e9080000"; then
+                  setenv e9_readback yes
+                fi
+              fi
+            fi
+            if test "${e9_readback}" = "yes"; then
+              setenv bootargs "${e9_saved_bootargs} e9probe=reset08_stub"
+              booti 0x11000000 0x15000000 0x18000000
+              setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_booti=returned"
+            else
+              setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=memory_readback_unconfirmed"
+            fi
+          else
+            setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=seed_load_failed"
+          fi
+        else
+          setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=dtb_load_failed"
+        fi
+      else
+        setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=initrd_load_failed"
+      fi
+    else
+      setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=image_load_failed"
+    fi
+  else
+    setenv bootargs "${e9_saved_bootargs} e9probe=reset08 e9_trace=attempt_guard_unconfirmed"
+  fi
+fi

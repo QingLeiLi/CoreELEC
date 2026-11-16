@@ -11,7 +11,7 @@ import subprocess
 PORT = pathlib.Path(__file__).resolve().parents[1]
 
 
-def make(slot_path, destination, mkimage):
+def make(slot_path, destination, mkimage, mode="entry"):
     slot = json.loads(slot_path.read_text())
     assert slot["hardware_write_tested"] is True
     assert slot["file"] == "E9LOG.TXT" and slot["file_bytes"] == 512 and slot["write_sectors"] == 1
@@ -19,16 +19,20 @@ def make(slot_path, destination, mkimage):
     assert not destination.exists()
     destination.mkdir(parents=True)
     template = (PORT / "boards/e900-usb-write-probe.src.in").read_text()
-    script_source = PORT / "boards/e900-usb-entry-trace.src"
+    script_source = PORT / "boards" / ("e900-usb-entry-trace.src" if mode == "entry" else "e900-usb-entry-reset.src")
     source = script_source.read_text().replace("e9probe=entry05", "e9probe=ledger07")
     stages = []
 
     def checkpoint(label, indent=""):
         index = len(stages)
-        filename = f"E9S{index:03d}.BIN"
+        filename = f"E9{'S' if mode == 'entry' else 'R'}{index:03d}.BIN"
         text = f"E900 persistent checkpoint {index:03d}: {label}\nnonce={slot['nonce']}\n"
         text += "A before-command checkpoint does not prove that command completed.\n"
         payload = text.encode()
+        if mode == "reset":
+            prefix = ("E900 reset08 attempted nonce=" + slot["nonce"] + "\n").encode()
+            assert len(prefix) <= 64
+            payload = prefix.ljust(64, b" ") + payload
         assert len(payload) < 512
         payload = payload + b" " * (511 - len(payload)) + b"\n"
         (destination / filename).write_bytes(payload)
@@ -40,11 +44,20 @@ def make(slot_path, destination, mkimage):
         return [indent + 'if test "${e9_log}" = "passed"; then'] + [indent + '  ' + line for line in lines] + [indent + 'fi']
 
     output = ['echo "E900 persistent USB boot ledger"', 'setenv e9_log passed', 'setenv e9_booti_attempted no']
-    output += checkpoint("script_started")
+    if mode == "entry":
+        output += checkpoint("script_started")
+    guard_done = mode == "entry"
     for line in source.splitlines():
         stripped = line.strip()
         indent = line[:len(line) - len(line.lstrip())]
         label = None
+        if stripped == "@START_CHECKPOINT@":
+            guard_done = True
+            output += checkpoint("reset_guard_checked", indent)
+            continue
+        if not guard_done:
+            output.append(line)
+            continue
         if stripped.startswith("if setexpr "):
             label = "before_binary_setexpr_RAM_read"
         elif stripped.startswith("if itest.l "):
@@ -66,12 +79,17 @@ def make(slot_path, destination, mkimage):
             output += checkpoint("booti_returned_without_successful_handoff", indent)
         elif "e9_booti=returned" in stripped:
             output += [indent + 'if test "${e9_booti_attempted}" = "yes"; then', indent + "  " + stripped,
-                       indent + 'else', indent + '  setenv bootargs "${e9_saved_bootargs} e9probe=ledger07 e9_booti=not_attempted"',
+                       indent + 'else', indent + '  setenv bootargs "${e9_saved_bootargs} e9probe=' + ('ledger07' if mode == 'entry' else 'reset08') + ' e9_booti=not_attempted"',
                        indent + 'fi']
         else:
             output.append(line)
     output += ['setenv bootargs "${bootargs} e9_log=${e9_log}"']
     script_text = "\n".join(output) + "\n"
+    if mode == "reset":
+        armed = [stage for stage in stages if stage["label"] == "before_booti"]
+        assert len(armed) == 1
+        script_text = script_text.replace("@ATTEMPTED_FILE@", armed[0]["file"])
+    assert "@" not in script_text
     assert len(script_text.encode()) < 65536
     assert all(word not in script_text for word in ["saveenv", "defenv", "mmc write", "store write"])
     (destination / "ledger.src").write_text(script_text)
@@ -84,7 +102,7 @@ def make(slot_path, destination, mkimage):
     usb.check_script(script, script_text.encode())
     for name in ["aml_autoscript", "cfgload"]:
         shutil.copy2(script, destination / name)
-    report = dict(slot=slot, stages=stages, script_sha256=usb.sha256(script),
+    report = dict(slot=slot, stages=stages, mode=mode, script_sha256=usb.sha256(script),
                   entry_source_sha256=usb.sha256(script_source), hardware_tested=False,
                   caveat="Last persisted checkpoint bounds progress, not necessarily the failure instruction. "
                          "ARM64 entry is only proven by an observed retained RAM entry marker.")
@@ -97,5 +115,6 @@ if __name__ == "__main__":
     parser.add_argument("slot", type=pathlib.Path)
     parser.add_argument("destination", type=pathlib.Path)
     parser.add_argument("--mkimage", required=True, type=pathlib.Path)
+    parser.add_argument("--mode", choices=["entry", "reset"], default="entry")
     args = parser.parse_args()
-    make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve())
+    make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode)
