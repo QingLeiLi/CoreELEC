@@ -1,0 +1,31 @@
+echo "E900 USB load preflight; no CE kernel execution"
+usb start
+setenv e9_found no
+for e9dev in 0 1 2 3; do
+  if fatload usb ${e9dev}:1 0x04000000 E9INPUT.TXT; then
+    setenv e9_found yes
+    setenv bootargs "${bootargs} e9_usb=${e9dev}"
+    if fatload usb ${e9dev}:1 0x11000000 e900-Image; then
+      setenv bootargs "${bootargs} e9_image=${filesize}"
+    else
+      setenv bootargs "${bootargs} e9_image=load_failed"
+    fi
+    if fatload usb ${e9dev}:1 0x18000000 dtb.img; then
+      setenv bootargs "${bootargs} e9_dtb=${filesize}"
+    else
+      setenv bootargs "${bootargs} e9_dtb=load_failed"
+    fi
+    if fatload usb ${e9dev}:1 0x15000000 e900-uInitrd; then
+      setenv bootargs "${bootargs} e9_initrd=${filesize}"
+      if iminfo 0x15000000; then
+        setenv bootargs "${bootargs} e9_initrd_crc=passed"
+      else
+        setenv bootargs "${bootargs} e9_initrd_crc=unconfirmed"
+      fi
+    else
+      setenv bootargs "${bootargs} e9_initrd=load_failed"
+    fi
+  fi
+done
+setenv bootargs "${bootargs} e9probe=pre03 e9_found=${e9_found}"
+echo "E900 preflight finished; continuing existing Android boot"

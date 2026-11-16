@@ -1,8 +1,8 @@
 echo "E900 capability probe: return results through Android bootargs"
-setenv e9_booti absent
-setenv e9_bootm absent
-setenv e9_fatwrite absent
-setenv e9_fdt absent
+setenv e9_booti unconfirmed
+setenv e9_bootm unconfirmed
+setenv e9_fatwrite unconfirmed
+setenv e9_fdt unconfirmed
 if help booti; then setenv e9_booti present; fi
 if help bootm; then setenv e9_bootm present; fi
 if help fatwrite; then setenv e9_fatwrite present; fi
