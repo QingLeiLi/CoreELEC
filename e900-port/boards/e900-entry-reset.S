@@ -1,5 +1,8 @@
 /* Same Image relocation/header; execute no normal Linux initialization. */
 .text
+#ifndef E9_TRACE_MAGIC
+#define E9_TRACE_MAGIC 0xe9080001
+#endif
 .balign 8
     ldr x16, trace_address
     ldr w17, entered_magic
@@ -14,5 +17,5 @@
 1:  wfe
     b 1b
 trace_address: .quad 0x074ff000
-entered_magic: .word 0xe9080001
+entered_magic: .word E9_TRACE_MAGIC
     .word 0

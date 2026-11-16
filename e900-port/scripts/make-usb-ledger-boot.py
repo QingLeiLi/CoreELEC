@@ -11,7 +11,7 @@ import subprocess
 PORT = pathlib.Path(__file__).resolve().parents[1]
 
 
-def make(slot_path, destination, mkimage, mode="entry"):
+def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
     slot = json.loads(slot_path.read_text())
     assert slot["hardware_write_tested"] is True
     assert slot["file"] == "E9LOG.TXT" and slot["file_bytes"] == 512 and slot["write_sectors"] == 1
@@ -21,6 +21,10 @@ def make(slot_path, destination, mkimage, mode="entry"):
     template = (PORT / "boards/e900-usb-write-probe.src.in").read_text()
     script_source = PORT / "boards" / ("e900-usb-entry-trace.src" if mode == "entry" else "e900-usb-entry-reset.src")
     source = script_source.read_text().replace("e9probe=entry05", "e9probe=ledger07")
+    assert profile in {"reset08", "premmu09"}
+    if mode == "reset" and profile == "premmu09":
+        source = source.replace("reset08", "premmu09").replace("e908000", "e909000")
+        source = source.replace("e900-Image-reset", "e900-Image-premmu")
     stages = []
 
     def checkpoint(label, indent=""):
@@ -30,7 +34,7 @@ def make(slot_path, destination, mkimage, mode="entry"):
         text += "A before-command checkpoint does not prove that command completed.\n"
         payload = text.encode()
         if mode == "reset":
-            prefix = ("E900 reset08 attempted nonce=" + slot["nonce"] + "\n").encode()
+            prefix = ("E900 " + profile + " attempted nonce=" + slot["nonce"] + "\n").encode()
             assert len(prefix) <= 64
             payload = prefix.ljust(64, b" ") + payload
         assert len(payload) < 512
@@ -79,7 +83,7 @@ def make(slot_path, destination, mkimage, mode="entry"):
             output += checkpoint("booti_returned_without_successful_handoff", indent)
         elif "e9_booti=returned" in stripped:
             output += [indent + 'if test "${e9_booti_attempted}" = "yes"; then', indent + "  " + stripped,
-                       indent + 'else', indent + '  setenv bootargs "${e9_saved_bootargs} e9probe=' + ('ledger07' if mode == 'entry' else 'reset08') + ' e9_booti=not_attempted"',
+                       indent + 'else', indent + '  setenv bootargs "${e9_saved_bootargs} e9probe=' + ('ledger07' if mode == 'entry' else profile) + ' e9_booti=not_attempted"',
                        indent + 'fi']
         else:
             output.append(line)
@@ -102,7 +106,7 @@ def make(slot_path, destination, mkimage, mode="entry"):
     usb.check_script(script, script_text.encode())
     for name in ["aml_autoscript", "cfgload"]:
         shutil.copy2(script, destination / name)
-    report = dict(slot=slot, stages=stages, mode=mode, script_sha256=usb.sha256(script),
+    report = dict(slot=slot, stages=stages, mode=mode, profile=profile, script_sha256=usb.sha256(script),
                   entry_source_sha256=usb.sha256(script_source), hardware_tested=False,
                   caveat="Last persisted checkpoint bounds progress, not necessarily the failure instruction. "
                          "ARM64 entry is only proven by an observed retained RAM entry marker.")
@@ -116,5 +120,6 @@ if __name__ == "__main__":
     parser.add_argument("destination", type=pathlib.Path)
     parser.add_argument("--mkimage", required=True, type=pathlib.Path)
     parser.add_argument("--mode", choices=["entry", "reset"], default="entry")
+    parser.add_argument("--profile", choices=["reset08", "premmu09"], default="reset08")
     args = parser.parse_args()
-    make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode)
+    make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode, args.profile)

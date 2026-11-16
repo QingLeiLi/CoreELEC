@@ -173,3 +173,29 @@ header (apart from the initial branch), append bounds, SMC arguments, guard
 ordering before writes, cold attempt, warm result, power-loss/no-marker path,
 unsupported RAM reader, file-load failures and checkpoint-write failures.
 ledger07 generation was regression tested. Hardware reset08 result pending.
+
+Hardware reset08 result: automatic return to Android with
+`e9probe=reset08 e9_entry=reached e9_log=passed`; persisted checkpoint 003
+matches `ARM64_entry_marker_observed_after_reset`. This positively confirms
+ARM64 payload execution, the firmware reset and retention/reexecution of the
+RAM marker on this reset path. It does not confirm any normal Linux startup.
+
+## Before-MMU milestone (premmu09)
+
+Use `--profile premmu09` with both reset-image and reset-ledger generators.
+The image header and its original branch to stext are unchanged. At the
+pinned stext file offset `0x12b0000`, the actual eight instructions match the
+source sequence: preserve boot args, el2_setup, physical offset/misalignment,
+boot-mode flag, initial page tables, CPU setup, branch to primary switch.
+The generator pins all eight exact words and replaces only the final branch
+at `0x12b001c` with a branch to the appended reset payload. This executes the
+real early assembly through `__cpu_setup`, then resets before entering
+`__primary_switch` or enabling the MMU. No normal C initialization is reached.
+
+Marker `0xe9090001`, the premmu09 durable prefix and separate Image filename
+prevent an old reset08 result from being mistaken for this milestone.
+The same persistent no-repeat guard is retained. Both profiles pass patch
+bounds, payload/SMC and shell control-flow tests. Source and independent LLVM
+disassembly agree on the patch site. The previous positive reset08 evidence
+was preserved and the live slot revalidated before deployment. premmu09
+hardware result remains pending.
