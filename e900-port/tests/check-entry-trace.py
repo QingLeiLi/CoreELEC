@@ -63,3 +63,43 @@ except AssertionError:
 else:
     raise AssertionError("Unpinned kernel accepted")
 print("PASS: Clang confirms all trampoline bytes; exact branch return, header preservation, image bounds and input pin checked")
+
+# Exercise the real shell source with command stubs. Failed command support or
+# failed RAM readback must not reach booti, while either supported reader can.
+harness = r'''
+mode="$1"; ram="$2"; failfile="$3"; sourcefile="$4"
+bootargs=android_original; calls=0
+setenv() { printf -v "$1" '%s' "$2"; }
+setexpr() {
+  [ "$mode" = setexpr ] || return 1
+  [ "$#" = 4 ] && [ "$3" = + ] && [ "$4" = 0 ] || return 1
+  printf -v "$1" '%s' "$ram"
+}
+itest.l() {
+  [ "$mode" = itest ] || return 1
+  [ "$ram" = "${3#0x}" ]
+}
+usb() { return 0; }
+fatload() {
+  [ "$4" != "$failfile" ] || return 1
+  if [ "$4" = E9ARM.BIN ]; then ram=e9000000; fi
+  return 0
+}
+booti() { calls=$((calls+1)); return 1; }
+. "$sourcefile" >/dev/null
+printf '%s\n%s\n' "$calls" "$bootargs"
+'''
+for mode, state, failed, calls, tag in [
+    ("itest", "0", "", "1", "e9_booti=returned"),
+    ("setexpr", "0", "", "1", "e9_booti=returned"),
+    ("none", "0", "", "0", "e9_trace=memory_readback_unconfirmed"),
+    ("itest", "e9000001", "", "0", "e9_entry=reached"),
+    ("setexpr", "e9000000", "", "0", "e9_entry=not_observed"),
+    ("itest", "0", "e900-uInitrd", "0", "e9_trace=initrd_load_failed"),
+]:
+    result = subprocess.run(["bash", "-c", harness, "trace-test", mode, state, failed,
+                             str(PORT / "boards/e900-usb-entry-trace.src")],
+                            check=True, text=True, capture_output=True).stdout.splitlines()
+    assert result[0] == calls and tag in result[1], result
+    assert result[1].startswith("android_original e9probe=entry05"), result
+print("PASS: real script gates booti on RAM verification; both readers, failed support, warm markers and load failure checked")

@@ -12,7 +12,7 @@ Hardware pre03 result: USB device 0, Image 28,051,464 bytes, DTB 56,995 bytes,
 uInitrd 3,901,932 bytes; all lengths match. `iminfo` returned failure, so CRC
 validation remains unconfirmed. Android boot and the return channel worked.
 
-## ARM64 entry trace (entry04)
+## ARM64 entry trace (entry04 / entry05)
 
 `scripts/make-entry-trace.py VERIFIED_BOOTI_KIT OUTPUT --mkimage PATH` accepts
 only the pinned successful build's raw Image, DTB and initramfs. It replaces the
@@ -29,12 +29,12 @@ this one entry-stage test. The DTB is loaded at `0x18000000` to preserve the
 existing Android DTB at `0x01000000` if the script returns.
 
 The script first checks a retained marker. Otherwise it loads the files,
-loads a four-byte armed marker (`0xe9000000`) and verifies RAM readback with
-`setexpr.l` before calling `booti`. All writes target USB files or normal RAM;
+loads an eight-byte armed marker (`0xe9000000`, zero padding) and verifies RAM
+readback before calling `booti`. All writes target USB files or normal RAM;
 there are no persistent env, eMMC or MMIO writes.
 
 If the bootloader reexecutes the USB script after a warm reset **and** RAM is
-retained, Android receives `e9probe=entry04` with one of:
+retained, Android receives `e9probe=entry05` with one of:
 
 - `e9_entry=reached`: the injected ARM64 entry instructions ran; this does not
   prove normal Linux initialization or a working display.
@@ -51,3 +51,16 @@ aliases to return to the loading-only probe. No cloud rebuild is required.
 Host validation: script CRC, pinned inputs, reservation-preserving DTB change,
 branch destinations, append bounds, unchanged original code after the initial
 branch, and Clang ARM64 assembly byte comparison. Hardware execution pending.
+
+Hardware entry04 result: `e9_trace=setexpr_unavailable`. Its initial unary
+`setexpr.l` command failed, so this probe did not call booti. This establishes
+no kernel failure and does not prove command absence.
+
+Entry05 uses binary `setexpr name *address + 0`, with direct `itest.l` memory
+comparisons as an alternative. Either reader must positively verify the seed
+before booti is allowed. Seed padding is zero because some old implementations
+dereference an unsigned long even for `.l` accesses. Revised script control flow
+was tested with command stubs covering both readers, no supported reader, warm
+markers, file load failure and boot command return. The instrumented kernel
+and diagnostic DTB are unchanged from entry04; only the seed and script aliases
+need replacing. Entry05 deployed and hash checked; hardware boot pending.

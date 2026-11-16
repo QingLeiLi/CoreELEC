@@ -90,7 +90,7 @@ def make(kit, destination, mkimage):
     destination.mkdir(parents=True)
     (destination / "e900-Image-trace").write_bytes(traced)
     (destination / "e900-trace.dtb").write_bytes(traced_dtb)
-    (destination / "E9ARM.BIN").write_bytes(struct.pack("<I", ARMED))
+    (destination / "E9ARM.BIN").write_bytes(struct.pack("<II", ARMED, 0))
     source = PORT / "boards/e900-usb-entry-trace.src"
     for forbidden in ["saveenv", "defenv", "mmc write", "store write", "reset", "mw."]:
         assert forbidden not in source.read_text(), forbidden
