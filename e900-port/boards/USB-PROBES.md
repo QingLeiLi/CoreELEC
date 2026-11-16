@@ -64,3 +64,38 @@ was tested with command stubs covering both readers, no supported reader, warm
 markers, file load failure and boot command return. The instrumented kernel
 and diagnostic DTB are unchanged from entry04; only the seed and script aliases
 need replacing. Entry05 deployed and hash checked; hardware boot pending.
+
+Hardware entry05 observation: Android logo for roughly ten seconds; USB was
+removed and power cut before Android booted. The resulting Android command
+line has no probe tag and its RAM no longer contains a diagnostic magic.
+This does not establish entry success or failure, nor prove a kernel hang.
+
+## Persistent USB evidence file (usb06)
+
+The earlier `fatwrite` probe did not create its file. `usb06` instead tests
+the bootloader USB storage block write path, with a preallocated 512-byte
+`E9LOG.TXT`. Preparation creates the file using Android's normal filesystem,
+reads the MBR/BPB/FAT/root directory, checks that it occupies one cluster, and
+verifies that its first data sector matches a fresh random-nonce payload.
+Raw disk reads during preparation are read-only.
+
+`scripts/prepare-usb-write-probe.py --adb-serial DEVICE --mkimage PATH OUTPUT`
+creates the two test files on the mounted USB and prepares scripts locally.
+It does not deploy scripts or reboot. The generated script is bound to the
+current USB layout. Do not use it on another drive, reformat the drive or move
+the evidence file without regenerating the slot mapping.
+
+At boot, the script selects USB storage 0, loads both 512-byte files, reads the
+mapped sector and uses `cmp.b` to compare it with the FAT-loaded evidence file
+before writing exactly one sector. It reads back and compares the replacement
+as well. Failure of any prerequisite prevents the write. Neither the partition
+table, FAT nor eMMC is a write target. The probe does not execute CE and returns
+to Android with `e9probe=usb06 e9_write=...`; a successful file update will
+remain readable after a power cycle.
+
+This first test proves only whether a bootloader checkpoint can be persisted.
+It cannot directly record an early Linux panic before USB drivers initialize.
+Integration with pre-handoff checkpoints and retained-RAM entry results remains
+pending successful hardware validation. Parser bounds and script guards have
+host tests; local image mapping and the actual USB file/sector mapping were
+checked. usb06 deployed and hashes verified; hardware write result pending.

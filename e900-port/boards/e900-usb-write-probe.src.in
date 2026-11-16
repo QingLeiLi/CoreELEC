@@ -1,0 +1,29 @@
+echo "E900 USB evidence file write test; no CE kernel execution"
+setenv e9_write not_attempted
+usb start
+if usb dev 0; then
+  if fatload usb 0:1 0x04000000 E9LOG.TXT; then
+    if test "${filesize}" = "200"; then
+      if fatload usb 0:1 0x04001000 E9NEXT.BIN; then
+        if test "${filesize}" = "200"; then
+          setenv e9_write guard_unconfirmed
+          if usb read 0x04002000 @LBA@ 1; then
+            if cmp.b 0x04000000 0x04002000 0x200; then
+              setenv e9_write command_failed
+              if usb write 0x04001000 @LBA@ 1; then
+                setenv e9_write verify_failed
+                if usb read 0x04002000 @LBA@ 1; then
+                  if cmp.b 0x04001000 0x04002000 0x200; then
+                    setenv e9_write passed
+                  fi
+                fi
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  fi
+fi
+setenv bootargs "${bootargs} e9probe=usb06 e9_write=${e9_write}"
+echo "E900 USB evidence test complete; continue Android"
