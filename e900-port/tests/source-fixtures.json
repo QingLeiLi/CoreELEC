@@ -1,0 +1,258 @@
+[
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "arch/arm64/boot/dts/amlogic/coreelec-gxl/coreelec_gxl.dtsi",
+    "git_blob_sha1": "2154f982b087658a85fffe347c6d8bd17d873e70",
+    "sha256": "e71d573646866c5b61ce459e92a47a49d31e75ac7649884ea48c4ad676109e62",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "arch/arm64/boot/dts/amlogic/coreelec-gxl/gxl_p212_1g.dts",
+    "git_blob_sha1": "77e6fb4bbaa9d4b9e8230bbb79581195da96e327",
+    "sha256": "77370f58f07bff6b4393263d1f1873249a4983919674d5d130a3ef88950d6e74",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "arch/arm64/boot/dts/amlogic/mesongxl.dtsi",
+    "git_blob_sha1": "4de262d39eb4f280bd78ca0d0494990acb63d15c",
+    "sha256": "3fb3bdb35080d09517e362f2b4c92d57e3d9dd5a10569c1e6e11978996eb6384",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/cpu_version/meson64_cpu.c",
+    "git_blob_sha1": "0b3180681c2b1a592f7f8397e1a88129bc1a3e50",
+    "sha256": "a55e220ece54329a44d6e98c9cdeec8faf97766f8cef34df48b14a69e17febc3",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/vpu/vpu.c",
+    "git_blob_sha1": "a7e116c6e8b5770e60402b34fc305dcfbf7033cd",
+    "sha256": "f61f1da5520933116a11f78e54df0b181ae30878aa7b3d909eb76d1bd44ab47a",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/vpu/vpu_ctrl.h",
+    "git_blob_sha1": "29a6fef833b78bc8d65a511818bdc575978b9966",
+    "sha256": "b0177175bdfd2d31ff06fef54174d4ca94476e43f981130775ef47a23fc3a572",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hdmi_tx_main.c",
+    "git_blob_sha1": "933287c06dfa5f502681cca0267e96073b6683f0",
+    "sha256": "1f6638aa991717fbe7840b19f38863ba7f46ad075df27fc2849060c2f5f2bde7",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/hw_clk.c",
+    "git_blob_sha1": "7d996444cce4cd98f82ee319f9e577251efb63a0",
+    "sha256": "af9bdd3c5d583d617ae9300af0abcc6202d206bda70b6eadbb5ef278fb54f73a",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/hw_g12a.c",
+    "git_blob_sha1": "8c6bd3691432cd20e919e01ef90f31a609cce7b1",
+    "sha256": "993215d2486ac6696793de9aacabec2468ba4be4a9228acdf7a96346ed688a68",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/hw_gxl.c",
+    "git_blob_sha1": "500c7ebbfd62fe67ef1cb65d7c64255f81cf1d99",
+    "sha256": "73d87bc6b82ec225b003856c8dd88015a040802c6bd2432abfe6d3adffe8b0b7",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/reg_ops.c",
+    "git_blob_sha1": "b4c5724917f452d183705a2f7c0ef8235de5a207",
+    "sha256": "f364ecf84ceb4b5d827f4b7f890fff020aee2a121d0646962e594dd09e69dd25",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/cpu_version.h",
+    "git_blob_sha1": "0f9657e198720128d2a101fa8b9abee7da7d42e2",
+    "sha256": "a5de71bbd3e403e224bbcfe496904c036a5edb0ea5b02e4e22240d565a83539a",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/iomap.h",
+    "git_blob_sha1": "0127c6bef3ca319c77363346e22f455efaaa9d79",
+    "sha256": "79c19fd8d7b3ea3a8dc3a6a2f595eaee0b1febbe50424cbbd845e65d006a37f0",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h",
+    "git_blob_sha1": "fc142e12cb93c8fb16c3bf7f7b407c1919545d4e",
+    "sha256": "17f2eb61320ed3a1e786d82432edfc66df6d38a52ac978a39489df39560cda44",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/chips/chips.c",
+    "git_blob_sha1": "d692ca84456d9e12a8d42d9b78e3faf7cbe5a3d1",
+    "sha256": "79fff5c6b4b94dbcd198eecfbea176679a1321bf4bf55083bd68889673cc7d53",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/chips/decoder_cpu_ver_info.c",
+    "git_blob_sha1": "546d914e62e8322ed4de5bbd7c22e27b905a0310",
+    "sha256": "d601f67fc8115539e85a92f83958bffe502ac6d48894bea006e67e6ef3005882",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/chips/decoder_cpu_ver_info.h",
+    "git_blob_sha1": "899017cba2d1b88a546496c4189fdb43acf1908f",
+    "sha256": "95e0f464e5ad83d5b84c38359f00f1cb98daa319ae9b3b05e8c3bb06ab7a942a",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/media_clock/clk/clkg12.c",
+    "git_blob_sha1": "b594a09d76e9e5f0e89edc1b96f4ca8ed80ea3d9",
+    "sha256": "9b4e348a81c276f110d97c9819924a8edb2882004744fcded84e6dec675652d4",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/frame_provider/decoder/h264/vh264.c",
+    "git_blob_sha1": "ab8c47dcb02377e6ef6df50b5eb837aac08372fa",
+    "sha256": "ac54eaf9106207d31efe439d6953f824bcf387bd5262bd38b80652f000649684",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/frame_provider/decoder/h265/vh265.c",
+    "git_blob_sha1": "8dae3b031bfe9ade3c0b963598686860ab33ba2b",
+    "sha256": "a09d5afc989ebaf73ed8f1760659049cfa13490127eb3131c122bce9f6a230a4",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/frame_provider/decoder/utils/amvdec.c",
+    "git_blob_sha1": "11d262fdb67d274c953a32a517e56e9a7ccfc04e",
+    "sha256": "7ffedf81703933c24f970223404e047a9c8426d4e74775556b9d1c0030b0dd02",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/frame_provider/decoder/utils/vdec.c",
+    "git_blob_sha1": "8c5f345a6e83f391549cef51efeb574f631426c9",
+    "sha256": "c302c977692bd8a5bfcf1a3f3225da898ee1dc84054f27e878f49b79ed556867",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/frame_provider/decoder/utils/vdec_power_ctrl.c",
+    "git_blob_sha1": "9057a8053a43f1d3e12678525d3ee288ebf15bdb",
+    "sha256": "5ac9b846fea019589efdb1ba3e2beb6da4bf641c65fd48787be15b5e95d037a4",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/media_clock/clk/clk.h",
+    "git_blob_sha1": "82eec1d14a134b7d2db9813e470aceb0c55af0b1",
+    "sha256": "dc06e274eac4fa13c140ebbe9ed139ac54d980827ad3c6475c8357879684e402",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/firmware/firmware_cfg.h",
+    "git_blob_sha1": "e23ac2ad41dd3c5d7d048917e757cbf540e23c61",
+    "sha256": "a4942e7c0a94431dceb5e3701eeb8b4455d34504327b9f11cc1cabf0fbfc183a",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/firmware/firmware_drv.c",
+    "git_blob_sha1": "7253d8fb34403a58ef02ba77f7ecd28d3bfb222a",
+    "sha256": "603cfce9f2e1b626ff947aec91da6aa83d00c201bcffa621089cd96169a0d140",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/firmware/firmware_priv.h",
+    "git_blob_sha1": "410745b5d7fe311b6b7eb5ca286d9217b0482c01",
+    "sha256": "eb2489ea0f85fe699cd20068656e92eb2e7f69eb1d2a5fefa8d9150c280123ed",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/firmware/firmware_type.c",
+    "git_blob_sha1": "7c77d7d0eb0838485c210d1bb69496e7908e4578",
+    "sha256": "f92a095f9157b57ff07cda792032b47a27fd697e29205c3d3213fcb0a1bd83e4",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/media_modules-aml",
+    "revision": "60561618f2bf154c1438d3c790b625ff01f215c3",
+    "path": "drivers/common/media_clock/clk/clk.c",
+    "git_blob_sha1": "972bcc131b8f7f5f338a492d41084e5290c9f226",
+    "sha256": "0e9c1fa8a5699c2cd2bb58736f8e3e44dde72d3dbb66a0713f4bc36be1a2745d",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/hdmi_tx_hw.c",
+    "git_blob_sha1": "ff4ad3ecbf6ada99a93e91b7c8c70bccb9ab4f9b",
+    "sha256": "79587d3775f8762d896dcba2d3f48de031c74e126839f3ab86c127db98abff90",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "arch/arm64/boot/dts/amlogic/gxl_p212_1g_buildroot.dts",
+    "git_blob_sha1": "3d068766511e52edf7a29d5afbeb2c6fda2c1286",
+    "sha256": "544dad82e32303bfd5d2f801adf2d60fa0771c97e3e90fb4209c19e9e3daae52",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/reg_ops.h",
+    "git_blob_sha1": "7dd840a686772c8b06d6bd1bfefd847696586795",
+    "sha256": "53f799aa83a23f06c6078b04baddc498e90180296e80aa1ee7b61c2d81f53004",
+    "verified": true
+  }
+]

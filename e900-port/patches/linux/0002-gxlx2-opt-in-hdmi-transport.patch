@@ -1,0 +1,97 @@
+Subject: [EXPERIMENTAL] add opt-in GXLX2 direct register transport, preserve GXL PHY
+
+Base revisions are fixed in pins.json. Not hardware validated.
+
+diff --git a/include/linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h b/include/linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h
+--- a/include/linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h
++++ b/include/linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h
+@@ -335,6 +335,8 @@
+ #endif
+ 	struct timer_list hdcp_timer;
+ 	int chip_type;
++	/* Experimental direct HDMI access with the existing GXL PHY profile. */
++	bool gxlx2_direct_hdmi;
+ 	int hdmi_init;
+ 	int hpdmode;
+ 	/* -1, no hdcp; 0, NULL; 1, 1.4; 2, 2.2 */
+diff --git a/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hdmi_tx_main.c b/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hdmi_tx_main.c
+--- a/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hdmi_tx_main.c
++++ b/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hdmi_tx_main.c
+@@ -6871,6 +6871,8 @@
+ 		/* Get ic type information */
+ 		ret = of_property_read_u32(pdev->dev.of_node, "ic_type",
+ 			&(hdmitx_device.chip_type));
++		hdmitx_device.gxlx2_direct_hdmi = of_property_read_bool(
++			pdev->dev.of_node, "amlogic,gxlx2-direct-hdmi");
+ 
+ 		/* Get dongle_mode information */
+ 		ret = of_property_read_u32(pdev->dev.of_node, "dongle_mode",
+@@ -7002,6 +7004,14 @@
+ 	amhdmitx_device_init(&hdmitx_device);
+ 
+ 	ret = amhdmitx_get_dt_info(pdev);
++	if (hdmitx_device.gxlx2_direct_hdmi) {
++		if (!is_meson_gxlx2_cpu() ||
++		    hdmitx_device.chip_type != MESON_CPU_ID_GXL) {
++			dev_err(&pdev->dev, "GXLX2 direct HDMI requires SoC 0x2a and ic_type 3\n");
++			return -EINVAL;
++		}
++		dev_warn(&pdev->dev, "experimental GXLX2 HDMI register transport; GXL PHY retained\n");
++	}
+ 
+ 	amhdmitx_clktree_probe(&(pdev->dev));
+ 
+diff --git a/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/reg_ops.c b/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/reg_ops.c
+--- a/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/reg_ops.c
++++ b/drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hw/reg_ops.c
+@@ -30,6 +30,7 @@
+ #include <linux/mutex.h>
+ #include <linux/cdev.h>
+ #include <linux/io.h>
++#include <linux/string.h>
+ #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
+ #include <linux/arm-smccc.h>
+ #include "common.h"
+@@ -257,6 +258,9 @@
+ 	}
+ };
+ 
++/* GXL buses/PHY, but separate direct DWC and TOP register windows. */
++static struct reg_map reg_maps_gxlx2[ARRAY_SIZE(reg_maps_def)];
++
+ struct reg_map *map;
+ 
+ void init_reg_map(unsigned int type)
+@@ -281,6 +285,14 @@
+ 	default:
+ 		map = reg_maps_def;
+ 		break;
++	}
++	if (get_hdmitx_device()->gxlx2_direct_hdmi) {
++		memcpy(reg_maps_gxlx2, reg_maps_def, sizeof(reg_maps_def));
++		reg_maps_gxlx2[HDMITX_SEC_REG_IDX].phy_addr = 0xda800000;
++		reg_maps_gxlx2[HDMITX_SEC_REG_IDX].size = 0x8000;
++		reg_maps_gxlx2[HDMITX_REG_IDX].phy_addr = 0xda808000;
++		reg_maps_gxlx2[HDMITX_REG_IDX].size = 0x4000;
++		map = reg_maps_gxlx2;
+ 	}
+ 	for (i = 0; map[i].phy_addr != REG_ADDR_END; i++) {
+ 		/* ANACTRL_REG_IDX is new added in SC2,
+@@ -576,7 +588,7 @@
+ 	unsigned int data;
+ 	struct hdmitx_dev *hdev = get_hdmitx_device();
+ 
+-	if (hdev->chip_type >= MESON_CPU_ID_G12A)
++	if (hdev->gxlx2_direct_hdmi || hdev->chip_type >= MESON_CPU_ID_G12A)
+ 		data = hdmitx_rd_reg_g12a(addr);
+ 	else if (hdev->chip_type == MESON_CPU_ID_GXL)
+ 		data = hdmitx_rd_reg_old(addr);
+@@ -669,7 +681,7 @@
+ {
+ 	struct hdmitx_dev *hdev = get_hdmitx_device();
+ 
+-	if (hdev->chip_type >= MESON_CPU_ID_G12A)
++	if (hdev->gxlx2_direct_hdmi || hdev->chip_type >= MESON_CPU_ID_G12A)
+ 		hdmitx_wr_reg_g12a(addr, data);
+ 	else if (hdev->chip_type == MESON_CPU_ID_GXL)
+ 		hdmitx_wr_reg_old(addr, data);

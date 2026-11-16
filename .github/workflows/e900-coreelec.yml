@@ -1,0 +1,128 @@
+name: E900 CoreELEC experimental build
+run-name: E900 ${{ inputs.profile }} / ${{ inputs.target }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Candidate patch profile (all builds remain unvalidated)
+        type: choice
+        default: decoder
+        options: [baseline, identify, hdmi, decoder]
+      target:
+        description: Compile kernel, kernel plus media modules, or a generic image
+        type: choice
+        default: media
+        options: [linux, media, image]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e900-${{ github.ref }}-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      PORT_ROOT: ${{ github.workspace }}/e900-port
+      E900_PORT_ROOT: ${{ github.workspace }}/e900-port
+      E900_WORK_ROOT: ${{ github.workspace }}/.e900-work
+      E900_AUDIT_ROOT: ${{ github.workspace }}/.e900-fixtures
+      PROFILE: ${{ inputs.profile }}
+      BUILD_TARGET: ${{ inputs.target }}
+      CONCURRENCY_MAKE_LEVEL: '4'
+      THREADCOUNT: '1'
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      TERM: xterm
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Reclaim preinstalled runner tools and check disk
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          df -h
+          # Only runs on the disposable GitHub runner, never the local Mac.
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          sudo apt-get clean
+          free_gib=$(df --output=avail -BG "$RUNNER_TEMP" | tail -1 | tr -dc '0-9')
+          required=35
+          if [ "$BUILD_TARGET" = image ]; then required=50; fi
+          df -h
+          if [ "$free_gib" -lt "$required" ]; then
+            echo "Need ${required}GiB free; runner has ${free_gib}GiB." >&2
+            exit 1
+          fi
+          mkdir -p "$E900_WORK_ROOT/downloads"
+
+      - name: Install native build dependencies
+        run: bash "$PORT_ROOT/scripts/ci-dependencies.sh"
+
+      - name: Restore download cache
+        id: downloads
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/downloads
+          key: e900-downloads-${{ hashFiles('e900-port/pins.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            e900-downloads-${{ hashFiles('e900-port/pins.json') }}-
+
+      - name: Prepare pinned upstream source and patches
+        run: bash "$PORT_ROOT/scripts/build.sh" prepare "$PROFILE"
+
+      - name: Fetch verified public test fixtures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 "$PORT_ROOT/scripts/fetch-test-fixtures.py"
+
+      - name: Test patch application and host C logic
+        run: |
+          export E900_CE_REFERENCE="$E900_WORK_ROOT/CoreELEC-$PROFILE"
+          python3 "$PORT_ROOT/tests/check-local.py"
+
+      - name: Compile selected target
+        shell: bash
+        run: |
+          # Reserve time for logs and artifact upload within GitHub's six-hour job limit.
+          timeout --signal=TERM --kill-after=60s 300m \
+            bash "$PORT_ROOT/scripts/build.sh" "$BUILD_TARGET" "$PROFILE"
+
+      - name: Save source download cache
+        if: always() && !cancelled() && steps.downloads.outputs.cache-primary-key != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/downloads
+          key: ${{ steps.downloads.outputs.cache-primary-key }}
+
+      - name: Upload experimental binaries and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: e900-${{ inputs.profile }}-${{ inputs.target }}-${{ github.run_id }}
+          path: |
+            ${{ env.E900_WORK_ROOT }}/export/
+            ${{ env.E900_WORK_ROOT }}/logs/
+          if-no-files-found: warn
+          retention-days: 7
+          include-hidden-files: true
+
+      - name: Summarize validation status
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '### Experimental CoreELEC build'
+            echo "Profile: $PROFILE; target: $BUILD_TARGET"
+            echo 'Compilation is separate from hardware validation.'
+            echo 'E900V21C board DTB is not integrated; artifacts are not ready to flash.'
+            df -h "$RUNNER_TEMP"
+          } >> "$GITHUB_STEP_SUMMARY"

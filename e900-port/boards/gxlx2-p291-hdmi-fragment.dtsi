@@ -1,0 +1,16 @@
+/*
+ * FRAGMENT ONLY: merge after a verified E900V21C 4.9 board DTS is available.
+ * This is not a standalone DTB and is deliberately NOT installed by the scripts.
+ * Requires linux/0001, linux/0002 and media/0001 from this workspace.
+ */
+/ {
+	cpu_ver_name {
+		compatible = "amlogic, cpu-major-id-gxlx2";
+	};
+};
+
+&amhdmitx {
+	/* HDMI profile ordinal 3 means GXL PHY, NOT the raw CPU ID 0x2a. */
+	ic_type = <3>;
+	amlogic,gxlx2-direct-hdmi;
+};

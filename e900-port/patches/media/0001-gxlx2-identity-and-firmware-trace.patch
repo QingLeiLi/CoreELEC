@@ -1,0 +1,64 @@
+Subject: [EXPERIMENTAL] match GXLX2 explicitly and trace selected decode firmware
+
+Base revisions are fixed in pins.json. Not hardware validated.
+
+diff --git a/drivers/common/chips/decoder_cpu_ver_info.c b/drivers/common/chips/decoder_cpu_ver_info.c
+--- a/drivers/common/chips/decoder_cpu_ver_info.c
++++ b/drivers/common/chips/decoder_cpu_ver_info.c
+@@ -67,6 +67,10 @@
+ };
+ 
+ static const struct of_device_id cpu_ver_of_match[] = {
++	{
++		.compatible = "amlogic, cpu-major-id-gxlx2",
++		.data = &cpu_ver_info[AM_MESON_CPU_MAJOR_ID_GXLX2 - MAJOR_ID_START],
++	},
+ 	{
+ 		.compatible = "amlogic, cpu-major-id-m8b",
+ 		.data = &cpu_ver_info[AM_MESON_CPU_MAJOR_ID_M8B - MAJOR_ID_START],
+diff --git a/drivers/common/chips/chips.c b/drivers/common/chips/chips.c
+--- a/drivers/common/chips/chips.c
++++ b/drivers/common/chips/chips.c
+@@ -72,6 +72,7 @@
+ 	{AM_MESON_CPU_MAJOR_ID_TXL, "txl"},
+ 	{AM_MESON_CPU_MAJOR_ID_TXLX, "txlx"},
+ 	{AM_MESON_CPU_MAJOR_ID_GXLX, "gxlx"},
++	{AM_MESON_CPU_MAJOR_ID_GXLX2, "gxlx2"},
+ 	{AM_MESON_CPU_MAJOR_ID_G12A, "g12a"},
+ 	{AM_MESON_CPU_MAJOR_ID_G12B, "g12b"},
+ 	{AM_MESON_CPU_MAJOR_ID_SM1, "sm1"},
+diff --git a/drivers/common/firmware/firmware_drv.c b/drivers/common/firmware/firmware_drv.c
+--- a/drivers/common/firmware/firmware_drv.c
++++ b/drivers/common/firmware/firmware_drv.c
+@@ -81,6 +81,15 @@
+ static u32 debug;
+ static u32 detail;
+ 
++/* Trace actual selections, without changing microcode compatibility policy. */
++static void trace_gxlx2_firmware(const struct fw_info_s *info)
++{
++	if (get_cpu_major_id() == AM_MESON_CPU_MAJOR_ID_GXLX2)
++		pr_info("e900-gxlx2: firmware format=%u name=%s cpu=%s source=%s\n",
++			info->format, info->name, info->data->head.cpu,
++			info->src_from);
++}
++
+ int get_firmware_data(unsigned int format, char *buf)
+ {
+ 	int data_len, ret = -1;
+@@ -109,6 +118,7 @@
+ 		if (format != info->format)
+ 			continue;
+ 
++		trace_gxlx2_firmware(info);
+ 		data_len = info->data->head.data_size;
+ 		memcpy(buf, info->data->data, data_len);
+ 		ret = data_len;
+@@ -150,6 +160,7 @@
+ 		if (strcmp(fw_name, info->name))
+ 			continue;
+ 
++		trace_gxlx2_firmware(info);
+ 		data_len = info->data->head.data_size;
+ 		memcpy(buf, info->data->data, data_len);
+ 		ret = data_len;

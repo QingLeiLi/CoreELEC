@@ -1,0 +1,7 @@
+{
+  "coreelec": "fc61125e8900ab0c2593a29b615980ed0cd5b939",
+  "linux": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+  "media_modules": "60561618f2bf154c1438d3c790b625ff01f215c3",
+  "base_image": "ubuntu:22.04",
+  "platform": "linux/amd64"
+}

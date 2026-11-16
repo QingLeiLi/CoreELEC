@@ -1,0 +1,15 @@
+Subject: [EXPERIMENTAL] register shared decode clocks for GXLX2 (capability audit pending)
+
+Base revisions are fixed in pins.json. Not hardware validated.
+
+diff --git a/drivers/common/media_clock/clk/clkg12.c b/drivers/common/media_clock/clk/clkg12.c
+--- a/drivers/common/media_clock/clk/clkg12.c
++++ b/drivers/common/media_clock/clk/clkg12.c
+@@ -1037,6 +1037,7 @@
+ 	AM_MESON_CPU_MAJOR_ID_TXL,\
+ 	AM_MESON_CPU_MAJOR_ID_TXLX,\
+ 	AM_MESON_CPU_MAJOR_ID_GXLX,\
++	AM_MESON_CPU_MAJOR_ID_GXLX2,\
+ 	AM_MESON_CPU_MAJOR_ID_G12A,\
+ 	AM_MESON_CPU_MAJOR_ID_G12B,\
+ 	AM_MESON_CPU_MAJOR_ID_SM1,\

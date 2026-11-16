@@ -1,0 +1,28 @@
+Subject: [EXPERIMENTAL] add the real GXLX2 CPU identity
+
+Base revisions are fixed in pins.json. Not hardware validated.
+
+diff --git a/include/linux/amlogic/cpu_version.h b/include/linux/amlogic/cpu_version.h
+--- a/include/linux/amlogic/cpu_version.h
++++ b/include/linux/amlogic/cpu_version.h
+@@ -34,6 +34,7 @@
+ 
+ #define MESON_CPU_MAJOR_ID_G12A		0x28
+ #define MESON_CPU_MAJOR_ID_G12B		0x29
++#define MESON_CPU_MAJOR_ID_GXLX2		0x2A
+ #define MESON_CPU_MAJOR_ID_SM1		0x2B
+ 
+ #define MESON_CPU_MAJOR_ID_TL1		0x2E
+@@ -150,6 +151,12 @@
+ 	return is_meson_gxl_cpu() && package_id_is(0xb0);
+ }
+ 
++/* GXLX2 is a distinct SoC; do not alias GXL/G12A globally. */
++static inline bool is_meson_gxlx2_cpu(void)
++{
++	return get_cpu_type() == MESON_CPU_MAJOR_ID_GXLX2;
++}
++
+ static inline bool is_meson_gxm_cpu(void)
+ {
+ 	return get_cpu_type() == MESON_CPU_MAJOR_ID_GXM;
