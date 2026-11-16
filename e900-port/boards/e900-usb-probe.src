@@ -1,0 +1,13 @@
+echo "E900 bootloader-only USB write probe; no CE kernel will be started"
+usb start
+for e9dev in 0 1 2 3; do
+  if fatload usb ${e9dev}:1 0x04000000 E9INPUT.TXT; then
+    if fatwrite usb ${e9dev}:1 0x04000000 E9PROBE.TXT ${filesize}; then
+      echo "E900 USB checkpoint written"
+    else
+      echo "E900 USB checkpoint unavailable"
+    fi
+  fi
+done
+sleep 12
+echo "E900 probe returns to the existing boot command"

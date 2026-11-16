@@ -52,3 +52,13 @@
 已验证 legacy header CRC、ramdisk 解压与原 CPIO 完全一致、源内核/DTB 哈希，以及六个文件在真实镜像副本中的 FAT 写入/回读。此验证不能代替实机启动。记录见 `tests/booti-kit-43886158436.json`。
 
 后续实测：booti 诊断入口仍约 5 秒复位，第二次安卓标出现后 U 盘不再闪烁；用户报告 SoC 异常烫手，测试时未安装散热片。当前暂停 CE 上电测试，先恢复原散热结构并建立 Android 温度基线。不能由此认定是过压、热关机、看门狗或单纯加载地址错误；切换 booti 并未验证成功。
+
+## 不接串口的引导器探针
+
+经 Android root ADB 只读核对，实际保存的 `bootcmd` 为 `run start_autoscript; run storeboot`，USB 分支遍历设备 0..3，从 0x01020000 执行 `s905_autoscript`。Android 的 ramoops 模块虽存在，但 mem_address/mem_size 均为 0，工作 Android DTB 也未定义 ramoops 保留区；当前 Android dmesg 无法代替上一次 CE 早期日志。
+
+`e900-usb-probe.src` 是仅运行引导器的第一阶段探针，**不调用任何 CE 内核**。它在包含 `E9INPUT.TXT` 的 USB FAT 分区尝试写出相同内容的 `E9PROBE.TXT`，等待 12 秒后返回原有启动命令。仅使用普通 RAM 缓冲，不访问 MMIO、不写 eMMC、不保存启动环境。归档由 `scripts/make-usb-probe.py <新输出目录> --mkimage <宿主mkimage>` 生成，marker 包含本次唯一 nonce。
+
+将四个文件 `E9INPUT.TXT`、`aml_autoscript`、`s905_autoscript`、`cfgload` 放入现有 COREELEC 根目录并覆盖三个脚本。先删除旧 E9PROBE.TXT（如存在）。预期返回 Android，随后核对 E9PROBE.TXT 是否与 E9INPUT.TXT 完全一致。若有该输出，证明该脚本执行且该 bootloader 能写 FAT；若没有，不能仅凭缺失文件区分脚本未执行和 fatwrite 不支持。若此无内核探针也约 5 秒复位，应先检查引导器阶段，不将复位归因于 CE 内核。
+
+探针的 legacy script CRC、四个文件在 CE 镜像副本中的 FAT 写入/回读已验证。实际 fatwrite 能力与引导结果仍待实机反馈；确认可写后，再增加分阶段检查点或复位后的 RAM 日志转存。
