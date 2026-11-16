@@ -34,8 +34,13 @@ def invalidated_packages(previous, state):
         packages.update(["linux", "media_modules-aml"])
     if any(name.startswith("media/") for name in changed):
         packages.add("media_modules-aml")
-    if previous.get("source_downloads") != state.get("source_downloads"):
-        packages.add("keyutils")
+    old_sources = {entry["package"]: entry for entry in previous.get("source_downloads", [])}
+    new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
+    changed_sources = {name for name in old_sources.keys() | new_sources.keys()
+                       if old_sources.get(name) != new_sources.get(name)}
+    if changed_sources - {"keyutils", "usbutils"}:
+        raise RuntimeError("Unexpected source download override")
+    packages.update(changed_sources)
     if previous.get("build_options") != state.get("build_options"):
         packages.update(["linux", "media_modules-aml"])
     return sorted(packages)
@@ -76,6 +81,31 @@ def keyutils_download_fix(repo):
     return relative, content, metadata
 
 
+def usbutils_download_fix(repo):
+    relative = "packages/sysutils/usbutils/package.mk"
+    original = (repo / relative).read_text()
+    digest = "a6a25ffdcf9103e38d7a44732aca17073f4e602b92e4ae55625231a82702e05b"
+    upstream = "http://kernel.org/pub/linux/utils/usb/usbutils/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+    mirror = "https://mirrors.edge.kernel.org/pub/linux/utils/usb/usbutils/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+    if ('PKG_VERSION="017"' not in original or f'PKG_SHA256="{digest}"' not in original):
+        raise RuntimeError("Unexpected usbutils version or checksum; refusing source URL override")
+    urls = re.findall(r'^PKG_URL="([^"]*)"$', original, re.M)
+    if len(urls) != 1 or urls[0] not in {upstream, mirror}:
+        raise RuntimeError("Unexpected usbutils URL; refusing to overwrite local changes")
+    source_name = 'PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"'
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if names and names != [source_name]:
+        raise RuntimeError("Unexpected usbutils source filename")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    metadata = dict(package="usbutils", version="017", archive_sha256=digest,
+                    url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -83,7 +113,7 @@ def install(repo, profile):
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
-    source_path, source_content, source_metadata = keyutils_download_fix(repo)
+    source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo)]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"
@@ -95,7 +125,8 @@ def install(repo, profile):
         destination = repo / dest_dir / ("9000-e900-" + source.name)
         entries.append(dict(source=relative, destination=str(destination.relative_to(repo)),
                             sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
-    state = dict(profile=profile, pins=PINS, patches=entries, source_downloads=[source_metadata],
+    state = dict(profile=profile, pins=PINS, patches=entries,
+                 source_downloads=[entry[2] for entry in source_fixes],
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
                  status="experimental-unvalidated")
     marker = repo / ".e900-profile.json"
@@ -126,7 +157,8 @@ def install(repo, profile):
         dest = repo / entry["destination"]
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes((PORT / "patches" / entry["source"]).read_bytes())
-    (repo / source_path).write_text(source_content)
+    for source_path, source_content, _ in source_fixes:
+        (repo / source_path).write_text(source_content)
     if option_content:
         option_destination.parent.mkdir(exist_ok=True)
         option_destination.write_text(option_content)

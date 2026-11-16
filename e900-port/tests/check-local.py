@@ -155,7 +155,8 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
     checkout = work / "CoreELEC"
     for relative in ["projects/Amlogic-ce/packages/linux/package.mk",
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
-                     "packages/sysutils/keyutils/package.mk"]:
+                     "packages/sysutils/keyutils/package.mk",
+                     "packages/sysutils/usbutils/package.mk"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)
@@ -166,6 +167,10 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         assert 'PKG_URL="https://deb.debian.org/debian/pool/main/k/keyutils/keyutils_${PKG_VERSION}.orig.tar.gz"' in keyutils
         assert keyutils.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"') == 1
         assert 'PKG_SHA256="a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"' in keyutils
+        usbutils = (checkout / "packages/sysutils/usbutils/package.mk").read_text()
+        assert 'PKG_URL="https://mirrors.edge.kernel.org/pub/linux/utils/usb/usbutils/${PKG_NAME}-${PKG_VERSION}.tar.xz"' in usbutils
+        assert usbutils.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"') == 1
+        assert 'PKG_SHA256="a6a25ffdcf9103e38d7a44732aca17073f4e602b92e4ae55625231a82702e05b"' in usbutils
         marker = json.loads((checkout / ".e900-profile.json").read_text())
         managed = checkout / marker["patches"][0]["destination"]
         managed.write_text(managed.read_text() + "\nlocal user edit\n")
@@ -213,5 +218,23 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
     else:
         raise AssertionError("Download override accepted an unexpected source version")
     print("PASS: keyutils mirror keeps the pinned checksum/cache filename and rejects version drift")
+    usbutils_path = checkout / "packages/sysutils/usbutils/package.mk"
+    saved_usbutils = usbutils_path.read_text()
+    for content, message in [
+        (saved_usbutils.replace('PKG_VERSION="017"', 'PKG_VERSION="018"'), "version or checksum"),
+        (saved_usbutils.replace('PKG_SHA256="a6', 'PKG_SHA256="b6'), "version or checksum"),
+        (saved_usbutils.replace("https://mirrors.edge.kernel.org/", "https://example.invalid/"), "URL"),
+        (saved_usbutils.replace('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.xz"',
+                               'PKG_SOURCE_NAME="changed.tar.xz"'), "filename"),
+    ]:
+        usbutils_path.write_text(content)
+        try:
+            installer.usbutils_download_fix(checkout)
+        except RuntimeError as exc:
+            assert message in str(exc)
+        else:
+            raise AssertionError("usbutils override accepted source drift")
+    usbutils_path.write_text(saved_usbutils)
+    print("PASS: usbutils mirror keeps the pinned checksum/cache filename and rejects source drift")
 
 print("HOST CHECKS PASSED. Full ARM64 kernel/module compilation and hardware tests remain pending.")
