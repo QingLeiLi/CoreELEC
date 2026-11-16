@@ -1,0 +1,37 @@
+{
+  "run_id": "43886158436",
+  "run_url": "https://github.com/QingLeiLi/CoreELEC/actions/runs/43886158436",
+  "commit": "c46ccbe6c203a39f6d5c914f4a62ce9fa718a93b",
+  "target": "image",
+  "profile": "decoder",
+  "last_action_exit_code": 0,
+  "usb_image_prepared": true,
+  "image": "target/CoreELEC-Amlogic-ng.arm-21.3-Omega_devel_20261116143110-E900V21C-USB-TEST.img.gz",
+  "image_sha256": "d84117dd2838a92b796c836d880cda2b06c46d523794ffd323e38ba2cfefb2ec",
+  "compressed_bytes": 171264320,
+  "raw_bytes": 574619648,
+  "artifact_hashes_verified": 35,
+  "board": {
+    "board": "gxlx2_p291_1g_e900v21c",
+    "sha256": "a6d547b1f883a42ce0fdab84946b18d01a7915b8e2cff4f2b1c8f371907708fd",
+    "bytes": 56995,
+    "checks": "passed",
+    "hardware_tested": false
+  },
+  "fat_readback": {
+    "dtb.img": "a6d547b1f883a42ce0fdab84946b18d01a7915b8e2cff4f2b1c8f371907708fd",
+    "aml_autoscript": "a577abd45de14655e57864e885e745b76d8217b4647e76b3251db8f6c5b51797",
+    "s905_autoscript": "a577abd45de14655e57864e885e745b76d8217b4647e76b3251db8f6c5b51797",
+    "cfgload": "a577abd45de14655e57864e885e745b76d8217b4647e76b3251db8f6c5b51797",
+    "kernel.img": "def12c3f399458293bbd091ef7f19ee7c5d252499ec18c4d35903a6fe760f0fe",
+    "SYSTEM": "2096dbc4fc8b8a1fb0a81cb73ebdc8af3fdd9c27ae086f31fd53a15c9c08f40e"
+  },
+  "host_codegen": {
+    "schema": 1,
+    "cflags": "-march=x86-64 -mtune=generic",
+    "upstream_optimize_sha256": "8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429",
+    "destination": "config/optimize",
+    "file_sha256": "7c6efeb905dc7e8b093d3eb8be1d0bdd3b32a4dea8ac75275ba50b45d8b3f517"
+  },
+  "hardware_tested": false
+}

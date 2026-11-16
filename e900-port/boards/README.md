@@ -35,4 +35,6 @@
 - 用固定内核版本自带 DTC 1.4.5 编译板级 DTS 通过。
 - DTB 大小 46328 字节，SHA-256：`3601a010bb14a506ad9a8e8dcc78cc716fa3549b87ec179ed317c4e3b6679af3`。
 - 属性检查通过；云端 DTC 的 phandle/布局可能不同，应以云端实际校验结果及其哈希为准。
-- 真实 mtools/mkimage 已通过合成系统文件的 FAT 打包/回读测试；完整 SYSTEM/Kodi 镜像构建与实机启动仍待下一轮执行。
+- 真实 mtools/mkimage 已通过合成系统文件的 FAT 打包/回读测试；任务 `43886158436` 已完成完整 SYSTEM/Kodi 镜像构建与独立 FAT 回读验证，实机启动仍待执行。
+
+云端实际镜像的 DTB 为 56995 字节，SHA-256 `a6d547b1f883a42ce0fdab84946b18d01a7915b8e2cff4f2b1c8f371907708fd`；属性检查通过，且与镜像 FAT 根目录 `dtb.img` 的独立回读结果一致。

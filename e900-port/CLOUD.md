@@ -2,12 +2,14 @@
 
 此工作流用于 CoreELEC 官方仓库的 fork。基线固定为 21.3-Omega 的 `fc61125e8900ab0c2593a29b615980ed0cd5b939`，本目录应放在 fork 根目录的 `e900-port/`；工作流放在 `.github/workflows/e900-coreelec.yml`。
 
-## 下一轮运行
+## 当前可测试产物与后续构建
 
-上一轮 `decoder/media` 已完成 Linux 4.9.269 与 28 个媒体模块编译。这次在 fork 的 Actions 页面选择 **E900 CoreELEC experimental build**：
+完整 USB 镜像已在 [任务 43886158436](https://github.com/QingLeiLi/CoreELEC/actions/runs/43886158436) 构建成功，使用提交 `c46ccbe`。板级 DTB 检查、镜像准备和回读步骤均成功，`usb_image_prepared=true`。下载产物后已独立核对 35 项文件哈希，以及 FAT 中的 `dtb.img`、三个入口脚本、`kernel.img` 和 `SYSTEM`。具体来源和哈希见 `tests/full-image-build-43886158436.json`。这代表完整镜像打包验证通过，实机启动、显示、音频及硬解仍待验证。
 
-- profile：`decoder`，包含五个候选补丁及本板 USB DTS。
-- target：`image`，构建完整 SYSTEM/Kodi 并准备 E900 外置 USB 测试镜像。
+后续有代码变动需要重建时，在 fork 的 Actions 页面选择 **E900 CoreELEC experimental build**：
+
+- profile：`decoder`。
+- target：`image`。
 
 先手动推送本地分支，再选择同一分支运行工作流。兼容的新宿主策略状态可以恢复；旧 `-march=native` 二进制状态已隔离，首次切换通用宿主策略需重建。后续增加内核 DTS 时仅清理并重编译内核及媒体模块，兼容工具链保留。SYSTEM/Kodi 等此前未构建的依赖仍需首次编译，可能明显长于单独的媒体模块增量构建。
 
@@ -64,7 +66,7 @@ GitHub 默认缓存容量为每仓库 10GB；本工作流不调整容量或计�
 
 ## 宿主 SIGILL 与可移植缓存
 
-任务 `43871738949` 的真正失败是 `gobject-introspection:host` 生成 `GLib-2.0.gir` 时出现 `Illegal instruction (core dumped)`。日志同时证实宿主参数使用 `-march=native`，GLib/Python/libffi/pcre2 则直接复用了先前任务的构建状态。此前缓存键没有区分 native CPU 指令集，这是一个明确的兼容隐患；仅凭现有日志尚不能证明 SIGILL 一定由它引起。
+任务 `43871738949` 的真正失败是 `gobject-introspection:host` 生成 `GLib-2.0.gir` 时出现 `Illegal instruction (core dumped)`。日志同时证实宿主参数使用 `-march=native`，GLib/Python/libffi/pcre2 则直接复用了先前任务的构建状态。此前缓存键没有区分 native CPU 指令集，这是一个明确的兼容隐患；仅凭该次日志尚不能证明 SIGILL 一定由它引起。后续通用宿主策略在任务 `43886158436` 完成完整镜像构建，未再触发该错误；这不等同于已经取得原崩溃的调用栈证据。
 
 安装器现在只把固定 `config/optimize` 中的宿主参数改为 `-march=x86-64 -mtune=generic`；目标 ARM 参数不变。固定原文件哈希并保护本地编辑。构建状态和 ccache 的兼容键包含新的宿主策略和 schema，旧 native 二进制不会通过 fallback 恢复；源码下载、已校验的归档及 deb 缓存继续复用。这次必须进行一次较大重编译，后续通用宿主二进制才可跨 runner CPU 共享。手动指向旧编译树时，安装器会拒绝混用并保留旧目录，不自动删除它。
 

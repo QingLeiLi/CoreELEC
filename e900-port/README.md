@@ -2,7 +2,7 @@
 
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。
 
-当前是实验性源码补丁和构建工具，不是已经适配完成的刷机包。已完成 Linux 4.9.269 内核与 28 个 AArch64 媒体模块的云端编译，并核对 31 项产物哈希；现已接入实验性板级 DTB，并用同版内核的 DTC 编译通过，尚未实机验证。工作区脚本不连接盒子、不写入磁盘设备，也不执行 eMMC 安装。
+当前是实验性源码补丁和构建工具，不是已经适配完成的刷机包。已在任务 `43886158436` 完成完整 USB 镜像构建，包含 Linux 4.9.269、媒体模块、SYSTEM/Kodi 和本板 DTB；本地核对 35 项产物哈希，并独立读回校验 FAT 中的六个关键文件。尚未实机验证。工作区脚本不连接盒子、不写入磁盘设备，也不执行 eMMC 安装。
 
 现在优先使用 [GitHub Actions 云编译](CLOUD.md)，无需本地 Docker。下面保留 Docker 入口作为本地备用方案。
 
@@ -28,7 +28,7 @@ docker pull --platform linux/amd64 ubuntu:22.04
 | `patches/media/0001-gxlx2-identity-and-firmware-trace.patch` | 补解码器 DT 匹配、型号名称、实际取用微码的日志 | 应用检查及云端模块编译通过，硬件未验证 |
 | `patches/linux/0002-gxlx2-opt-in-hdmi-transport.patch` | 用独立 DT 属性启用 DWC/TOP 直接访问，保留 GXL PHY 配置 | 本地映射/分流测试及云端内核编译通过，硬件未验证 |
 | `patches/media/0002-gxlx2-experimental-clock-registration.patch` | 将 GXLX2 加入现有共享时钟注册列表 | 入口已编译通过；能力分支尚未完整审查 |
-| `patches/linux/0003-e900v21c-usb-board.patch` | 注册 E900V21C 1GB USB 实验板级 DTS | 同版 DTC 编译和属性校验通过，云端重编译及硬件未验证 |
+| `patches/linux/0003-e900v21c-usb-board.patch` | 注册 E900V21C 1GB USB 实验板级 DTS | 本地及云端 DTB 编译和属性校验通过，硬件未验证 |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
@@ -38,7 +38,7 @@ HDMI 补丁没有增加或重排原有 `chip_type` 枚举。它要求真实 CPU 
 
 `decoder` 配置现包含 `boards/gxlx2_p291_1g_e900v21c.dts` 和对应 Makefile 补丁。它继承同版 CE 的 P212 1GB 定义，覆盖本板 CPU、USB、内存保留区、内部 RMII PHY 和 HDMI 访问方式；首轮禁用 eMMC、SD、SDIO、无线及未核对的 GPIO 外设。详细依据和限制见 [板级说明](boards/README.md)。旧 HDMI 片段仅保留作为参考。
 
-下一轮云编译选择 `profile=decoder`、`target=image`，生成完整 SYSTEM/Kodi 和 `*-E900V21C-USB-TEST.img.gz`。工作流会替换 USB 启动入口，读回核对 DTB、脚本、内核及 SYSTEM；只有 `build-metadata.json` 的 `usb_image_prepared=true` 才表示本次镜像打包校验成功。这不代表盒子已经启动或硬解可用。
+任务 `43886158436` 已用 `profile=decoder`、`target=image` 成功生成完整 SYSTEM/Kodi 和 `*-E900V21C-USB-TEST.img.gz`。工作流会替换 USB 启动入口，读回核对 DTB、脚本、内核及 SYSTEM；只有 `build-metadata.json` 的 `usb_image_prepared=true` 才表示本次镜像打包校验成功。这不代表盒子已经启动或硬解可用。
 
 ## Docker 好了之后的入口
 
@@ -107,6 +107,8 @@ ARM64 内核和媒体模块已完成编译验证；Docker 镜像、本板启动�
 python3 tests/check-usb-roundtrip.py <本板编译后DTB> <mtools所在目录> <mkimage路径>
 ```
 
-已使用 GNU mtools 4.0.43 和与 CE 同版本并应用其补丁的 U-Boot mkimage 2016.03，通过真实 FAT 写入/回读、镜像导出及失败重试清理检查。该测试的内核/SYSTEM 是合成占位文件，只验证打包链路；实际 CoreELEC SYSTEM、内核启动及硬件仍需后续验证。
+已使用 GNU mtools 4.0.43 和与 CE 同版本并应用其补丁的 U-Boot mkimage 2016.03，通过真实 FAT 写入/回读、镜像导出及失败重试清理检查。该测试的内核/SYSTEM 是合成占位文件，只验证打包链路；实际 CoreELEC 镜像也已通过独立 FAT 回读校验；内核启动及硬件仍需后续验证。
 
 宿主工具现固定使用通用 x86-64 参数，以支持不同 runner CPU 共享后续缓存；旧 native 构建状态和 ccache 已隔离，首次切换需较大重编译。详见 [宿主 SIGILL 与可移植缓存](CLOUD.md#宿主-sigill-与可移植缓存)。这属于宿主构建策略调整，目标 ARM 指令集配置未变化。
+
+首次完整 USB 镜像的来源、哈希和验证结果见 [构建记录](tests/full-image-build-43886158436.json)。首次上机只写外置 U 盘，按 USB 启动方式测试，使用有线网络；不进行 eMMC 安装、BL301 注入或系统更新。
