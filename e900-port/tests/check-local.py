@@ -154,13 +154,18 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
     spec.loader.exec_module(installer)
     checkout = work / "CoreELEC"
     for relative in ["projects/Amlogic-ce/packages/linux/package.mk",
-                     "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk"]:
+                     "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
+                     "packages/sysutils/keyutils/package.mk"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)
     with mock.patch.object(installer.subprocess, "check_output", return_value=installer.PINS["coreelec"]):
         installer.install(checkout, "identify")
         installer.install(checkout, "identify")
+        keyutils = (checkout / "packages/sysutils/keyutils/package.mk").read_text()
+        assert 'PKG_URL="https://deb.debian.org/debian/pool/main/k/keyutils/keyutils_${PKG_VERSION}.orig.tar.gz"' in keyutils
+        assert keyutils.count('PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"') == 1
+        assert 'PKG_SHA256="a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"' in keyutils
         marker = json.loads((checkout / ".e900-profile.json").read_text())
         managed = checkout / marker["patches"][0]["destination"]
         managed.write_text(managed.read_text() + "\nlocal user edit\n")
@@ -178,5 +183,14 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         else:
             raise AssertionError("Unpinned checkout accepted")
     print("PASS: installer is repeatable and refuses local edits/unpinned revisions")
+    bad_source = checkout / "packages/sysutils/keyutils/package.mk"
+    bad_source.write_text(bad_source.read_text().replace('PKG_VERSION="1.6.3"', 'PKG_VERSION="0.0"'))
+    try:
+        installer.keyutils_download_fix(checkout)
+    except RuntimeError as exc:
+        assert "version or checksum" in str(exc)
+    else:
+        raise AssertionError("Download override accepted an unexpected source version")
+    print("PASS: keyutils mirror keeps the pinned checksum/cache filename and rejects version drift")
 
 print("HOST CHECKS PASSED. Full ARM64 kernel/module compilation and hardware tests remain pending.")

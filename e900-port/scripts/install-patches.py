@@ -30,6 +30,31 @@ def validate_packages(repo):
             raise RuntimeError(f"Unexpected package revision: {relative}")
 
 
+def keyutils_download_fix(repo):
+    relative = "packages/sysutils/keyutils/package.mk"
+    original = (repo / relative).read_text()
+    digest = "a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"
+    upstream = "https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/snapshot/${PKG_NAME}-${PKG_VERSION}.tar.gz"
+    mirror = "https://deb.debian.org/debian/pool/main/k/keyutils/keyutils_${PKG_VERSION}.orig.tar.gz"
+    source_name = 'PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"'
+    if ('PKG_VERSION="1.6.3"' not in original or f'PKG_SHA256="{digest}"' not in original):
+        raise RuntimeError("Unexpected keyutils version or checksum; refusing source URL override")
+    urls = re.findall(r'^PKG_URL="([^"]*)"$', original, re.M)
+    if len(urls) != 1 or urls[0] not in {upstream, mirror}:
+        raise RuntimeError("Unexpected keyutils URL; refusing to overwrite local changes")
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if names and names != [source_name]:
+        raise RuntimeError("Unexpected keyutils source filename")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    metadata = dict(package="keyutils", version="1.6.3", archive_sha256=digest,
+                    url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -37,6 +62,7 @@ def install(repo, profile):
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
+    source_path, source_content, source_metadata = keyutils_download_fix(repo)
     entries = []
     for relative in PROFILES[profile]:
         source = PORT / "patches" / relative
@@ -44,7 +70,7 @@ def install(repo, profile):
         destination = repo / dest_dir / ("9000-e900-" + source.name)
         entries.append(dict(source=relative, destination=str(destination.relative_to(repo)),
                             sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
-    state = dict(profile=profile, pins=PINS, patches=entries,
+    state = dict(profile=profile, pins=PINS, patches=entries, source_downloads=[source_metadata],
                  status="uncompiled-unvalidated-board-dtb-not-integrated")
     marker = repo / ".e900-profile.json"
     previous = json.loads(marker.read_text()) if marker.exists() else None
@@ -67,6 +93,7 @@ def install(repo, profile):
         dest = repo / entry["destination"]
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes((PORT / "patches" / entry["source"]).read_bytes())
+    (repo / source_path).write_text(source_content)
     marker.write_text(json.dumps(state, indent=2) + "\n")
     print(f"Profile {profile}: {len(entries)} candidate patches installed; no board DTB installed.")
 
