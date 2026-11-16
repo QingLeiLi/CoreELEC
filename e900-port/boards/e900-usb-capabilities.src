@@ -1,0 +1,11 @@
+echo "E900 capability probe: return results through Android bootargs"
+setenv e9_booti absent
+setenv e9_bootm absent
+setenv e9_fatwrite absent
+setenv e9_fdt absent
+if help booti; then setenv e9_booti present; fi
+if help bootm; then setenv e9_bootm present; fi
+if help fatwrite; then setenv e9_fatwrite present; fi
+if help fdt; then setenv e9_fdt present; fi
+setenv bootargs "${bootargs} e9probe=cap02 e9_booti=${e9_booti} e9_bootm=${e9_bootm} e9_fatwrite=${e9_fatwrite} e9_fdt=${e9_fdt}"
+echo "E900 capability probe complete; continuing existing boot command"
