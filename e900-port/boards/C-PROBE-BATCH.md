@@ -49,3 +49,26 @@ No cloud build is needed. The four-stage controller and the previous three-
 stage controller pass the same cold/warm/no-repeat/write-failure tests, with
 an additional wrong-stage magic rejection case for batch13. Deployment hashes
 must be verified before the explicitly authorized ADB reboot.
+
+## Actual binary decision tree (bisect14)
+
+`--late --bisect` supplies four ordered candidates between rest_init and the
+first init execution attempt: kernel_init_freeable entry; before smp_init;
+after main initcalls before opening console; before userspace exec attempt.
+It starts with the second candidate, the middle boundary of this four-point
+partition. PASS selects the upper subinterval; absence of the expected marker
+selects the lower subinterval. It never runs all four in order. Maximum three
+physical attempts narrow the result to adjacent candidate boundaries.
+
+Decision tree (candidate indices 0..3): start 1; 1 PASS -> 2, 1 FAIL -> 0;
+2 PASS -> 3, 2 FAIL -> finish; either result at 0 or 3 finishes. Terminal
+PASS/FAIL records suppress repeat launches. All selected hooks and their
+original instruction words are pinned. The latest durable outcome plus this
+decision tree identifies the narrowed interval; host archives preserve the
+preceding evidence before deploying another test.
+
+This is a reachability search, not proof of fault causality. FAIL means the
+expected retained marker was not observed. Reset, RAM retention, physical
+relocation conventions and probe failure remain possible explanations.
+A terminal all-PASS path reaches the first userspace exec attempt; it does
+not prove /init actually executes or that a diagnostic initramfs is valid.

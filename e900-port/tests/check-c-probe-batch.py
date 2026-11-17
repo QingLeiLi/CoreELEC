@@ -30,6 +30,22 @@ cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f
           ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
 if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
 for ledger,ram,mode,expected in cases:
+ if meta.get('batch')=='bisect14': break
  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
+if meta.get('batch')=='bisect14':
+ cases=[('old','0','ok','BOOT E9B1ARM.BIN'),
+        ('E9B1ARM.BIN','e9140002','ok','BOOT E9B2ARM.BIN'),
+        ('E9B1ARM.BIN','0','ok','BOOT E9B0ARM.BIN'),
+        ('E9B2ARM.BIN','e9140003','ok','BOOT E9B3ARM.BIN'),
+        ('E9B2ARM.BIN','0','ok','END E9B2FAIL.BIN'),
+        ('E9B0ARM.BIN','e9140001','ok','END E9B0PASS.BIN'),
+        ('E9B0ARM.BIN','0','ok','END E9B0FAIL.BIN'),
+        ('E9B3ARM.BIN','e9140004','ok','END E9B3PASS.BIN'),
+        ('E9B3ARM.BIN','0','ok','END E9B3FAIL.BIN'),
+        ('old','0','fail','END old')]
+ for ledger,ram,mode,expected in cases:
+  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
+  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
+ print('PASS: middle-first binary branches and all terminal intervals')
 print('PASS:',n,'stage progression, final pass, failed marker, no retry and write failure')
