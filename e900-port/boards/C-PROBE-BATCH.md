@@ -172,3 +172,14 @@ The root is the second milestone. Pinned disassembly checks each hook and the
 old hooks are restored before installing the new ones. Early error branches
 can bypass later milestones, so absence remains inconclusive without further
 operation-specific confirmation. No hardware setup is bypassed or modified.
+
+## IRQ/RDMA/VPU clock split (bisect22)
+
+bisect21 observed CMA completion but not later DT/clock-property completion.
+`--di-probe --di-clocks` places candidates after IRQ mapping, after RDMA
+registration, immediately before VPU clkb enable, and after that enable path.
+The second candidate is the middle-first root. Source di_get_vpu_clkb logs an
+error for a failed clk_get("vpu_clkb_composite"), while its caller still uses
+that pointer. This is a hypothesis only; the probe does not alter clock calls,
+CPU identity, driver matching or DT properties. Old hook instructions are
+restored and all image changes confined to new hooks/reset payloads.
