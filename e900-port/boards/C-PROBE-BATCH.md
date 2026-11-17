@@ -160,3 +160,15 @@ When updating from bisect19, restore the old loop comparison at 0x12b0cf4,
 install one new four-byte branch at the selected probe site and replace the
 128-byte reset payload. Verify old/full new hashes and preserve the preceding
 ledger. No initcall is skipped or driver disabled in this test.
+
+## DI setup subregion (bisect21)
+
+bisect20 passed after reserved-memory initialization and did not observe the
+pre-di_hw_init marker. `--di-probe --di-setup` selects four stable milestones:
+CMA processing complete before IRQ mapping; DT/clock-property processing
+complete before canvas setup; canvas complete before local metadata allocation;
+sysfs and nr_drv_init complete before buffer arithmetic and IRQ registration.
+The root is the second milestone. Pinned disassembly checks each hook and the
+old hooks are restored before installing the new ones. Early error branches
+can bypass later milestones, so absence remains inconclusive without further
+operation-specific confirmation. No hardware setup is bypassed or modified.
