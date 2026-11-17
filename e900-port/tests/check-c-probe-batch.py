@@ -16,6 +16,20 @@ printf 'END %s %s\n' "$ledger" "$bootargs"
 '''
 # Source output redirected by dot would hide BOOT too; emit on stderr.
 h=h.replace("printf 'BOOT %s\\n' \"$ledger\";", "printf 'BOOT %s\\n' \"$ledger\" >&2;")
-for ledger,ram,mode,expected in [('old','0','ok','BOOT E9B0ARM.BIN'),('E9B0ARM.BIN','e9120001','ok','BOOT E9B1ARM.BIN'),('E9B1ARM.BIN','e9120001','ok','BOOT E9B2ARM.BIN'),('E9B2ARM.BIN','e9120001','ok','END E9B2PASS.BIN'),('E9B1ARM.BIN','0','ok','END E9B1FAIL.BIN'),('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]:
- p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True);assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
-print('PASS: cold launch, automatic progression, final success, failed marker, no retry, write failure')
+import json
+meta=json.loads((kit/'batch-provenance.json').read_text())
+late=meta.get('batch')=='batch13'
+n=len(meta['stages'])
+cases=[]
+for i in range(n):
+    cases.append(('old' if i==0 else f'E9B{i-1}ARM.BIN',
+                  '0' if i==0 else f'{0xe9130000+i:x}' if late else 'e9120001',
+                  'ok',f'BOOT E9B{i}ARM.BIN'))
+cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f'END E9B{n-1}PASS.BIN'),
+          ('E9B1ARM.BIN','0','ok','END E9B1FAIL.BIN'),
+          ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
+if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
+for ledger,ram,mode,expected in cases:
+ p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
+ assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
+print('PASS:',n,'stage progression, final pass, failed marker, no retry and write failure')
