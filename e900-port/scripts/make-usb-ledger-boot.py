@@ -21,7 +21,14 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
     template = (PORT / "boards/e900-usb-write-probe.src.in").read_text()
     script_source = PORT / "boards" / ("e900-usb-entry-trace.src" if mode == "entry" else "e900-usb-entry-reset.src")
     source = script_source.read_text().replace("e9probe=entry05", "e9probe=ledger07")
-    assert profile in {"reset08", "premmu09", "cstart11", "clock23", "guard24"}
+    assert profile in {"reset08", "premmu09", "cstart11", "clock23", "guard24", "ce25"}
+    if mode == "reset" and profile == "ce25":
+        source = source.replace("reset08", "ce25").replace("e9080000", "e9250000").replace("e9080001", "e9250001")
+        source = source.replace("e900-Image-reset", "e900-Image-guard").replace("e900-uInitrd", "e900-uInitrd-full").replace("e900-trace.dtb", "e900-full.dtb")
+        source = source.replace('setenv bootargs "${e9_saved_bootargs} e9probe=ce25_stub"',
+            'setenv bootargs "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 ssh panic=10 loglevel=8 ignore_loglevel initcall_debug e9probe=ce25 "')
+        source = source.replace('  if test "${e9_stage}" = "e9250001"; then',
+            '  if itest.l *0x074ff000 == 0xe9250002; then setenv e9_stage e9250001; fi\n  if test "${e9_stage}" = "e9250001"; then')
     if mode == "reset" and profile == "guard24":
         source = source.replace("reset08", "guard24").replace("e9080000", "e9240000").replace("e9080001", "e9100002")
         source = source.replace("e900-Image-reset", "e900-Image-guard").replace("e900-uInitrd", "e900-uInitrd-user")
@@ -150,6 +157,6 @@ if __name__ == "__main__":
     parser.add_argument("destination", type=pathlib.Path)
     parser.add_argument("--mkimage", required=True, type=pathlib.Path)
     parser.add_argument("--mode", choices=["entry", "reset"], default="entry")
-    parser.add_argument("--profile", choices=["reset08", "premmu09", "cstart11", "clock23", "guard24"], default="reset08")
+    parser.add_argument("--profile", choices=["reset08", "premmu09", "cstart11", "clock23", "guard24", "ce25"], default="reset08")
     args = parser.parse_args()
     make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode, args.profile)

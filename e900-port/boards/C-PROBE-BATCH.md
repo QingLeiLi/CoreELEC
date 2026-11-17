@@ -227,3 +227,31 @@ range guard, NULL/ERR boundary vectors, valid-call return address, full Image
 edit bounds, initramfs proof contents and actual recovery shell. No source
 build, eMMC write or bootloader/env modification is involved. Hardware trial
 outcome is pending; a later failure may expose additional unsupported paths.
+
+## Normal CE init and framebuffer reservation (ce25)
+
+Guard24 reached diagnostic PID1 and exported a log with di_probe:ok. The log
+shows DI CMA allocated 0x3d800000..0x40000000 before the framebuffer allocator
+requested 0x3dc00000..0x40000000 and failed. make-full-boot-trial.py changes
+only the framebuffer reservation to a fixed reg with reusable shared-DMA
+semantics, removing its size/alignment/alloc-ranges properties. Fixed reg
+regions are reserved before dynamic CMA allocation; the DI allocator can
+choose a different range. Other board properties stay unchanged except the
+existing reserved trace area's compatible value, as checked by FDT decoding.
+This hardware trial still needs to confirm CMA accepts the fixed framebuffer.
+
+The same generator starts from the pinned original CE initramfs and changes
+only /init: add a RAM entry marker, export the before/after boot-step checkpoints
+to /flash once mounted, and record before_switch_root plus a second RAM marker.
+All other original entries are preserved. This is the normal CE flow, not the
+diagnostic PID1 that immediately reboots. It uses the successful clock-guard
+kernel, full CE boot/disk labels and HDMI bootargs. It does not enable eMMC.
+
+The ce25 reset ledger launches the attempt once and falls back to Android only
+if the bootloader runs again. Successful CE does not run Android ADB and will
+remain running. Diagnose with HDMI/SSH and E9BOOT.TXT/E9CELOG.TXT/E9CECMD.TXT;
+on a stall use established USB-removed Android recovery, reinsert the drive,
+and preserve logs. No automatic reboot is injected into normal CE userspace.
+Host checks cover CPIO preservation/CRC, shell syntax, FDT changes, cold and
+both retained stage markers, correct labels and unchanged disabled eMMC/SDIO.
+Complete Kodi/HDMI playback remains unvalidated.
