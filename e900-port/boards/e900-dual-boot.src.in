@@ -1,0 +1,103 @@
+echo "E900 dual10: MMU switch, then diagnostic userspace; persistent no-repeat guards"
+setenv e9_saved_bootargs "${bootargs}"
+setenv e9_log passed
+setenv e9_p1 unknown
+setenv e9_p2 unknown
+setenv e9_mmu no
+usb start
+if usb dev 0; then
+  if fatload usb 0:1 0x04000000 E9LOG.TXT; then
+    if fatload usb 0:1 0x04001000 E9P1FLAG.BIN; then
+      setenv e9_p1 no
+      if cmp.b 0x04000000 0x04001000 0x40; then setenv e9_p1 yes; fi
+    fi
+    if fatload usb 0:1 0x04001000 E9P2FLAG.BIN; then
+      setenv e9_p2 no
+      if cmp.b 0x04000000 0x04001000 0x40; then setenv e9_p2 yes; fi
+    fi
+  fi
+fi
+if test "${e9_p1}" != "unknown"; then
+  if test "${e9_p2}" != "unknown"; then
+    if fatload usb 0:1 0x04000000 E9MMU.TXT; then
+      if fatload usb 0:1 0x04001000 E9MPASS.BIN; then
+        if cmp.b 0x04000000 0x04001000 0x200; then setenv e9_mmu yes; fi
+      fi
+    fi
+    if test "${e9_mmu}" = "no"; then
+      if test "${e9_p1}" = "yes"; then
+        @CHECKPOINT P1 before_MMU_marker_read@
+        setenv e9_stage unknown
+        if itest.l *0x074ff000 == 0xe9100001; then
+          setenv e9_stage e9100001
+        else
+          if setexpr e9_stage *0x074ff000 + 0; then echo "MMU result read"; fi
+        fi
+        if test "${e9_stage}" = "e9100001"; then
+          @MMU_PROOF@
+          if test "${e9_log}" = "passed"; then setenv e9_mmu yes; fi
+        else
+          @CHECKPOINT P1 MMU_attempt_not_repeated_marker_unconfirmed@
+        fi
+      else
+        @CHECKPOINT P1 before_load_MMU_probe@
+        if fatload usb 0:1 0x11000000 e900-Image-mmu; then
+          if fatload usb 0:1 0x15000000 e900-uInitrd; then
+            if fatload usb 0:1 0x18000000 e900-trace.dtb; then
+              if fatload usb 0:1 0x074ff000 E9MSEED.BIN; then
+                @CHECKPOINT P1 before_MMU_booti@
+                if test "${e9_log}" = "passed"; then
+                  setenv bootargs "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 panic=10 loglevel=8 ignore_loglevel"
+                  booti 0x11000000 0x15000000 0x18000000
+                  @CHECKPOINT P1 MMU_booti_returned@
+                fi
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+    if test "${e9_mmu}" = "yes"; then
+      if test "${e9_p2}" = "yes"; then
+        setenv e9_user no
+        if fatload usb 0:1 0x04000000 E9USER.TXT; then
+          if fatload usb 0:1 0x04001000 E9UPASS.BIN; then
+            if cmp.b 0x04000000 0x04001000 0x200; then setenv e9_user yes; fi
+          fi
+        fi
+        if test "${e9_user}" = "yes"; then
+          @CHECKPOINT P2 userspace_file_proof_observed@
+        else
+          setenv e9_stage unknown
+          if itest.l *0x074ff000 == 0xe9100002; then
+            setenv e9_stage e9100002
+          else
+            if setexpr e9_stage *0x074ff000 + 0; then echo "Userspace result read"; fi
+          fi
+          if test "${e9_stage}" = "e9100002"; then
+            @CHECKPOINT P2 userspace_RAM_proof_USB_file_unavailable@
+          else
+            @CHECKPOINT P2 userspace_attempt_not_repeated_entry_unconfirmed@
+          fi
+        fi
+      else
+        @CHECKPOINT P2 MMU_proven_before_userspace_probe@
+        if fatload usb 0:1 0x11000000 e900-Image; then
+          if fatload usb 0:1 0x15000000 e900-uInitrd-user; then
+            if fatload usb 0:1 0x18000000 e900-trace.dtb; then
+              if fatload usb 0:1 0x074ff000 E9USEED.BIN; then
+                @CHECKPOINT P2 before_userspace_booti_MMU_already_proven@
+                if test "${e9_log}" = "passed"; then
+                  setenv bootargs "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 panic=10 loglevel=8 ignore_loglevel"
+                  booti 0x11000000 0x15000000 0x18000000
+                  @CHECKPOINT P2 userspace_booti_returned@
+                fi
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  fi
+fi
+setenv bootargs "${e9_saved_bootargs} e9probe=dual10 e9_mmu=${e9_mmu} e9_log=${e9_log}"

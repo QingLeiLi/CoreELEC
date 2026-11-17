@@ -70,8 +70,9 @@ class FatDisk:
             yield self.read(self.cluster_lba(cluster), self.spc)
             cluster = self.next_cluster(cluster)
 
-    def evidence_slot(self, expected):
+    def evidence_slot(self, expected, shortname=b"E9LOG   TXT"):
         assert len(expected) == 512
+        assert len(shortname) == 11 and all(chr(c).isalnum() or c == 32 for c in shortname)
         entries = []
         finished = False
         for chunk in self.directory():
@@ -82,7 +83,7 @@ class FatDisk:
                     break
                 if entry[0] == 0xe5 or entry[11] & 0x18 or entry[11] == 0x0f:
                     continue
-                if entry[:11] == b"E9LOG   TXT":
+                if entry[:11] == shortname:
                     entries.append(entry)
             if finished:
                 break
@@ -98,7 +99,8 @@ class FatDisk:
         assert self.read(lba, 1) == expected, "Raw data does not match the allocated evidence file"
         return dict(lba=lba, cluster=cluster, partition_start=self.part,
                     partition_sectors=self.length, fat_bits=self.bits, volume_id=self.volume_id,
-                    file="E9LOG.TXT", file_bytes=512, write_sectors=1)
+                    file=shortname[:8].decode().rstrip() + "." + shortname[8:].decode().rstrip(),
+                    file_bytes=512, write_sectors=1)
 
 
 def prepare(serial, destination, mkimage):
