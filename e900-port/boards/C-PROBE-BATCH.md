@@ -124,3 +124,10 @@ scratch payload. Deployment may verify all old full-file hashes, upload four
 hashes, and only then replace script aliases. This is not raw block writing.
 Keep normal kernel/initrd/DTB files and preserve the preceding evidence first.
 No new reboot is allowed until all records and scripts also pass full hashes.
+
+bisect17 returned 281-completed PASS and no 309-completed marker. The next
+window `281:309 --run-id 18` defines counts 288, 295, 302, 305 and starts at
+295. `--run-id` assigns a distinct profile prefix and marker magic to avoid
+confusing an earlier pass with the new window. Run IDs must not be reused for
+a different window while old on-device state remains. Image deltas are still
+restricted to the existing 128-byte payload and fully hash checked.

@@ -16,7 +16,7 @@ STAGES = [(0x12b07c8, 0xa9bb7bfd, "C_entry"),
           (0x12b082c, 0x910123e0, "before_setup_arch")]
 
 
-def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False, functions=False, window=None):
+def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False, functions=False, window=None, run_id=17):
     def load(name, filename):
         s = importlib.util.spec_from_file_location(name, PORT / "scripts" / filename)
         m = importlib.util.module_from_spec(s); s.loader.exec_module(m)
@@ -82,7 +82,9 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
         upper=(middle+high)//2
         function_counts=[(low+middle)//2,middle,upper,(upper+high)//2]
         function_levels=[6]*4
-        batch="bisect17"
+        assert 17<=run_id<=99
+        batch=f"bisect{run_id}"
+        window_magic=0xe9000001 | (int(str(run_id),16)<<16)
         stages=[(0x12b0cf4,0xeb00033f,f'device_first_{count}_completed') for count in function_counts]
     for index, (hook, expected, label) in enumerate(stages):
         assert struct.unpack_from("<I", data, hook)[0] == expected
@@ -97,7 +99,7 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
                 if initcalls and index >= 2:
                     extra = [f"-DE9_LEVEL_PREFIX={4 if index == 2 else 6}",
                              f"-DE9_RETURN_BRANCH={hex(trace.branch(0xcf135c, 0x12b0d14))}"]
-                subprocess.run(["clang", "-target", "aarch64-none-elf", f"-DE9_LATE_MAGIC={hex((0xe9170001 if window else 0xe9160001 if functions else 0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+index)}", *extra, "-c", str(PORT / "boards/e900-late-reset.S"), "-o", str(obj)], check=True)
+                subprocess.run(["clang", "-target", "aarch64-none-elf", f"-DE9_LATE_MAGIC={hex((window_magic if window else 0xe9160001 if functions else 0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+index)}", *extra, "-c", str(PORT / "boards/e900-late-reset.S"), "-o", str(obj)], check=True)
                 payload = reset.text_section(obj.read_bytes())
                 if functions:
                     assert struct.unpack_from('<I',payload,24)[0]==0xeb00033f
@@ -175,7 +177,7 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
         # stage has its own magic; an earlier result cannot satisfy the next.
         for i in range(len(stages)):
             old = '    if itest.l *0x074ff000 == 0xe9120001; then setenv e9_stage e9120001; else\n      if setexpr e9_stage *0x074ff000 + 0; then echo "batch marker read"; fi\n    fi'
-            magic = hex((0xe9170001 if window else 0xe9160001 if functions else 0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+i)
+            magic = hex((window_magic if window else 0xe9160001 if functions else 0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+i)
             new = f'    if itest.l *0x028f6018 == {magic}; then setenv e9_stage e9120001; else\n      if itest.l *0x029f6018 == {magic}; then setenv e9_stage e9120001; fi\n    fi'
             assert old in source
             source = source.replace(old,new,1)
@@ -190,5 +192,5 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('original',type=pathlib.Path);p.add_argument('slot',type=pathlib.Path);p.add_argument('output',type=pathlib.Path)
-    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');p.add_argument('--functions',action='store_true');p.add_argument('--window');a=p.parse_args()
-    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls,a.functions,a.window)
+    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');p.add_argument('--functions',action='store_true');p.add_argument('--window');p.add_argument('--run-id',type=int,default=17);a=p.parse_args()
+    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls,a.functions,a.window,a.run_id)
