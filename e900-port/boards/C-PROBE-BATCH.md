@@ -90,3 +90,22 @@ unchanged. Source and pinned disassembly identify the inline loop. Tests
 check both conditional prefixes, return destinations, decision branches,
 wrong marker handling, terminal states and failed writes. As before, absence
 of a marker is not definitive proof of a kernel fault.
+
+## Function-count binary split (bisect16)
+
+bisect15 passed levels 0..5. Recovered RELA entries from the pinned Image
+identify the level boundary table at file offset 0x1312c18, with 400 level-6
+functions and 51 level-7 functions. These counts are asserted by the builder.
+`--late --bisect --functions` defines candidates after 112, 225, 338 device
+initcalls, and after all device plus 25 late initcalls. The same middle-first
+tree selects the needed candidates rather than running them sequentially.
+
+At the loop's original `cmp x25,x0` (0x12b0cf4), the conditional payload checks
+x21 (level), then computes x25 minus the table's start pointer loaded via x22.
+Only the matching level and byte count trigger a reset. Non-target iterations
+restore the original comparison and return to b.hs at 0x12b0cf8. The payload
+uses x16 only as a caller-clobbered temporary; it preserves x0/x21/x22/x25 and
+the loop's condition flags on the normal path. The marker VA adjustment
+accounts for the extra 32-byte conditional prefix. Pinned instruction words,
+branch destinations, counter operands and full generated-controller branches
+are tested. These tests do not establish hardware success or fault causality.

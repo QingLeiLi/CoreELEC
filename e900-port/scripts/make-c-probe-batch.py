@@ -16,7 +16,7 @@ STAGES = [(0x12b07c8, 0xa9bb7bfd, "C_entry"),
           (0x12b082c, 0x910123e0, "before_setup_arch")]
 
 
-def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False):
+def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False, functions=False):
     def load(name, filename):
         s = importlib.util.spec_from_file_location(name, PORT / "scripts" / filename)
         m = importlib.util.module_from_spec(s); s.loader.exec_module(m)
@@ -60,17 +60,36 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
                   (0x12b0d10, 0xf10022bf, "initcall_levels_0_through_3_completed"),
                   (0x12b0d10, 0xf10022bf, "initcall_levels_0_through_5_completed")]
     records = []
+    if functions:
+        assert late and bisect and not initcalls
+        batch = "bisect16"
+        # Validate the relocated level table rather than trusting source counts.
+        rel = {target-0xffffff8009080000: value-0xffffff8009080000
+               for target,kind,value in (struct.unpack_from('<QQQ', data, p)
+                  for p in range(0x13a9d10,0x1868128,24)) if kind==1027}
+        boundaries=[rel[0x1312c18+i*8] for i in range(9)]
+        assert [(boundaries[i+1]-boundaries[i])//8 for i in [6,7]]==[400,51]
+        stages=[(0x12b0cf4,0xeb00033f,label) for label in
+                ['device_first_112_completed','device_first_225_completed',
+                 'device_first_338_completed','device_all_and_late_first_25_completed']]
     for index, (hook, expected, label) in enumerate(stages):
         assert struct.unpack_from("<I", data, hook)[0] == expected
         if late:
             with tempfile.TemporaryDirectory(prefix="e900-late-stub-") as t:
                 obj = pathlib.Path(t) / "stub.o"
                 extra = []
+                if functions:
+                    extra=[f'-DE9_FN_LEVEL={6 if index<3 else 7}',
+                           f'-DE9_FN_BYTES={(112,225,338,25)[index]*8}',
+                           f'-DE9_RETURN_BRANCH={hex(trace.branch(0xcf136c,0x12b0cf8))}']
                 if initcalls and index >= 2:
                     extra = [f"-DE9_LEVEL_PREFIX={4 if index == 2 else 6}",
                              f"-DE9_RETURN_BRANCH={hex(trace.branch(0xcf135c, 0x12b0d14))}"]
-                subprocess.run(["clang", "-target", "aarch64-none-elf", f"-DE9_LATE_MAGIC={hex((0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+index)}", *extra, "-c", str(PORT / "boards/e900-late-reset.S"), "-o", str(obj)], check=True)
+                subprocess.run(["clang", "-target", "aarch64-none-elf", f"-DE9_LATE_MAGIC={hex((0xe9160001 if functions else 0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+index)}", *extra, "-c", str(PORT / "boards/e900-late-reset.S"), "-o", str(obj)], check=True)
                 payload = reset.text_section(obj.read_bytes())
+                if functions:
+                    assert struct.unpack_from('<I',payload,24)[0]==0xeb00033f
+                    assert trace.branch_target(0xcf136c,struct.unpack_from('<I',payload,28)[0])==0x12b0cf8
                 if initcalls and index >= 2:
                     assert struct.unpack_from("<4I", payload) == (0xf10002bf | ((4 if index==2 else 6)<<10), 0x54000060, 0xf10022bf, trace.branch(0xcf135c,0x12b0d14))
             assert len(payload) <= 128
@@ -144,7 +163,7 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
         # stage has its own magic; an earlier result cannot satisfy the next.
         for i in range(len(stages)):
             old = '    if itest.l *0x074ff000 == 0xe9120001; then setenv e9_stage e9120001; else\n      if setexpr e9_stage *0x074ff000 + 0; then echo "batch marker read"; fi\n    fi'
-            magic = hex((0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+i)
+            magic = hex((0xe9160001 if functions else 0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+i)
             new = f'    if itest.l *0x028f6018 == {magic}; then setenv e9_stage e9120001; else\n      if itest.l *0x029f6018 == {magic}; then setenv e9_stage e9120001; fi\n    fi'
             assert old in source
             source = source.replace(old,new,1)
@@ -159,5 +178,5 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('original',type=pathlib.Path);p.add_argument('slot',type=pathlib.Path);p.add_argument('output',type=pathlib.Path)
-    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');a=p.parse_args()
-    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls)
+    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');p.add_argument('--functions',action='store_true');a=p.parse_args()
+    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls,a.functions)

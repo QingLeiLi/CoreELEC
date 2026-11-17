@@ -1,5 +1,16 @@
 .text
 .balign 8
+#ifdef E9_FN_LEVEL
+    cmp x21, #E9_FN_LEVEL
+    b.ne 3f
+    ldr x16, [x22]
+    sub x16, x25, x16
+    cmp x16, #E9_FN_BYTES
+    b.eq 2f
+3:  cmp x25, x0
+    .inst E9_RETURN_BRANCH
+2:
+#endif
 #ifdef E9_LEVEL_PREFIX
     cmp x21, #E9_LEVEL_PREFIX
     b.eq 2f
@@ -24,7 +35,9 @@
     smc #0
 1:  wfe
     b 1b
-#ifdef E9_LEVEL_PREFIX
+#if defined(E9_FN_LEVEL)
+offset_to_marker: .quad (0x1876018 - 0xcf1370)
+#elif defined(E9_LEVEL_PREFIX)
 offset_to_marker: .quad (0x1876018 - 0xcf1360)
 #else
 offset_to_marker: .quad (0x1876018 - 0xcf1350)

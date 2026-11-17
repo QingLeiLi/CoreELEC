@@ -30,10 +30,10 @@ cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f
           ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
 if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
 for ledger,ram,mode,expected in cases:
- if meta.get('batch') in {'bisect14','bisect15'}: break
+ if meta.get('batch') in {'bisect14','bisect15','bisect16'}: break
  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
-if meta.get('batch') in {'bisect14','bisect15'}:
+if meta.get('batch') in {'bisect14','bisect15','bisect16'}:
  cases=[('old','0','ok','BOOT E9B1ARM.BIN'),
         ('E9B1ARM.BIN','e9140002','ok','BOOT E9B2ARM.BIN'),
         ('E9B1ARM.BIN','0','ok','BOOT E9B0ARM.BIN'),
@@ -44,6 +44,8 @@ if meta.get('batch') in {'bisect14','bisect15'}:
         ('E9B3ARM.BIN','e9140004','ok','END E9B3PASS.BIN'),
         ('E9B3ARM.BIN','0','ok','END E9B3FAIL.BIN'),
         ('old','0','fail','END old')]
+ if meta.get('batch')=='bisect16':
+  cases=[(l,ram.replace('e914','e916'),mode,expected) for l,ram,mode,expected in cases]
  if meta.get('batch')=='bisect15':
   cases=[(l,ram.replace('e914','e915'),mode,expected) for l,ram,mode,expected in cases]
  for ledger,ram,mode,expected in cases:
@@ -62,3 +64,17 @@ if meta.get('batch')=='bisect15':
   if delta&0x02000000:delta-=0x04000000
   assert 0xcf135c+4*delta==0x12b0d14
  print('PASS: conditional initcall probes reset only at target level; restore original flags comparison on other iterations')
+
+if meta.get('batch')=='bisect16':
+ import struct
+ for index,count in enumerate([112,225,338,25]):
+  data=(kit/f'E9B{index}.IMG').read_bytes()
+  w=struct.unpack_from('<8I',data,0xcf1350)
+  assert w[0]==(0xf10002bf|((6 if index<3 else 7)<<10))
+  assert w[2]==0xf94002d0 and w[3]==0xcb100330
+  assert w[4]==(0xf100021f|(count*8<<10))
+  assert w[6]==0xeb00033f
+  delta=w[7]&0x03ffffff
+  if delta&0x02000000:delta-=0x04000000
+  assert 0xcf136c+delta*4==0x12b0cf8
+ print('PASS: level-specific function counters, original loop comparison and branch restoration')
