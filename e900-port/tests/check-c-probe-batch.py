@@ -30,10 +30,10 @@ cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f
           ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
 if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
 for ledger,ram,mode,expected in cases:
- if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18'}: break
+ if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18','bisect19'}: break
  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
-if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18'}:
+if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18','bisect19'}:
  cases=[('old','0','ok','BOOT E9B1ARM.BIN'),
         ('E9B1ARM.BIN','e9140002','ok','BOOT E9B2ARM.BIN'),
         ('E9B1ARM.BIN','0','ok','BOOT E9B0ARM.BIN'),
@@ -68,7 +68,7 @@ if meta.get('batch')=='bisect15':
   assert 0xcf135c+4*delta==0x12b0d14
  print('PASS: conditional initcall probes reset only at target level; restore original flags comparison on other iterations')
 
-if meta.get('batch') in {'bisect16','bisect17','bisect18'}:
+if meta.get('batch') in {'bisect16','bisect17','bisect18','bisect19'}:
  import struct
  for index,count in enumerate(meta.get("function_counts",[112,225,338,25])):
   data=(kit/f'E9B{index}.IMG').read_bytes()

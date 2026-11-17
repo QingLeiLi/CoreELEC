@@ -131,3 +131,12 @@ window `281:309 --run-id 18` defines counts 288, 295, 302, 305 and starts at
 confusing an earlier pass with the new window. Run IDs must not be reused for
 a different window while old on-device state remains. Image deltas are still
 restricted to the existing 128-byte payload and fully hash checked.
+
+bisect18 observed 302 completed device callbacks, but no 305-completed marker.
+The three candidates' offsets and printk function-name strings identify
+303 di_module_init, 304 dim_module_init, 305 dil_init. The final discriminator
+uses `--window 302:305 --run-id 19 --counts 302,303,304,305`. The 302 boundary
+is a redundant lower-bound control; remaining probes check each callback
+completion. A positive/negative adjacent boundary isolates a callback without
+skipping or changing its implementation. It still does not exclude probe
+interference or non-deterministic behavior. Old evidence is archived first.

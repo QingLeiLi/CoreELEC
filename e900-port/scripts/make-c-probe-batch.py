@@ -16,7 +16,7 @@ STAGES = [(0x12b07c8, 0xa9bb7bfd, "C_entry"),
           (0x12b082c, 0x910123e0, "before_setup_arch")]
 
 
-def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False, functions=False, window=None, run_id=17):
+def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False, functions=False, window=None, run_id=17, counts=None):
     def load(name, filename):
         s = importlib.util.spec_from_file_location(name, PORT / "scripts" / filename)
         m = importlib.util.module_from_spec(s); s.loader.exec_module(m)
@@ -77,10 +77,14 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
     if window:
         assert functions
         low,high=map(int,window.split(':'))
-        assert 0<=low<high<=400 and high-low>=8
+        assert 0<=low<high<=400 and (high-low>=8 or counts)
         middle=(low+high)//2
         upper=(middle+high)//2
         function_counts=[(low+middle)//2,middle,upper,(upper+high)//2]
+        if counts:
+            function_counts=list(map(int,counts.split(',')))
+            assert len(function_counts)==4 and all(low<=x<=high for x in function_counts)
+            assert all(a<b for a,b in zip(function_counts,function_counts[1:]))
         function_levels=[6]*4
         assert 17<=run_id<=99
         batch=f"bisect{run_id}"
@@ -192,5 +196,5 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False, initcal
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('original',type=pathlib.Path);p.add_argument('slot',type=pathlib.Path);p.add_argument('output',type=pathlib.Path)
-    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');p.add_argument('--functions',action='store_true');p.add_argument('--window');p.add_argument('--run-id',type=int,default=17);a=p.parse_args()
-    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls,a.functions,a.window,a.run_id)
+    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');p.add_argument('--functions',action='store_true');p.add_argument('--window');p.add_argument('--run-id',type=int,default=17);p.add_argument('--counts');a=p.parse_args()
+    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls,a.functions,a.window,a.run_id,a.counts)
