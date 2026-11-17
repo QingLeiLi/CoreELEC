@@ -72,3 +72,21 @@ expected retained marker was not observed. Reset, RAM retention, physical
 relocation conventions and probe failure remain possible explanations.
 A terminal all-PASS path reaches the first userspace exec attempt; it does
 not prove /init actually executes or that a diagnostic initramfs is valid.
+
+## Narrowed SMP/initcall search (bisect15)
+
+bisect14 returned stage 2 FAIL, implying stage 1 reached before smp_init and
+no observed marker after all main initcalls. `--late --bisect --initcalls`
+searches only that interval with four ordered candidates: smp_init return;
+before main initcall levels; levels 0..3 completed; levels 0..5 completed.
+Start at candidate 1, branch down to 0 on absent marker or up to 2/3 on PASS.
+
+The last two images replace the loop comparison at 0x12b0d10 with a branch
+into a conditional payload. x21 contains the incremented level index. A target
+value 4 or 6 resets; otherwise the payload reexecutes the exact original
+`cmp x21,#8` and branches back to the original b.ne at 0x12b0d14, preserving
+the normal loop flags. All code outside the hook and scratch payload is
+unchanged. Source and pinned disassembly identify the inline loop. Tests
+check both conditional prefixes, return destinations, decision branches,
+wrong marker handling, terminal states and failed writes. As before, absence
+of a marker is not definitive proof of a kernel fault.

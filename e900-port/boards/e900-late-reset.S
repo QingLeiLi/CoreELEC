@@ -1,5 +1,12 @@
 .text
 .balign 8
+#ifdef E9_LEVEL_PREFIX
+    cmp x21, #E9_LEVEL_PREFIX
+    b.eq 2f
+    cmp x21, #8
+    .inst E9_RETURN_BRANCH
+2:
+#endif
     /* Address boot_args[3] using the running kernel VA alias. The original
      * startup saves x3 here; this isolated probe never continues after write. */
     adr x16, .
@@ -17,6 +24,10 @@
     smc #0
 1:  wfe
     b 1b
+#ifdef E9_LEVEL_PREFIX
+offset_to_marker: .quad (0x1876018 - 0xcf1360)
+#else
 offset_to_marker: .quad (0x1876018 - 0xcf1350)
+#endif
 marker: .word E9_LATE_MAGIC
     .word 0

@@ -30,10 +30,10 @@ cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f
           ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
 if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
 for ledger,ram,mode,expected in cases:
- if meta.get('batch')=='bisect14': break
+ if meta.get('batch') in {'bisect14','bisect15'}: break
  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
-if meta.get('batch')=='bisect14':
+if meta.get('batch') in {'bisect14','bisect15'}:
  cases=[('old','0','ok','BOOT E9B1ARM.BIN'),
         ('E9B1ARM.BIN','e9140002','ok','BOOT E9B2ARM.BIN'),
         ('E9B1ARM.BIN','0','ok','BOOT E9B0ARM.BIN'),
@@ -44,8 +44,21 @@ if meta.get('batch')=='bisect14':
         ('E9B3ARM.BIN','e9140004','ok','END E9B3PASS.BIN'),
         ('E9B3ARM.BIN','0','ok','END E9B3FAIL.BIN'),
         ('old','0','fail','END old')]
+ if meta.get('batch')=='bisect15':
+  cases=[(l,ram.replace('e914','e915'),mode,expected) for l,ram,mode,expected in cases]
  for ledger,ram,mode,expected in cases:
   p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
   assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
  print('PASS: middle-first binary branches and all terminal intervals')
 print('PASS:',n,'stage progression, final pass, failed marker, no retry and write failure')
+if meta.get('batch')=='bisect15':
+ import struct
+ for index,level in [(2,4),(3,6)]:
+  data=(kit/f'E9B{index}.IMG').read_bytes()
+  words=struct.unpack_from('<4I',data,0xcf1350)
+  assert words[0]==(0xf10002bf | (level<<10))
+  assert words[1]==0x54000060 and words[2]==0xf10022bf
+  delta=words[3]&0x03ffffff
+  if delta&0x02000000:delta-=0x04000000
+  assert 0xcf135c+4*delta==0x12b0d14
+ print('PASS: conditional initcall probes reset only at target level; restore original flags comparison on other iterations')

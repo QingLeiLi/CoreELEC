@@ -16,7 +16,7 @@ STAGES = [(0x12b07c8, 0xa9bb7bfd, "C_entry"),
           (0x12b082c, 0x910123e0, "before_setup_arch")]
 
 
-def make(original, slot_path, output, mkimage, late=False, bisect=False):
+def make(original, slot_path, output, mkimage, late=False, bisect=False, initcalls=False):
     def load(name, filename):
         s = importlib.util.spec_from_file_location(name, PORT / "scripts" / filename)
         m = importlib.util.module_from_spec(s); s.loader.exec_module(m)
@@ -52,14 +52,27 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False):
                   (0x12b0c54, 0x94002f9b, "before_smp_init"),
                   (0x12b0d18, 0x90ffeea0, "after_main_initcalls_before_console_open"),
                   (0xce911c, 0xf9400a60, "before_userspace_exec_attempt")]
+    if initcalls:
+        assert bisect and late
+        batch = "bisect15"
+        stages = [(0x12b0c58, 0x913ea273, "after_smp_init"),
+                  (0x12b0c94, 0xb202e7e0, "before_main_initcall_levels"),
+                  (0x12b0d10, 0xf10022bf, "initcall_levels_0_through_3_completed"),
+                  (0x12b0d10, 0xf10022bf, "initcall_levels_0_through_5_completed")]
     records = []
     for index, (hook, expected, label) in enumerate(stages):
         assert struct.unpack_from("<I", data, hook)[0] == expected
         if late:
             with tempfile.TemporaryDirectory(prefix="e900-late-stub-") as t:
                 obj = pathlib.Path(t) / "stub.o"
-                subprocess.run(["clang", "-target", "aarch64-none-elf", f"-DE9_LATE_MAGIC={hex((0xe9140001 if bisect else 0xe9130001)+index)}", "-c", str(PORT / "boards/e900-late-reset.S"), "-o", str(obj)], check=True)
+                extra = []
+                if initcalls and index >= 2:
+                    extra = [f"-DE9_LEVEL_PREFIX={4 if index == 2 else 6}",
+                             f"-DE9_RETURN_BRANCH={hex(trace.branch(0xcf135c, 0x12b0d14))}"]
+                subprocess.run(["clang", "-target", "aarch64-none-elf", f"-DE9_LATE_MAGIC={hex((0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+index)}", *extra, "-c", str(PORT / "boards/e900-late-reset.S"), "-o", str(obj)], check=True)
                 payload = reset.text_section(obj.read_bytes())
+                if initcalls and index >= 2:
+                    assert struct.unpack_from("<4I", payload) == (0xf10002bf | ((4 if index==2 else 6)<<10), 0x54000060, 0xf10022bf, trace.branch(0xcf135c,0x12b0d14))
             assert len(payload) <= 128
             stub = payload.ljust(128, b"\0")
         image = bytearray(data)
@@ -131,7 +144,7 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False):
         # stage has its own magic; an earlier result cannot satisfy the next.
         for i in range(len(stages)):
             old = '    if itest.l *0x074ff000 == 0xe9120001; then setenv e9_stage e9120001; else\n      if setexpr e9_stage *0x074ff000 + 0; then echo "batch marker read"; fi\n    fi'
-            magic = hex((0xe9140001 if bisect else 0xe9130001)+i)
+            magic = hex((0xe9150001 if initcalls else 0xe9140001 if bisect else 0xe9130001)+i)
             new = f'    if itest.l *0x028f6018 == {magic}; then setenv e9_stage e9120001; else\n      if itest.l *0x029f6018 == {magic}; then setenv e9_stage e9120001; fi\n    fi'
             assert old in source
             source = source.replace(old,new,1)
@@ -146,5 +159,5 @@ def make(original, slot_path, output, mkimage, late=False, bisect=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('original',type=pathlib.Path);p.add_argument('slot',type=pathlib.Path);p.add_argument('output',type=pathlib.Path)
-    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');a=p.parse_args()
-    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect)
+    p.add_argument('--mkimage',required=True,type=pathlib.Path);p.add_argument('--late',action='store_true');p.add_argument('--bisect',action='store_true');p.add_argument('--initcalls',action='store_true');a=p.parse_args()
+    make(a.original,a.slot,a.output,a.mkimage,a.late,a.bisect,a.initcalls)
