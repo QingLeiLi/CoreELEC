@@ -30,10 +30,10 @@ cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f
           ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
 if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
 for ledger,ram,mode,expected in cases:
- if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18','bisect19'}: break
+ if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18','bisect19','bisect20'}: break
  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
-if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18','bisect19'}:
+if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18','bisect19','bisect20'}:
  cases=[('old','0','ok','BOOT E9B1ARM.BIN'),
         ('E9B1ARM.BIN','e9140002','ok','BOOT E9B2ARM.BIN'),
         ('E9B1ARM.BIN','0','ok','BOOT E9B0ARM.BIN'),
@@ -44,6 +44,8 @@ if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17','bisect18',
         ('E9B3ARM.BIN','e9140004','ok','END E9B3PASS.BIN'),
         ('E9B3ARM.BIN','0','ok','END E9B3FAIL.BIN'),
         ('old','0','fail','END old')]
+ if meta.get('batch')=='bisect20':
+  cases=[(l,ram.replace('e914','e920'),mode,expected) for l,ram,mode,expected in cases]
  if meta.get('window'):
   prefix='e9'+meta['batch'].removeprefix('bisect')
   cases=[(l,ram.replace('e914',prefix),mode,expected) for l,ram,mode,expected in cases]

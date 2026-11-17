@@ -140,3 +140,23 @@ is a redundant lower-bound control; remaining probes check each callback
 completion. A positive/negative adjacent boundary isolates a callback without
 skipping or changing its implementation. It still does not exclude probe
 interference or non-deterministic behavior. Old evidence is archived first.
+
+## DI registration/probe split (bisect20)
+
+bisect19 observed 303-completed marker absent, then 302-completed PASS. The
+pinned callback is di_module_init. RELA at the registered di_driver structure
+identifies di_probe at 0xcd4904. The source and disassembly agree that
+platform_driver_register invokes the matching platform probe.
+
+`--late --bisect --di-probe` targets probe entry, after reserved-memory setup,
+before di_hw_init, and immediately after di_hw_init. The same binary tree
+starts at the second candidate. Missing an interior point can include an
+ordinary early error return, not necessarily a crash or hang; record it only
+as an unobserved milestone until a controlled bypass/log test confirms cause.
+The hardware-init call is identifiable from its two bool arguments and source
+position following request_irq; early DT/IRQ/CMA setup runs unmodified.
+
+When updating from bisect19, restore the old loop comparison at 0x12b0cf4,
+install one new four-byte branch at the selected probe site and replace the
+128-byte reset payload. Verify old/full new hashes and preserve the preceding
+ledger. No initcall is skipped or driver disabled in this test.
