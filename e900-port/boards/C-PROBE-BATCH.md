@@ -255,3 +255,20 @@ and preserve logs. No automatic reboot is injected into normal CE userspace.
 Host checks cover CPIO preservation/CRC, shell syntax, FDT changes, cold and
 both retained stage markers, correct labels and unchanged disabled eMMC/SDIO.
 Complete Kodi/HDMI playback remains unvalidated.
+
+## Display-disabled comparison with early init logs (ce26)
+
+ce25 produced HDMI black and no logs after /flash. Only before_booti survived
+manual Android recovery, so failure before PID1 cannot be distinguished from
+an initramfs stall before mounting /flash. ce26 is a temporary comparison:
+same guarded kernel, same CE flow and framebuffer reservation, but meson-fb
+and amhdmitx status disabled. Decoded FDT comparison confirms those are the
+only DT differences from ce25; eMMC/SDIO stay disabled.
+
+An early PID1 background logger waits for the USB block device, verifies the
+per-run proof token before writing E9EARLY.TXT and E9STAGE.TXT, then stops when
+normal /flash becomes available. The original init sequence and switch_root
+are retained. Logging cannot capture a pre-PID1 kernel hang; absence remains
+inconclusive. HDMI black is expected for this comparison. Observe network/SSH
+or recover Android and collect files before repeating. This is not the final
+user-facing configuration or an assertion that graphics caused ce25 failure.

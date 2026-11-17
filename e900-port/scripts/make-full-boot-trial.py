@@ -20,7 +20,7 @@ def load(name, file):
     return m
 
 
-def make(kit, output, mkimage, dtc):
+def make(kit, output, mkimage, dtc, headless=False, proof_file=None):
     dual = load("full_cpio", "make-dual-checkpoint.py")
     trace = load("full_trace", "make-entry-trace.py")
     usb = load("full_usb", "prepare-usb-image.py")
@@ -42,6 +42,13 @@ def make(kit, output, mkimage, dtc):
         text = text[:start] + new + text[end:]
         # Keep the tested trace page reserved but do not let ramoops clear markers.
         text = text.replace('compatible = "ramoops";', 'compatible = "e9trace";')
+        if headless:
+            for node in ['meson-fb', 'amhdmitx']:
+                start=text.index('\n\t'+node+' {')
+                end=text.index('\n\t};',start)
+                section=text[start:end]
+                assert 'status = "okay";' in section
+                text=text[:start]+section.replace('status = "okay";','status = "disabled";')+text[end:]
         source.write_text(text)
         subprocess.run([str(dtc), "-q", "-I", "dts", "-O", "dtb", "-o", str(output / "e900-full.dtb"), str(source)], check=True)
     old_nodes = usb.board.read_fdt(original_dtb)
@@ -53,6 +60,9 @@ def make(kit, output, mkimage, dtc):
         for key,value in props.items():
             if path == fb and key in {'size','alignment','alloc-ranges'}: continue
             if path == '/reserved-memory/ramoops@0x07400000' and key == 'compatible': continue
+            if headless and path in {'/meson-fb','/amhdmitx'} and key=='status':
+                assert new_nodes[path][key]==b'disabled\0'
+                continue
             assert new_nodes[path][key] == value, (path,key)
     archive = gzip.decompress((kit / 'e900-uInitrd').read_bytes()[64:])
     assert hashlib.sha256(archive).hexdigest() == trace.PINNED_INITRD
@@ -62,6 +72,7 @@ def make(kit, output, mkimage, dtc):
     hook = '''
 # E900 trial: keep original CE flow, export checkpoints only after /flash exists.
 e9_export() {
+  echo "$1" >/tmp/e9-current-step
   echo "e900 ce25: $1" >/dev/kmsg
   if /usr/bin/busybox mountpoint -q /flash; then
     if /usr/bin/busybox mount -o remount,rw /flash; then
@@ -77,6 +88,39 @@ e9_export() {
 /usr/bin/busybox dd if=/e9-full-entry.bin of=/dev/mem bs=1 seek=122679296 count=4 2>/dev/null
 e9_export init_entered
 '''
+    if headless:
+        assert proof_file and proof_file.is_file()
+        early='''
+# Exit when the normal /flash logger becomes available. Only the USB drive
+# containing the per-run proof token may receive early diagnostic files.
+(
+  /usr/bin/busybox mkdir -p /tmp/e9-early
+  n=0
+  while [ "$n" -lt 120 ]; do
+    /usr/bin/busybox mountpoint -q /flash && exit 0
+    for dev in /dev/sda1 /dev/sdb1; do
+      [ -b "$dev" ] || continue
+      if /usr/bin/busybox mount -t vfat -o rw "$dev" /tmp/e9-early; then
+        expected=; actual=
+        IFS= read -r expected </e9-usb-proof.txt
+        if [ -f /tmp/e9-early/E9UPASS.BIN ]; then
+          IFS= read -r actual </tmp/e9-early/E9UPASS.BIN
+        fi
+        if [ "$expected" = "$actual" ] && [ -n "$expected" ]; then
+          /usr/bin/busybox dmesg >/tmp/e9-early/E9EARLY.TXT
+          /usr/bin/busybox cat /tmp/e9-current-step >/tmp/e9-early/E9STAGE.TXT
+          /usr/bin/busybox sync
+        fi
+        /usr/bin/busybox umount /tmp/e9-early
+      fi
+    done
+    /usr/bin/busybox sleep 1
+    n=$((n+1))
+  done
+) &
+'''
+        hook += early
+        hook=hook.replace('ce25','ce26')
     anchor = 'UPDATE_ROOT=/storage/.update'
     assert init.count(anchor)==1
     init=init.replace(anchor,hook+'\n'+anchor,1)
@@ -93,6 +137,10 @@ e9_export init_entered
     for name,value in [('e9-full-entry.bin',0xe9250001),('e9-full-switch.bin',0xe9250002)]:
         body=struct.pack('<I',value)
         result.append((name,[inode,0o100644,0,0,1,0,4,0,0,0,0,0,0],body));inode+=1
+    if headless:
+        proof=proof_file.read_bytes()
+        assert len(proof)==512 and proof.startswith(b'E900 dual10 /init reached nonce=')
+        result.append(('e9-usb-proof.txt',[inode,0o100644,0,0,1,0,len(proof),0,0,0,0,0,0],proof))
     cpio=dual.cpio_write(result)
     decoded={n:(f,b) for n,f,b in dual.cpio_read(cpio)}
     for name,fields,body in entries:
@@ -106,7 +154,7 @@ e9_export init_entered
     (output/'E9RSEED.BIN').write_bytes(struct.pack('<II',0xe9250000,0))
     (output/'full-provenance.json').write_text(json.dumps(dict(original_cpio_sha256=trace.PINNED_INITRD,
         original_init_preserved_except_progress_hooks=True,original_other_entries_preserved=True,
-        fixed_framebuffer_region=['0x3dc00000','0x40000000'],files={p.name:usb.sha256(p) for p in output.iterdir() if p.is_file()},hardware_tested=False),indent=2)+'\n')
+        fixed_framebuffer_region=['0x3dc00000','0x40000000'],headless_control=headless,early_USB_logger=headless,files={p.name:usb.sha256(p) for p in output.iterdir() if p.is_file()},hardware_tested=False),indent=2)+'\n')
     print('Prepared normal CE boot trial:',output)
 
 
@@ -114,4 +162,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('kit',type=pathlib.Path);p.add_argument('output',type=pathlib.Path)
     p.add_argument('--mkimage',type=pathlib.Path,required=True);p.add_argument('--dtc',type=pathlib.Path,required=True)
-    a=p.parse_args();make(a.kit,a.output,a.mkimage,a.dtc)
+    p.add_argument('--headless',action='store_true');p.add_argument('--proof-file',type=pathlib.Path)
+    a=p.parse_args();make(a.kit,a.output,a.mkimage,a.dtc,a.headless,a.proof_file)
