@@ -21,10 +21,13 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
     template = (PORT / "boards/e900-usb-write-probe.src.in").read_text()
     script_source = PORT / "boards" / ("e900-usb-entry-trace.src" if mode == "entry" else "e900-usb-entry-reset.src")
     source = script_source.read_text().replace("e9probe=entry05", "e9probe=ledger07")
-    assert profile in {"reset08", "premmu09"}
+    assert profile in {"reset08", "premmu09", "cstart11"}
     if mode == "reset" and profile == "premmu09":
         source = source.replace("reset08", "premmu09").replace("e908000", "e909000")
         source = source.replace("e900-Image-reset", "e900-Image-premmu")
+    if mode == "reset" and profile == "cstart11":
+        source = source.replace("reset08", "cstart11").replace("e908000", "e912000")
+        source = source.replace("e900-Image-reset", "e900-Image-cstart")
     stages = []
 
     def checkpoint(label, indent=""):
@@ -120,6 +123,6 @@ if __name__ == "__main__":
     parser.add_argument("destination", type=pathlib.Path)
     parser.add_argument("--mkimage", required=True, type=pathlib.Path)
     parser.add_argument("--mode", choices=["entry", "reset"], default="entry")
-    parser.add_argument("--profile", choices=["reset08", "premmu09"], default="reset08")
+    parser.add_argument("--profile", choices=["reset08", "premmu09", "cstart11"], default="reset08")
     args = parser.parse_args()
     make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode, args.profile)
