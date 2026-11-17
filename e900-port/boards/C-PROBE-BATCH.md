@@ -272,3 +272,20 @@ are retained. Logging cannot capture a pre-PID1 kernel hang; absence remains
 inconclusive. HDMI black is expected for this comparison. Observe network/SSH
 or recover Android and collect files before repeating. This is not the final
 user-facing configuration or an assertion that graphics caused ce25 failure.
+
+## Isolate CE bootargs (control27)
+
+ce26 is Android after recovery and no post-booti evidence was recovered, even
+with graphics disabled. This does not prove a graphics fault or pre-PID1 hang.
+control27 returns to the verified guard24 kernel and original trace DT, plus
+the same diagnostic PID1. Only bootargs change to the full CE bootargs used
+in ce25. Instrumentation names/markers are versioned to avoid stale proof:
+E9C27.TXT, E9D27.TXT, E9A27.TXT, and marker e9270001. The original diagnostic
+initrd is SHA256 pinned; only its init text (output names), proof text and
+marker file differ. All other archive entries/metadata remain unchanged.
+
+Prepare with make-control-initrd.py VERIFIED_DIAGNOSTIC_INITRD OUTPUT --mkimage
+PATH; generate reset ledger profile control27. Verify the actual on-device
+kernel and original trace DT match the successful reference before replacing
+scripts. This test requests automatic reboot after logs, unlike normal CE.
+The lack of a new marker/file still cannot independently prove fault cause.
