@@ -206,3 +206,24 @@ reviewed, hex-loop edge vectors tested, and the actual generated shell exercised
 for cold boot, captured ERR_PTR text, absent marker and no-repeat handling.
 The standalone generator reproduces the deployment image exactly. Hardware
 snapshot value remains pending.
+
+## Controlled missing-clock guard (guard24)
+
+clock23 returned e9_clock=fffffffffffffffe, confirming ERR_PTR(-ENOENT) in the
+vpu_clkb field before its enable path. guard24 changes only that path for a
+controlled test. The original clk_is_enabled BL at 0xcd4e04 branches to a
+28-byte guard: NULL or IS_ERR_VALUE causes the saved handle to be cleared and
+control to continue after the clock-enable block. Valid pointers retain the
+original clk_is_enabled call and exact return address, followed by the
+unchanged prepare/enable sequence. No driver initcall is disabled. This is
+not the final SoC clock-topology correction or a proposal to ignore all errors.
+
+The trial uses the existing diagnostic PID1 initramfs, checks its marker and
+returns to Android with a persistent single-attempt guard. If PID1 runs, it
+tries to write E9USER.TXT, E9DMESG.TXT and E9CMD.TXT before rebooting. The same
+trace DTB protects the RAM marker. Preserve existing clock23 cmdline and file
+evidence before replacing USB scripts. Host checks cover emitted pointer
+range guard, NULL/ERR boundary vectors, valid-call return address, full Image
+edit bounds, initramfs proof contents and actual recovery shell. No source
+build, eMMC write or bootloader/env modification is involved. Hardware trial
+outcome is pending; a later failure may expose additional unsupported paths.
