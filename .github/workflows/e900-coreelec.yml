@@ -14,6 +14,10 @@ on:
         type: choice
         default: media
         options: [linux, media, image]
+      source_trace:
+        description: Enable source-level E900 early boot diagnostics (decoder only)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,6 +36,7 @@ jobs:
       E900_WORK_ROOT: ${{ github.workspace }}/.e900-work
       E900_AUDIT_ROOT: ${{ github.workspace }}/.e900-work/downloads/.e900-fixtures
       E900_INCREMENTAL_REUSE: '1'
+      E900_SOURCE_TRACE: ${{ inputs.source_trace && '1' || '0' }}
       PROFILE: ${{ inputs.profile }}
       BUILD_TARGET: ${{ inputs.target }}
       CONCURRENCY_MAKE_LEVEL: '4'

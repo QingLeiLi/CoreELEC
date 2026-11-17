@@ -270,7 +270,12 @@ def install(repo, profile):
     option_destination = repo / ".coreelec/options"
     option_metadata = dict(destination=".coreelec/options", sha256=hashlib.sha256(option_content.encode()).hexdigest()) if option_content else None
     entries = []
-    for relative in PROFILES[profile]:
+    selected = list(PROFILES[profile])
+    if os.environ.get("E900_SOURCE_TRACE", "0") == "1":
+        if profile != "decoder":
+            raise RuntimeError("Source tracing requires the decoder board profile")
+        selected.append("linux/0004-e900-source-boot-trace.patch")
+    for relative in selected:
         source = PORT / "patches" / relative
         dest_dir = LINUX_DIR if relative.startswith("linux/") else MEDIA_DIR
         destination = repo / dest_dir / ("9000-e900-" + source.name)

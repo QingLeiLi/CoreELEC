@@ -1,0 +1,113 @@
+--- a/arch/arm64/kernel/head.S
++++ b/arch/arm64/kernel/head.S
+@@ -218,7 +218,20 @@
+ 	 *  x28        __create_page_tables()     callee preserved temp register
+ 	 *  x19/x20    __primary_switch()         callee preserved temp registers
+ 	 */
++/* E900 diagnostic trace in reserved normal RAM; MMU must be off.
++ * x16/x17 are scratch on the primary bootstrap path, x0..x3 stay intact.
++ */
++	.macro e900_boot_trace, stage
++	movz	x16, #0xf000
++	movk	x16, #0x074f, lsl #16
++	movz	w17, #\stage
++	movk	w17, #0xe911, lsl #16
++	str	w17, [x16]
++	dsb	sy
++	.endm
++
+ ENTRY(stext)
++	e900_boot_trace 1
+ 	bl	preserve_boot_args
+ 	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
+ 	adrp	x23, __PHYS_OFFSET
+@@ -232,6 +245,7 @@
+ 	 * the TCR will have been set.
+ 	 */
+ 	bl	__cpu_setup			// initialise processor
++	e900_boot_trace 2
+ 	b	__primary_switch
+ ENDPROC(stext)
+ 
+@@ -426,6 +440,9 @@
+  *   x0 = __PHYS_OFFSET
+  */
+ __primary_switched:
++	/* Virtual mapping is active; record in mapped .data, not physical RAM. */
++	mov	w16, #3
++	str_l	w16, e900_virtual_boot_stage, x17
+ 	adrp	x4, init_thread_union
+ 	add	sp, x4, #THREAD_SIZE
+ 	adr_l	x5, init_task
+@@ -643,6 +660,9 @@
+  * This is not in .bss, because we set it sufficiently early that the boot-time
+  * zeroing of .bss would clobber it.
+  */
++ENTRY(e900_virtual_boot_stage)
++	.long 0
++	.balign 8
+ ENTRY(__boot_cpu_mode)
+ 	.long	BOOT_CPU_MODE_EL2
+ 	.long	BOOT_CPU_MODE_EL1
+--- a/init/main.c
++++ b/init/main.c
+@@ -22,6 +22,9 @@
+ #include <linux/delay.h>
+ #include <linux/ioport.h>
+ #include <linux/init.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <asm-generic/early_ioremap.h>
+ #include <linux/initrd.h>
+ #include <linux/bootmem.h>
+ #include <linux/acpi.h>
+@@ -485,6 +488,24 @@
+ 	kaiser_init();
+ }
+ 
++/* Source-level E900 diagnostic, enabled only for the board profile.
++ * The trace page is reserved separately from ramoops in its diagnostic DTB.
++ */
++extern u32 e900_virtual_boot_stage;
++static void __init e900_source_boot_trace(void)
++{
++	u32 __iomem *trace;
++	if (!of_machine_is_compatible("skyworth,e900v21c"))
++		return;
++	trace = early_ioremap(0x074ff000, 4096);
++	if (trace) {
++		writel(0xe9110004, trace);
++		early_iounmap(trace, 4096);
++	}
++	pr_notice("E900_TRACE: MMU virtual stage=%u; setup_arch completed; C startup reached\n",
++		  e900_virtual_boot_stage);
++}
++
+ asmlinkage __visible void __init start_kernel(void)
+ {
+ 	char *command_line;
+@@ -512,6 +533,7 @@
+ 	page_address_init();
+ 	pr_notice("%s", linux_banner);
+ 	setup_arch(&command_line);
++	e900_source_boot_trace();
+ 	mm_init_cpumask(&init_mm);
+ 	setup_command_line(command_line);
+ 	setup_nr_cpu_ids();
+--- a/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
++++ b/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
+@@ -14,6 +14,14 @@
+ 	};
+ 
+ 	reserved-memory {
++		/* Diagnostic page must not be reused by ramoops or Linux. */
++		ramoops@0x07400000 {
++			reg = <0x0 0x07400000 0x0 0x000ff000>;
++		};
++		e900-trace@74ff000 {
++			reg = <0x0 0x074ff000 0x0 0x00001000>;
++			no-map;
++		};
+ 		/* Preserve the old Android boot firmware's fixed secure carveout.
+ 		 * Keep CE's separate secmon CMA pool: its driver allocates 3MiB there.
+ 		 */

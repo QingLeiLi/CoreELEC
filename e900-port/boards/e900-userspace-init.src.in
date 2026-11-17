@@ -1,0 +1,40 @@
+#!/bin/sh
+# Diagnostic PID 1: record /init entry; do not start the normal CE system.
+BB=/usr/bin/busybox
+$BB mkdir -p /dev /proc /sys /tmp/e9proof
+$BB mount -t devtmpfs devtmpfs /dev
+$BB mount -t proc proc /proc
+$BB mount -t sysfs sysfs /sys
+[ -e /dev/mem ] || $BB mknod /dev/mem c 1 1
+# This is the diagnostic reserved RAM region, not a hardware register.
+$BB dd if=/e9/user-marker.bin of=/dev/mem bs=1 seek=122679296 count=4
+echo "e900 dual10: diagnostic /init entered" >/dev/kmsg
+i=0
+while [ "$i" -lt 60 ]; do
+  for dev in /dev/sda1 /dev/sdb1 /dev/sdc1 /dev/sdd1; do
+    [ -b "$dev" ] || continue
+    if $BB mount -t vfat -o rw "$dev" /tmp/e9proof; then
+      token=
+      if [ -f /tmp/e9proof/E9UPASS.BIN ]; then
+        IFS= read -r token </tmp/e9proof/E9UPASS.BIN
+      fi
+      if [ "$token" = "E900 dual10 /init reached nonce=@NONCE@" ]; then
+        if $BB cp /e9/userspace-proof.txt /tmp/e9proof/E9USER.TXT; then
+          $BB dmesg >/tmp/e9proof/E9DMESG.TXT
+          $BB cat /proc/cmdline >/tmp/e9proof/E9CMD.TXT
+          $BB sync
+          $BB umount /tmp/e9proof
+          $BB reboot -f
+          break 2
+        fi
+      fi
+      $BB umount /tmp/e9proof
+    fi
+  done
+  $BB sleep 1
+  i=$((i + 1))
+done
+# Return the RAM marker even if USB storage never becomes available.
+$BB sync
+$BB reboot -f
+while :; do $BB sleep 60; done
