@@ -30,10 +30,10 @@ cases += [(f'E9B{n-1}ARM.BIN',f'{0xe9130000+n:x}' if late else 'e9120001','ok',f
           ('E9B1FAIL.BIN','0','ok','END E9B1FAIL.BIN'),('old','0','fail','END old')]
 if late: cases.append(('E9B2ARM.BIN','e9130002','ok','END E9B2FAIL.BIN'))
 for ledger,ram,mode,expected in cases:
- if meta.get('batch') in {'bisect14','bisect15','bisect16'}: break
+ if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17'}: break
  p=subprocess.run(['bash','-c',h,'test',ledger,ram,mode,str(kit/'batch.src')],capture_output=True,text=True,check=True)
  assert expected in p.stdout+p.stderr,(ledger,p.stdout,p.stderr)
-if meta.get('batch') in {'bisect14','bisect15','bisect16'}:
+if meta.get('batch') in {'bisect14','bisect15','bisect16','bisect17'}:
  cases=[('old','0','ok','BOOT E9B1ARM.BIN'),
         ('E9B1ARM.BIN','e9140002','ok','BOOT E9B2ARM.BIN'),
         ('E9B1ARM.BIN','0','ok','BOOT E9B0ARM.BIN'),
@@ -44,6 +44,8 @@ if meta.get('batch') in {'bisect14','bisect15','bisect16'}:
         ('E9B3ARM.BIN','e9140004','ok','END E9B3PASS.BIN'),
         ('E9B3ARM.BIN','0','ok','END E9B3FAIL.BIN'),
         ('old','0','fail','END old')]
+ if meta.get('batch')=='bisect17':
+  cases=[(l,ram.replace('e914','e917'),mode,expected) for l,ram,mode,expected in cases]
  if meta.get('batch')=='bisect16':
   cases=[(l,ram.replace('e914','e916'),mode,expected) for l,ram,mode,expected in cases]
  if meta.get('batch')=='bisect15':
@@ -65,12 +67,12 @@ if meta.get('batch')=='bisect15':
   assert 0xcf135c+4*delta==0x12b0d14
  print('PASS: conditional initcall probes reset only at target level; restore original flags comparison on other iterations')
 
-if meta.get('batch')=='bisect16':
+if meta.get('batch') in {'bisect16','bisect17'}:
  import struct
- for index,count in enumerate([112,225,338,25]):
+ for index,count in enumerate(meta.get("function_counts",[112,225,338,25])):
   data=(kit/f'E9B{index}.IMG').read_bytes()
   w=struct.unpack_from('<8I',data,0xcf1350)
-  assert w[0]==(0xf10002bf|((6 if index<3 else 7)<<10))
+  assert w[0]==(0xf10002bf|(meta.get("function_levels",[6,6,6,7])[index]<<10))
   assert w[2]==0xf94002d0 and w[3]==0xcb100330
   assert w[4]==(0xf100021f|(count*8<<10))
   assert w[6]==0xeb00033f

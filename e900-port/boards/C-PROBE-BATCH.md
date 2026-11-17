@@ -109,3 +109,18 @@ the loop's condition flags on the normal path. The marker VA adjustment
 accounts for the extra 32-byte conditional prefix. Pinned instruction words,
 branch destinations, counter operands and full generated-controller branches
 are tested. These tests do not establish hardware success or fault causality.
+
+## Narrow function window (bisect17)
+
+bisect16 observed 225 device initcalls completed, but no 338-completed marker.
+`--window 225:338` with the function probe options creates candidates at
+253, 281, 309 and 323 completed callbacks. The middle-first controller starts
+at 281. This parameterized mode currently uses a distinct bisect17 magic and
+record prefix; prepare a distinct profile/magic before reusing another window.
+
+Each image differs from its bisect16 counterpart only in the existing 128-byte
+scratch payload. Deployment may verify all old full-file hashes, upload four
+128-byte deltas, use filesystem dd with conv=notrunc,fsync, verify new full-file
+hashes, and only then replace script aliases. This is not raw block writing.
+Keep normal kernel/initrd/DTB files and preserve the preceding evidence first.
+No new reboot is allowed until all records and scripts also pass full hashes.
