@@ -21,7 +21,29 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
     template = (PORT / "boards/e900-usb-write-probe.src.in").read_text()
     script_source = PORT / "boards" / ("e900-usb-entry-trace.src" if mode == "entry" else "e900-usb-entry-reset.src")
     source = script_source.read_text().replace("e9probe=entry05", "e9probe=ledger07")
-    assert profile in {"reset08", "premmu09", "cstart11"}
+    assert profile in {"reset08", "premmu09", "cstart11", "clock23"}
+    if mode == "reset" and profile == "clock23":
+        source = source.replace("reset08", "clock23").replace("e908000", "e923000")
+        source = source.replace("e900-Image-reset", "e900-Image-clock")
+        source = source.replace('setenv e9_saved_bootargs "${bootargs}"', 'setenv e9_saved_bootargs "${bootargs}"\nsetenv clk unavailable')
+        old = '''  if itest.l *0x074ff000 == 0xe9230001; then
+    setenv e9_stage e9230001
+  else
+    if setexpr e9_stage *0x074ff000 + 0; then
+      echo "E900 reset marker read completed"
+    fi
+  fi'''
+        new = '''  if itest.l *0x028f6018 == 0xe9230001; then
+    setenv e9_stage e9230001
+    env import -t 0x028f6000 0x15
+  else
+    if itest.l *0x029f6018 == 0xe9230001; then
+      setenv e9_stage e9230001
+      env import -t 0x029f6000 0x15
+    fi
+  fi'''
+        assert old in source
+        source = source.replace(old,new)
     if mode == "reset" and profile == "premmu09":
         source = source.replace("reset08", "premmu09").replace("e908000", "e909000")
         source = source.replace("e900-Image-reset", "e900-Image-premmu")
@@ -91,6 +113,8 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
         else:
             output.append(line)
     output += ['setenv bootargs "${bootargs} e9_log=${e9_log}"']
+    if profile == "clock23":
+        output += ['setenv bootargs "${bootargs} e9_clock=${clk}"']
     script_text = "\n".join(output) + "\n"
     if mode == "reset":
         armed = [stage for stage in stages if stage["label"] == "before_booti"]
@@ -123,6 +147,6 @@ if __name__ == "__main__":
     parser.add_argument("destination", type=pathlib.Path)
     parser.add_argument("--mkimage", required=True, type=pathlib.Path)
     parser.add_argument("--mode", choices=["entry", "reset"], default="entry")
-    parser.add_argument("--profile", choices=["reset08", "premmu09", "cstart11"], default="reset08")
+    parser.add_argument("--profile", choices=["reset08", "premmu09", "cstart11", "clock23"], default="reset08")
     args = parser.parse_args()
     make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode, args.profile)

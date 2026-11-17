@@ -183,3 +183,26 @@ error for a failed clk_get("vpu_clkb_composite"), while its caller still uses
 that pointer. This is a hypothesis only; the probe does not alter clock calls,
 CPU identity, driver matching or DT properties. Old hook instructions are
 restored and all image changes confined to new hooks/reset payloads.
+
+## Actual clock handle capture (clock23)
+
+bisect22 passed immediately before the VPU clkb enabling sequence and lacked
+its after marker. The diagnostic DT has no deinterlace clocks/clock-names.
+Source logs clk_get failure but the caller still invokes clk_prepare_enable.
+To verify the hypothesis, make-clock-value-image.py patches the same before
+point to snapshot the handle at di_devp+136 without dereferencing that handle.
+
+The 148-byte stub formats `clk=XXXXXXXXXXXXXXXX\n` at the mapped boot_args
+region and writes the reset marker at offset 24. It cleans the cache line,
+requests reset and never calls the clock API. The clock23 reset ledger verifies
+the marker, imports only 21 ASCII bytes from the matching physical alias with
+`env import -t`, and appends e9_clock to the Android command line. No environment
+is saved. `unavailable` means no value was recovered. The durable ledger still
+records reachability; the pointer itself is returned via volatile bootargs,
+so collect it before another power cycle. No raw pointer is dereferenced.
+
+The complete image is pinned, edit bounds and offsets checked, disassembly
+reviewed, hex-loop edge vectors tested, and the actual generated shell exercised
+for cold boot, captured ERR_PTR text, absent marker and no-repeat handling.
+The standalone generator reproduces the deployment image exactly. Hardware
+snapshot value remains pending.
