@@ -11,7 +11,8 @@ import subprocess
 PORT = pathlib.Path(__file__).resolve().parents[1]
 
 
-def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
+def make(slot_path, destination, mkimage, mode="entry", profile="reset08", minimal_io=False):
+    assert not minimal_io or mode == "reset", "Minimal I/O requires the persistent reset guard"
     slot = json.loads(slot_path.read_text())
     assert slot["hardware_write_tested"] is True
     assert slot["file"] == "E9LOG.TXT" and slot["file_bytes"] == 512 and slot["write_sectors"] == 1
@@ -72,6 +73,8 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
     stages = []
 
     def checkpoint(label, indent=""):
+        if minimal_io and label != "reset_guard_checked":
+            return []
         index = len(stages)
         filename = f"E9{'S' if mode == 'entry' else 'R'}{index:03d}.BIN"
         text = f"E900 persistent checkpoint {index:03d}: {label}\nnonce={slot['nonce']}\n"
@@ -136,7 +139,7 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
         output += ['setenv bootargs "${bootargs} e9_clock=${clk}"']
     script_text = "\n".join(output) + "\n"
     if mode == "reset":
-        armed = [stage for stage in stages if stage["label"] == "before_booti"]
+        armed = [stage for stage in stages if stage["label"] == ("reset_guard_checked" if minimal_io else "before_booti")]
         assert len(armed) == 1
         script_text = script_text.replace("@ATTEMPTED_FILE@", armed[0]["file"])
     assert "@" not in script_text
@@ -152,7 +155,7 @@ def make(slot_path, destination, mkimage, mode="entry", profile="reset08"):
     usb.check_script(script, script_text.encode())
     for name in ["aml_autoscript", "cfgload"]:
         shutil.copy2(script, destination / name)
-    report = dict(slot=slot, stages=stages, mode=mode, profile=profile, script_sha256=usb.sha256(script),
+    report = dict(slot=slot, stages=stages, mode=mode, profile=profile, minimal_io=minimal_io, script_sha256=usb.sha256(script),
                   entry_source_sha256=usb.sha256(script_source), hardware_tested=False,
                   caveat="Last persisted checkpoint bounds progress, not necessarily the failure instruction. "
                          "ARM64 entry is only proven by an observed retained RAM entry marker.")
@@ -167,5 +170,6 @@ if __name__ == "__main__":
     parser.add_argument("--mkimage", required=True, type=pathlib.Path)
     parser.add_argument("--mode", choices=["entry", "reset"], default="entry")
     parser.add_argument("--profile", choices=["reset08", "premmu09", "cstart11", "clock23", "guard24", "ce25", "ce26", "control27", "control28"], default="reset08")
+    parser.add_argument("--minimal-io", action="store_true", help="Write only the reset guard before loading; omit intermediate checkpoints")
     args = parser.parse_args()
-    make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode, args.profile)
+    make(args.slot.resolve(), args.destination.resolve(), args.mkimage.resolve(), args.mode, args.profile, args.minimal_io)

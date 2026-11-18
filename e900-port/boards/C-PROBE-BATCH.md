@@ -300,3 +300,25 @@ marker e9280001. FDT decoding confirms that framebuffer reservation properties
 are the only differences versus the passing control27 DT; both display nodes
 remain enabled. Keep this separate from the previous headless/normal-init
 attempts so failure or success has an interpretable single-variable boundary.
+
+## Reduce bootloader I/O (transport comparison 29)
+
+Two control28 attempts returned Android with seed_load_failed and e9_log=failed.
+Android saw a zero-sector FC 3281B storage device. Reinsertion restored Netac
+OnlyDisk with 60825600 sectors; the DTB and seed matched the host. Both saved
+ledgers ended before_load_e900-control28.dtb. These are not kernel test results.
+The cause of the USB state change remains unproven.
+
+--minimal-io (reset mode only) retains one guarded persistent attempt write
+before loading any kernel payload; intermediate checkpoints are omitted. The
+same control28 kernel, initrd, DTB, load order, bootargs and RAM markers remain.
+The persistent prefix still prevents relaunch after automatic warm reboot.
+No new per-stage disk evidence is expected; transient failure tags and existing
+PID1 proof/log files remain available. Host shell stubs checked launch, repeat
+suppression and DTB-load failure. Device deployment is not hardware success.
+
+After filesystem writes through sda1, buffered whole-device sda reads can retain
+old evidence bytes. sync followed by blockdev --flushbufs /dev/block/sda made
+file and raw reads agree. Revalidate the FAT mapping and expected bytes before
+using the existing guarded evidence slot; never infer a changed mapping from
+stale whole-device cache alone.
