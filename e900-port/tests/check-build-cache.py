@@ -47,6 +47,25 @@ with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
     assert first["compat"] != cache.identities(port, "identify", root / "work", dict(host, packages="gcc-12=12.4"))["compat"]
     print("PASS: host, absolute build root and profile isolate incompatible toolchains")
 
+    setup = port / "scripts/ci-dependencies.sh"
+    current_setup = setup.read_bytes()
+    prior_setup = current_setup.replace(b" rsync squashfs-tools\n", b" rsync\n")
+    assert prior_setup != current_setup
+    setup.write_bytes(prior_setup)
+    prior_identity = cache.identities(port, "identify", root / "work", host)
+    assert first["previous_compat"] == prior_identity["compat"]
+    setup.write_bytes(current_setup)
+    for different in [
+        cache.identities(port, "identify", root / "other-work", host),
+        cache.identities(port, "hdmi", root / "work", host),
+        cache.identities(port, "identify", root / "work", dict(host, packages="gcc-12=12.4")),
+    ]:
+        assert different["previous_compat"] != prior_identity["compat"]
+    setup.write_bytes(current_setup + b"\n# unreviewed setup change\n")
+    assert cache.identities(port, "identify", root / "work", host)["previous_compat"] == "none"
+    setup.write_bytes(current_setup)
+    print("PASS: squashfs-tools-only setup fallback preserves host/root/profile isolation; unknown setup changes cannot fall back")
+
     decoder_identity = cache.identities(port, "decoder", root / "work", host)
     options = port / "boards/usb-build.options"
     original_options = options.read_bytes()

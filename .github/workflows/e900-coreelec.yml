@@ -114,6 +114,7 @@ jobs:
           restore-keys: |
             e900-state-v1-${{ steps.cache-keys.outputs.compat }}-${{ steps.cache-keys.outputs.state }}-
             e900-state-v1-${{ steps.cache-keys.outputs.compat }}-
+            e900-state-v1-${{ steps.cache-keys.outputs.previous_compat }}-
 
       - name: Prepare pinned upstream source and patches
         id: prepare

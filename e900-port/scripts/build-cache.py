@@ -10,6 +10,14 @@ import sys
 
 PORT = pathlib.Path(__file__).resolve().parents[1]
 
+# These exact setup scripts differ only by installing squashfs-tools, a host
+# image inspection tool. Compiler versions/ISA/root/profile must still match.
+# Unknown future setup changes get no fallback; never broaden the cache prefix.
+PREVIOUS_COMPATIBLE_SETUP = {
+    "13d79da29b8569e6a65d2febca7a7f951ef3de768b4db2c32ded8bd4a54a67e0":
+        "1d97a8f262f0945e8c6d5a3db9ac2c151ab54140770df5d5a297efc9203f1db4",
+}
+
 
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()[:24]
@@ -37,7 +45,9 @@ def identities(port, profile, work_root, host):
                  installer=file_hash(port / "scripts/install-patches.py"),
                  board_options=file_hash(port / "boards/usb-build.options") if profile == "decoder" else None,
                  cache_protocol=file_hash(port / "scripts/build-cache.py"))
-    return dict(compat=digest(compatibility), state=digest(state),
+    previous_setup = PREVIOUS_COMPATIBLE_SETUP.get(compatibility["setup_script"])
+    previous_compat = digest(dict(compatibility, setup_script=previous_setup)) if previous_setup else "none"
+    return dict(compat=digest(compatibility), previous_compat=previous_compat, state=digest(state),
                 compiler=digest(dict(schema=2, pins=pins, host=host, host_codegen=installer.HOST_CODEGEN)),
                 details=compatibility)
 
@@ -86,7 +96,7 @@ def main():
         work.mkdir(parents=True, exist_ok=True)
         (work / "cache-identity.json").write_text(json.dumps(result, indent=2) + "\n")
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-            for name in ["compat", "state", "compiler"]:
+            for name in ["compat", "previous_compat", "state", "compiler"]:
                 output.write(f"{name}={result[name]}\n")
         print(json.dumps(result, indent=2))
     else:
