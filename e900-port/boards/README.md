@@ -1,6 +1,6 @@
 # E900V21C USB 首轮板级描述
 
-适用待测板：创维 E900V21C / 5800-2ATA411，GXLX2（CPU ID 0x2a）、1GB DDR3L、8GB eMMC。目标是使用现有 Android 引导程序从外置 USB 启动 CoreELEC 21.3 NG；此 DTS 尚未实机验证。
+适用待测板：创维 E900V21C / 5800-2ATA411，GXLX2（CPU ID 0x2a）、1GB DDR3L、8GB eMMC。目标是使用现有 Android 引导程序从外置 USB 启动 CoreELEC 21.3 NG；已用等价 DT 修改启动并验证 MP2 GPU、固定 framebuffer、USB 根系统与有线网；最新整套源码仍待重新 ARM 构建。当前状态见 [正常启动记录](NORMAL-USB-BOOT.md)，下方首轮诊断为历史记录。
 
 ## 配置依据
 
@@ -22,15 +22,15 @@
 
 ## USB 启动入口
 
-`e900-usb-autoscript.src` 被打包为传统 U-Boot script，同时放入 FAT 根目录的 `aml_autoscript`、`s905_autoscript` 和 `cfgload`，兼容现有多重启动入口。USB 内核容器加载到 0x20000000，DTB 位于 0x01000000；保留 CE 现有 Android boot image 格式，不重新打包其内部加载地址。
+当前镜像使用 `e900-usb-image.src`，打包为三个入口 `aml_autoscript`、`s905_autoscript`、`cfgload`。以 `booti` 启动原始 ARM64 `e900-Image`（0x11000000）、原 CE initramfs 包装的 `e900-uInitrd`（0x15000000）和 `dtb.img`（0x18000000）。DTB 不再覆盖旧 Android 的 0x01000000 地址；旧 `bootm` 脚本仅保留为历史材料。
 
-脚本只改变内存变量，不执行 `saveenv`、`defenv` 或存储写入命令。内核命令行启用 `ssh`，便于 HDMI 黑屏时获取日志。仍需实机验证旧引导程序能否执行这一入口并传递 DTB；已有 Armbian USB 启动成功不能代替这一步。
+脚本不保存环境、不写 eMMC，也不执行探针证据写盘；加载失败则返回原 Android 启动回退。镜像准备只操作普通 `.img` 文件，核对 ARM64 头与地址范围、原 CPIO `/init`、legacy initrd CRC、全部 FAT 文件回读、SYSTEM/build 哈希和实际媒体模块清单。元数据记录本次 run/attempt；失败或旧任务产物不标记为本次成功。
 
-镜像准备脚本操作构建目录中的普通 `.img` 文件，不使用磁盘设备或挂载权限。它会回读 DTB 和三个入口脚本，并核对内核与本次编译一致、SYSTEM 为 SquashFS，输出 SHA-256 和本次 run/attempt 的来源记录。旧任务留下的镜像不作为本次成功产物导出。
+当前实机正常启动使用先前构建加已验证的二进制 DI 守卫/MP2 DT；未来源码镜像采用同样的加载布局，但仍需完整 ARM 构建和实机回归。
 
 首轮使用有线网络和已确认规格的独立供电；暂不执行系统更新、BL301 注入或 eMMC 安装。测试顺序为能否进入内核、USB 根文件系统、有线 SSH、HDMI/Kodi、音频，最后再验证解码微码及各格式硬解。不得以编译成功推断这些功能已可用。
 
-## 本地验证记录
+## 首轮本地验证记录（历史）
 
 - 用固定内核版本自带 DTC 1.4.5 编译板级 DTS 通过。
 - DTB 大小 46328 字节，SHA-256：`3601a010bb14a506ad9a8e8dcc78cc716fa3549b87ec179ed317c4e3b6679af3`。

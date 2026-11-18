@@ -1,0 +1,15 @@
+echo "E900V21C CoreELEC USB boot"
+setenv e900_saved_bootargs "${bootargs}"
+usb start
+if usb dev 0; then
+  if fatload usb 0:1 0x11000000 e900-Image; then
+    if fatload usb 0:1 0x15000000 e900-uInitrd; then
+      if fatload usb 0:1 0x18000000 dtb.img; then
+        setenv bootargs "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 ssh panic=10 loglevel=4 "
+        booti 0x11000000 0x15000000 0x18000000
+      fi
+    fi
+  fi
+fi
+setenv bootargs "${e900_saved_bootargs}"
+echo "E900 USB boot unavailable; return to existing bootloader fallback"

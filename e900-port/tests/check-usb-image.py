@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Negative checks for image bounds, script integrity and stale image exports."""
+import gzip
 import importlib.util
 import json
 import os
@@ -58,6 +59,35 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-check-") as directory:
     script.write_bytes(broken)
     rejects(usb.check_script, script, source)
     print("PASS: U-Boot script validates source content, header CRC and data CRC")
+
+    # Reject corrupt/truncated boot containers before touching FAT output.
+    def entry(name,body,mode):
+        fields=[1,mode,0,0,1,0,len(body),0,0,0,0,len(name)+1,0]
+        result=b"070701"+b"".join(f"{v:08x}".encode() for v in fields)+name.encode()+b"\0"
+        result+=bytes(-len(result)%4)
+        result+=body
+        return result+bytes(-len(result)%4)
+    cpio=entry('init',b'#!/bin/sh\n',0o100755)+entry('TRAILER!!!',b'',0)
+    container=root/'Image.lzo';raw_image=root/'Image'
+    raw=bytearray(4096);struct.pack_into('<2Q',raw,8,0x1080000,4096);raw[56:60]=b'ARMd'
+    raw_image.write_bytes(raw)
+    android=bytearray(4096+len(cpio));android[:8]=b'ANDROID!'
+    struct.pack_into('<8I',android,8,1,0x1080000,len(cpio),0x1000000,0,0xf00000,0x100,2048)
+    android[4096:]=cpio;container.write_bytes(android)
+    assert usb.boot_payloads(container,raw_image)==cpio
+    container.write_bytes(android[:-1]);rejects(usb.boot_payloads,container,raw_image)
+    container.write_bytes(android);raw[56:60]=b'BAD!';raw_image.write_bytes(raw)
+    rejects(usb.boot_payloads,container,raw_image)
+    raw[56:60]=b'ARMd';struct.pack_into('<Q',raw,16,0x4000001);raw_image.write_bytes(raw)
+    rejects(usb.boot_payloads,container,raw_image)
+    packed=gzip.compress(cpio,mtime=0)
+    header=bytearray(struct.pack('>7I4B32s',0x27051956,0,0,len(packed),0,0,zlib.crc32(packed),5,22,3,1,b'initrd'))
+    struct.pack_into('>I',header,4,zlib.crc32(header))
+    initrd=root/'uInitrd';initrd.write_bytes(header+packed);usb.check_initrd(initrd,cpio)
+    rejects(usb.check_initrd,initrd,b'different cpio')
+    damaged=bytearray(initrd.read_bytes());damaged[-1]^=1;initrd.write_bytes(damaged)
+    rejects(usb.check_initrd,initrd,cpio)
+    print('PASS: boot payload checks reject truncated initramfs, wrong ARM64 header, load overlap and changed/invalid initrd')
 
     repo = root / "repo"
     repo.mkdir()

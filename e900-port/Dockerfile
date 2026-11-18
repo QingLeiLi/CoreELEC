@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     patchutils tar bzip2 gzip xz-utils zstd perl gawk gperf zip unzip diffutils \
     lzop make file xfonts-utils xsltproc default-jre-headless python3 \
     libc6-dev libncurses5-dev libjson-perl libxml-parser-perl libparse-yapp-perl \
-    rdfind golang-1.22-go git openssh-client rsync \
+    rdfind golang-1.22-go git openssh-client rsync squashfs-tools \
  && locale-gen en_US.UTF-8 \
  && mkdir -p /opt/e900-host-bin \
  && ln -s /usr/bin/gcc-12 /opt/e900-host-bin/gcc \

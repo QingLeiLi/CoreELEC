@@ -2,7 +2,9 @@
 
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。
 
-当前是实验性源码补丁和构建工具，不是已经适配完成的刷机包。已在任务 `43886158436` 完成完整 USB 镜像构建，包含 Linux 4.9.269、媒体模块、SYSTEM/Kodi 和本板 DTB；本地核对 35 项产物哈希，并独立读回校验 FAT 中的六个关键文件。首轮实机出现 USB 启动循环复位，移除 U 盘后 Android 正常；正在核对启动入口，见板级说明。工作区脚本不连接盒子、不写入磁盘设备，也不执行 eMMC 安装。
+当前已通过外置 USB 启动 Linux 4.9.269，Mali-450 MP2、Kodi 离屏 GUI 和输入导航可用。H.264 在临时修复下首次产出 13 帧，停止播放可正常退出；持续播放、物理 HDMI 和声音尚未完成。当前显示 HPD=0、VSYNC 未运行，强制显示模式测试曾导致失联及自动重启。盒子现已恢复稳定基线。
+
+任务 `43886158436` 完成了初版完整构建，但 SYSTEM 漏装全部媒体模块；已修正隐藏构建路径过滤问题。最新源码还补齐 MP2/固定 framebuffer、DI 可选时钟、七条媒体总线注册和 VLD DMC 通道。等价运行实验不代表这些源码已完成全量 ARM 编译。镜像打包已切到实测的 `booti` 布局，并检查 SYSTEM 的实际模块清单，详见 [当前启动与验证状态](boards/NORMAL-USB-BOOT.md)。仍是实验性适配，eMMC 保持禁用。
 
 现在优先使用 [GitHub Actions 云编译](CLOUD.md)，无需本地 Docker。下面保留 Docker 入口作为本地备用方案。
 
@@ -24,17 +26,20 @@ docker pull --platform linux/amd64 ubuntu:22.04
 
 | 文件 | 行为 | 状态 |
 |---|---|---|
-| `patches/linux/0001-gxlx2-identity.patch` | 内核增加真实 CPU ID 0x2a 及独立判断函数 | 本地 C 测试及云端内核编译通过，硬件未验证 |
-| `patches/media/0001-gxlx2-identity-and-firmware-trace.patch` | 补解码器 DT 匹配、型号名称、实际取用微码的日志 | 应用检查及云端模块编译通过，硬件未验证 |
+| `patches/linux/0001-gxlx2-identity.patch` | 内核增加真实 CPU ID 0x2a 及独立判断函数 | 真实 CPU ID 已实机确认；本地及原云端编译通过 |
+| `patches/media/0001-gxlx2-identity-and-firmware-trace.patch` | 补解码器 DT 匹配、型号名称、实际取用微码的日志 | 实机日志确认型号及微码选择；原云端模块编译通过 |
 | `patches/linux/0002-gxlx2-opt-in-hdmi-transport.patch` | 用独立 DT 属性启用 DWC/TOP 直接访问，保留 GXL PHY 配置 | 本地映射/分流测试及云端内核编译通过，硬件未验证 |
 | `patches/media/0002-gxlx2-experimental-clock-registration.patch` | 将 GXLX2 加入现有共享时钟注册列表 | 入口已编译通过；能力分支尚未完整审查 |
-| `patches/linux/0003-e900v21c-usb-board.patch` | 注册 E900V21C 1GB USB 实验板级 DTS | 本地及云端 DTB 编译和属性校验通过，硬件未验证 |
+| `patches/linux/0003-e900v21c-usb-board.patch` | 注册 E900V21C 1GB USB 实验板级 DTS | MP2/固定 framebuffer 运行实验通过；更新源码已通过 DTB 检查 |
+| `patches/linux/0005-gxlx2-optional-di-clock.patch` | 缺失 DI 可选 clkb 时处理 ENOENT | 等价二进制守卫已启动；源码宿主逻辑测试通过，ARM 构建待做 |
+| `patches/linux/0006-gxlx2-direct-media-register-buses.patch` | 注册已核对的七条媒体总线 | 临时模块实测读取寄存器及首批解码帧；源码 ARM 构建待做 |
+| `patches/media/0003-gxlx2-vld-dmc-channel.patch` | VLD 启用/停止/复位使用 bit13 | 等价模块实验可正常停止；源码宿主范围测试通过，ARM 构建待做 |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
 HDMI 补丁没有增加或重排原有 `chip_type` 枚举。它要求真实 CPU 为 GXLX2，HDMI 的 `ic_type` 保留为 3（GXL PHY 配置），另用 `amlogic,gxlx2-direct-hdmi` 选择直接访问。其他芯片及未启用该属性的路径继续使用现有配置。
 
-**仍需处理：**板级 DTS 的实机核对、HDMI TOP/DWC 初始化差异、HPD/DDC、PHY/PLL 的芯片特例、Mali/fbdev、音频，以及解码电源/时钟中依据 `>= G12A` 作出的能力判断。HDCP/安全寄存器访问路径也未完成核对；当前补丁只处理基础非安全寄存器传输，不能据此宣称 HDCP 可用。
+**仍需处理：**持续解码、HDMI TOP/DWC 初始化、HPD/DDC/VSYNC、PHY/PLL、音频及 parser/demux/AIU 寄存器偏移，以及媒体驱动依据 `>= G12A` 作出的其他能力判断。HDCP/安全寄存器访问路径也未完成核对；当前补丁只处理基础非安全寄存器传输，不能据此宣称 HDCP 可用。
 
 `decoder` 配置现包含 `boards/gxlx2_p291_1g_e900v21c.dts` 和对应 Makefile 补丁。它继承同版 CE 的 P212 1GB 定义，覆盖本板 CPU、USB、内存保留区、内部 RMII PHY 和 HDMI 访问方式；首轮禁用 eMMC、SD、SDIO、无线及未核对的 GPIO 外设。详细依据和限制见 [板级说明](boards/README.md)。旧 HDMI 片段仅保留作为参考。
 
@@ -74,7 +79,7 @@ bash scripts/docker.sh export identify
 | `baseline` | 固定官方源码，没有本工作区补丁 |
 | `identify` | CPU 识别和固件日志 |
 | `hdmi` | identify + 可选 HDMI 寄存器传输 |
-| `decoder` | hdmi + 实验性解码时钟注册 + E900 USB 板级 DTB |
+| `decoder` | hdmi + E900 USB 板级 DTB + DI/媒体总线/VLD DMC/解码时钟修复 |
 
 每个 profile 使用独立源码及编译目录，共用下载和 ccache 目录；同一卷禁止并发构建。修改补丁后，本地默认拒绝直接复用已有编译树；CI 显式开启受控增量更新，只清理受影响的内核/媒体包，保留兼容工具链。详见 [缓存说明](CLOUD.md#增量缓存)。
 

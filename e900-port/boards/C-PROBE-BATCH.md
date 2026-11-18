@@ -461,3 +461,54 @@ ELF, leaving all other bytes/relocations intact. No firmware/HEVC changes.
 It is a device-specific binary experiment, not a validated generic patch.
 Evidence was saved and candidate41 staged before recovery reboot; the runtime
 overlay has not been made persistent. Original normal boot remains on USB.
+
+
+## Register accessors and first decoded frames (42–49)
+
+Trial41 changed only positive DMC mask constants; candidate44 also fixes the
+inverse clear masks, five instructions total. The source equivalent now uses
+one GXLX2-aware VLD mask helper in enable, disable and reset. HEVC/firmware
+selection is unchanged. Actual channel status MMIO alone did not solve waits:
+register_ops_m8.c omits GXLX2 from both CPU registration lists. Read-only live
+RAM confirmed all 17 amports_ops pointers NULL, so codec_reg_read returned 0
+without accessing hardware. The original __initdata arrays were already freed.
+
+A fresh boot audit bound a temporary freestanding AArch64 e900_regops module
+to the matching Image, live kernel symbol addresses and pinned module-layout
+CRC. It calls register_reg_ops_per_cpu, which copies seven verified direct-bus
+records to kernel-owned memory with callbacks in core kernel text. There are
+no direct kernel-memory/instruction writes, force-loads or persistent hooks.
+DOS/AO/HHI/CBUS/VC/VPP/DMC were registered; ambiguous parser/AIU/demux/reset
+remained absent. clang's initial default ADRP relocation was rejected cleanly
+by the old module loader. The corrected large-code-model helper loaded with
+normal CRC checks and read DMC status 0xfffff through the codec API.
+
+Trial45 on a clean boot loaded the candidate44 runtime-only module overlay.
+The synthetic H.264 Main 1280x720 30fps sample produced 13 decoded frames and
+27 vdec-1 interrupts, zero reported frame/hardware errors, with no Oops taint.
+Subsequent counts stayed at 13; VSYNC stayed at one. Stop then successfully
+released decoder/channel/CMA resources, unlike the previous busy-loop failure.
+This is initial decode and teardown evidence only; sustained playback remains
+blocked by absent output timing. Firmware g12a_h264_multi.bin was deliberately
+not changed because the existing selection now demonstrates decoded frames.
+
+Normal display/mode changes while HPD=0 follow the driver's skip-initialization
+branch (misleading 'alread display in uboot' log). A direct hdmitx disp_mode
+write lost SSH and was followed by an automatic fresh boot. No persistent
+journal or pstore was available; do not infer a specific PLL/Oops/watchdog
+cause without evidence. Recovery baseline49: Kodi active NRestarts=0, Mali and
+meson-ir live, taint 4096, HPD=0, no helper/decoder overlay loaded. The normal
+USB loader and eMMC were not changed by these trials.
+
+Source patches 0006 (seven direct buses) and media0003 (VLD DMC) are in decoder
+profile. Host tests compile real patched registration/mask logic, preserve
+existing CPU tables including existing absent GXLX registration, and apply
+all patches to Git-blob-verified GPL fixtures. They are not an ARM kernel build.
+
+Image packaging now uses the proven raw Image/booti/external-initrd layout,
+not the original bootm Android-container path. The original CE initramfs was
+extracted from the real build and matched its known 6262784-byte CPIO hash.
+A real FAT+SquashFS roundtrip fixture verifies payload CRC/readback, build
+provenance, original initramfs identity and rejection of missing SYSTEM media
+modules/stale builds. Fresh cloud compilation and physical HDMI remain pending.
+No GitHub push/workflow dispatch was performed.

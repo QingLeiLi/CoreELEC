@@ -32,10 +32,11 @@ if state["last_action"] == "image" and state["last_action_exit_code"] == 0 and m
     if relative.is_absolute() or ".." in relative.parts or relative.parent != pathlib.Path("target"):
         raise ValueError("Unexpected prepared image path")
     image = repo / relative
-    if (prepared["run_id"] == os.environ.get("GITHUB_RUN_ID", "local")
+    if (prepared.get("schema") == 2
+            and prepared["run_id"] == os.environ.get("GITHUB_RUN_ID", "local")
             and prepared["run_attempt"] == os.environ.get("GITHUB_RUN_ATTEMPT", "local")
             and prepared["profile_state_sha256"] == usb.sha256(repo / ".e900-profile.json")
-            and prepared["boot_script_sha256"] == usb.sha256(usb.PORT / "boards/e900-usb-autoscript.src")
+            and prepared["boot_script_sha256"] == usb.sha256(usb.PORT / "boards/e900-usb-image.src")
             and prepared["sha256"] == usb.sha256(image)
             and prepared["board"]["sha256"] == usb.board.validate(usb.board.find_board(repo))["sha256"]):
         paths.extend([image, image.with_name(image.name + ".sha256"), image.with_name(image.name + ".json")])

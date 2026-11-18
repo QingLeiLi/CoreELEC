@@ -32,13 +32,38 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     (toolchain / "mcopy").symlink_to(mtools / "mcopy")
     kernel = repo / "build.test/build/linux-test/arch/arm64/boot/Image.lzo"
     kernel.parent.mkdir(parents=True)
-    kernel.write_bytes(b"ANDROID!" + bytes(4096))
+    def newc(name,body,mode):
+        fields=[1,mode,0,0,1,0,len(body),0,0,0,0,len(name)+1,0]
+        head=b"070701"+b"".join(f"{v:08x}".encode() for v in fields)+name.encode()+b"\0"
+        head+=bytes(-len(head)%4)
+        return head+body+bytes(-len(body)%4)
+    ramdisk=newc('init',b'#!/bin/sh\necho synthetic test\n',0o100755)+newc('TRAILER!!!',b'',0)
+    container=bytearray(4096+len(ramdisk))
+    container[:8]=b'ANDROID!'
+    struct.pack_into('<8I',container,8,16,0x1080000,len(ramdisk),0x1000000,0,0xf00000,0x100,2048)
+    container[2048:2064]=b'synthetic kernel'
+    container[4096:]=ramdisk
+    kernel.write_bytes(container)
+    image=kernel.with_name('Image');raw_image=bytearray(4096)
+    struct.pack_into('<2Q',raw_image,8,0x1080000,4096)
+    raw_image[56:60]=b'ARMd';image.write_bytes(raw_image)
+    module_tree=repo/'build.test/build/media_modules-aml-test/drivers'
+    module_tree.mkdir(parents=True)
+    names=['decoder_common.ko','amvdec_mh264.ko']
+    squash=repo/'system-root'
+    installed=squash/'usr/lib/kernel-overlays/base/lib/modules/4.9.269/media_modules-aml'
+    installed.mkdir(parents=True)
+    for name in names:
+        (module_tree/name).write_bytes(b'synthetic module')
+        shutil.copy2(module_tree/name,installed/name)
     board = kernel.parent / "dts/amlogic/coreelec-gxl" / (usb.board.BOARD + ".dtb")
     board.parent.mkdir(parents=True)
     shutil.copy2(dtb, board)
     (repo / ".e900-profile.json").write_text(json.dumps(dict(profile="decoder", board_dtb=usb.board.BOARD)))
     system = target / "CoreELEC-test.system"
-    system.write_bytes(b"hsqs" + bytes(4096))
+    squash_tool=shutil.which('mksquashfs')
+    assert squash_tool and shutil.which('unsquashfs'),'Install squashfs-tools'
+    subprocess.run([squash_tool,str(squash),str(system),'-noappend','-processors','1','-all-root','-quiet'],check=True)
     raw = target / "fixture.img"
     start, sectors = 2048, 65536
     header = bytearray(512)
@@ -56,7 +81,18 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     with raw.open("rb") as source, gzip.open(compressed, "wb") as destination:
         shutil.copyfileobj(source, destination)
     metadata = usb.prepare(repo)
-    assert set(metadata["fat_readback"]) == {"dtb.img", "aml_autoscript", "s905_autoscript", "cfgload", "kernel.img", "SYSTEM"}
+    assert set(metadata["fat_readback"]) == {"dtb.img", "e900-Image", "e900-uInitrd", "aml_autoscript", "s905_autoscript", "cfgload", "kernel.img", "SYSTEM"}
+    assert metadata['media_modules']==sorted(names)
+    assert metadata['boot_method'].startswith('booti /')
+    import hashlib
+    assert metadata['initramfs_sha256']==hashlib.sha256(ramdisk).hexdigest()
+    # A matching SYSTEM hash alone must never hide missing media modules again.
+    (installed/'amvdec_mh264.ko').unlink()
+    bad_system=target/'missing-modules.system'
+    subprocess.run([squash_tool,str(squash),str(bad_system),'-noappend','-processors','1','-all-root','-quiet'],check=True)
+    try:usb.check_media_modules(repo,bad_system)
+    except ValueError as exc:assert 'SYSTEM media modules mismatch' in str(exc)
+    else:raise AssertionError('Missing media driver was accepted')
     environment = dict(os.environ, E900_WORK_ROOT=str(repo.parent / "work"))
     subprocess.run([sys.executable, str(PORT / "scripts/export-artifacts.py"), str(repo), "decoder", "image", "0"], env=environment, check=True)
     exported = pathlib.Path(environment["E900_WORK_ROOT"]) / "export/decoder"
@@ -79,4 +115,4 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     print("PASS: real mtools/mkimage FAT roundtrip, provenance export and failed-retry cleanup")
     print("PASS: mismatched SYSTEM rejects preparation and clears the ready marker")
 
-print("Synthetic OS files only; the actual CoreELEC SYSTEM and hardware still need testing.")
+print("Synthetic payloads inside real FAT/SquashFS filesystems; source-built OS and hardware tests remain pending.")

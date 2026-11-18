@@ -13,7 +13,7 @@ sudo env DEBIAN_FRONTEND=noninteractive apt-get -o "Dir::Cache::archives=$deb_ca
   util-linux patchutils tar bzip2 gzip xz-utils zstd perl gawk gperf zip unzip \
   diffutils lzop make file gdb xfonts-utils xsltproc default-jre-headless python3 \
   libc6-dev libncurses5-dev libjson-perl libxml-parser-perl libparse-yapp-perl \
-  rdfind golang-1.22-go git openssh-client rsync
+  rdfind golang-1.22-go git openssh-client rsync squashfs-tools
 sudo locale-gen en_US.UTF-8
 # Keep the runner's existing alternatives groups intact.
 toolbin="$RUNNER_TEMP/e900-host-bin"

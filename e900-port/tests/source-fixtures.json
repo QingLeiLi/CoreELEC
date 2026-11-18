@@ -286,5 +286,21 @@
     "git_blob_sha1": "b34c3cc8e0103efb7530a00ea18a7392c6e556d6",
     "sha256": "bbc4db192bbb703752cd8c606dbdc2848fb3a42cd7677eaa34adc4d31aebfe3b",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/arch/registers/register_ops_m8.c",
+    "git_blob_sha1": "bdcd4424c0d66ba7a64a3d7b24253b28134e8ff1",
+    "sha256": "f64648200f45738b5bb57aff1bc96d3b3b63cb9b20c327f6b9f3ae19a0132924",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/old_cpu_version.h",
+    "git_blob_sha1": "8fd7a027fc8220b0a76d986f2eb629f7ae36cb07",
+    "sha256": "7c949d05777a7a5ea5099a19f0a913b8068965dbf29493964e3ab18c1e587af0",
+    "verified": true
   }
 ]

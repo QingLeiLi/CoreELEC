@@ -129,6 +129,7 @@ jobs:
           export E900_CE_REFERENCE="$E900_WORK_ROOT/CoreELEC-$PROFILE"
           python3 "$PORT_ROOT/tests/check-local.py"
           python3 "$PORT_ROOT/tests/check-di-clock.py"
+          python3 "$PORT_ROOT/tests/check-media-buses.py"
           python3 "$PORT_ROOT/tests/check-media-install.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"
           python3 "$PORT_ROOT/tests/check-usb-image.py"
@@ -159,6 +160,12 @@ jobs:
       - name: Prepare and read back E900 USB test image
         if: inputs.profile == 'decoder' && inputs.target == 'image'
         run: |
+          repo="$E900_WORK_ROOT/CoreELEC-$PROFILE"
+          dtbs=("$repo"/build.*/build/linux-*/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dtb)
+          toolbins=("$repo"/build.*/toolchain/bin)
+          test "${#dtbs[@]}" = 1
+          test "${#toolbins[@]}" = 1
+          python3 "$PORT_ROOT/tests/check-usb-roundtrip.py" "${dtbs[0]}" "${toolbins[0]}" "${toolbins[0]}/mkimage"
           python3 "$PORT_ROOT/scripts/prepare-usb-image.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE"
           python3 "$PORT_ROOT/scripts/export-artifacts.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE" "$PROFILE" image 0
 

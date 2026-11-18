@@ -8,7 +8,9 @@ import struct
 
 PINNED='c4c355cfcce7406ed11ab30b0b831ce1642a51d2f9e497829190d779acaa0fdf'
 # Same source VLD-mask selection, inlined in init/release plus exported reset.
-PATCHES=[('vdec_init',0x5364,26),('vdec_reset_core',0x5f80,19),('vdec_release',0x7bdc,19)]
+PATCHES=[('vdec_init',0x5364,26,False),('vdec_reset_core',0x5f80,19,False),
+         ('vdec_reset_core_inverse',0x5f88,22,True),('vdec_release',0x7bdc,19,False),
+         ('vdec_release_inverse',0x7bd8,26,True)]
 
 def make(source,output):
     assert not output.exists()
@@ -21,10 +23,11 @@ def make(source,output):
     names=original[sections[stridx][4]:sections[stridx][4]+sections[stridx][5]]
     text=next(s for s in sections if names[s[0]:].split(b'\0',1)[0]==b'.text')
     patched=bytearray(original);changes=[]
-    for function,offset,reg in PATCHES:
+    for function,offset,reg,inverse in PATCHES:
         assert offset+4<=text[5]
         pos=text[4]+offset
-        before=0x52a00400|reg;after=0x52840000|reg
+        before=(0x12a00400 if inverse else 0x52a00400)|reg
+        after=(0x12840000 if inverse else 0x52840000)|reg
         assert struct.unpack_from('<I',original,pos)[0]==before,(function,hex(offset))
         struct.pack_into('<I',patched,pos,after)
         changes.append(dict(function=function,text_offset=offset,file_offset=pos,before=hex(before),after=hex(after)))
@@ -33,7 +36,7 @@ def make(source,output):
     output.mkdir(parents=True)
     (output/'decoder_common.ko').write_bytes(patched)
     (output/'dmc-provenance.json').write_text(json.dumps({'original_sha256':PINNED,'patched_sha256':hashlib.sha256(patched).hexdigest(),'scope':'GXLX2 VLD mask bit21 to bit13; no firmware or HEVC changes','instructions':changes,'hardware_tested':False,'not_for_other_boards':True},indent=2)+'\n')
-    print('Prepared three-instruction DMC candidate; all other ELF bytes and relocations unchanged')
+    print('Prepared five-instruction DMC candidate (set and clear masks); all other ELF bytes and relocations unchanged')
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path);p.add_argument('output',type=Path)

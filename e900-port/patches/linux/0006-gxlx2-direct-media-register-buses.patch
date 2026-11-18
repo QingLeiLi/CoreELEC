@@ -1,0 +1,40 @@
+Subject: [EXPERIMENTAL] register the seven verified GXLX2 media buses
+
+Pinned-source equivalent of the one-boot hardware experiment.
+Full ARM64 source build remains pending.
+
+diff --git a/drivers/amlogic/media/common/arch/registers/register_ops_m8.c b/drivers/amlogic/media/common/arch/registers/register_ops_m8.c
+--- a/drivers/amlogic/media/common/arch/registers/register_ops_m8.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops_m8.c
+@@ -78,6 +78,20 @@
+ 	{IO_DMC_BUS, 0, codecio_read_dmcbus, codecio_write_dmcbus},
+ };
+ 
++/* GXLX2 numeric ID falls outside both legacy registration lists.
++ * Register only the direct buses verified on P291; parser/AIU/demux/reset
++ * offsets still require a separate hardware audit and are not guessed here.
++ */
++static struct chip_register_ops gxlx2_ops[] __initdata = {
++	{IO_DOS_BUS, 0, codecio_read_dosbus, codecio_write_dosbus},
++	{IO_AO_BUS, 0, codecio_read_aobus, codecio_write_aobus},
++	{IO_HHI_BUS, -0x1000, codecio_read_hiubus, codecio_write_hiubus},
++	{IO_C_BUS, 0, codecio_read_cbus, codecio_write_cbus},
++	{IO_VC_BUS, 0, codecio_read_vcbus, codecio_write_vcbus},
++	{IO_VPP_BUS, 0, codecio_read_vcbus, codecio_write_vcbus},
++	{IO_DMC_BUS, 0, codecio_read_dmcbus, codecio_write_dmcbus},
++};
++
+ static int __init vdec_reg_ops_init(void)
+ {
+ 	int cpus[] = REGISTER_FOR_CPU;
+@@ -129,6 +143,10 @@
+ 		}
+ 	}
+ 
++	if (is_meson_gxlx2_cpu())
++		return register_reg_ops_per_cpu(MESON_CPU_MAJOR_ID_GXLX2,
++			gxlx2_ops, ARRAY_SIZE(gxlx2_ops));
++
+ 	register_reg_ops_mgr(cpus, m8_ops,
+ 		sizeof(m8_ops) / sizeof(struct chip_register_ops));
+ 

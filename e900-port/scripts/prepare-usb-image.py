@@ -61,6 +61,75 @@ def check_script(path, source):
         raise ValueError("U-Boot script does not contain the reviewed source")
 
 
+def boot_payloads(container, image):
+    """Extract unchanged CE newc initramfs; the vendor bootm container is not booted."""
+    data=container.read_bytes()
+    if len(data)<608 or data[:8]!=b"ANDROID!":
+        raise ValueError("Expected CE Android boot image container")
+    kernel_size,_,ramdisk_size,_,second_size,_,_,page=struct.unpack_from("<8I",data,8)
+    if page<2048 or page>65536 or page&(page-1) or not kernel_size or not ramdisk_size or second_size:
+        raise ValueError("Unsupported Android boot image layout")
+    start=page+((kernel_size+page-1)//page)*page
+    if start+ramdisk_size>len(data):
+        raise ValueError("Truncated Android ramdisk")
+    ramdisk=data[start:start+ramdisk_size]
+    # Validate every newc entry and a real executable /init without rewriting it.
+    pos=0;init=False
+    while True:
+        if ramdisk[pos:pos+6]!=b"070701" or pos+110>len(ramdisk):
+            raise ValueError("Invalid CE newc ramdisk")
+        try:
+            fields=[int(ramdisk[pos+6+i*8:pos+14+i*8],16) for i in range(13)]
+        except ValueError as exc:
+            raise ValueError("Invalid CE cpio header") from exc
+        size,namesize=fields[6],fields[11]
+        if not namesize or pos+110+namesize>len(ramdisk):
+            raise ValueError("Truncated CE cpio name")
+        name=ramdisk[pos+110:pos+110+namesize]
+        if name[-1:]!=b"\0":raise ValueError("Unterminated CE cpio name")
+        body=(pos+110+namesize+3)&~3
+        if body+size>len(ramdisk):raise ValueError("Truncated CE cpio body")
+        if name[:-1] in {b"init",b"./init"}:
+            init=(fields[1]&0o170000)==0o100000 and bool(fields[1]&0o111) and size>0
+        pos=(body+size+3)&~3
+        if name[:-1]==b"TRAILER!!!":break
+    if not init:raise ValueError("CE ramdisk lacks executable /init")
+    raw=image.read_bytes()
+    if len(raw)<64 or raw[56:60]!=b"ARMd":raise ValueError("Invalid raw ARM64 Image")
+    text_offset,image_size=struct.unpack_from("<2Q",raw,8)
+    if text_offset!=0x1080000 or max(image_size,len(raw))>0x4000000:
+        raise ValueError("ARM64 Image does not fit the tested USB boot layout")
+    if ramdisk_size>0x3000000:raise ValueError("Initramfs overlaps the USB DTB load address")
+    return ramdisk
+
+
+def check_initrd(path, expected):
+    data=path.read_bytes()
+    if len(data)<64:raise ValueError("Truncated legacy initrd")
+    fields=struct.unpack(">7I4B32s",data[:64]);header=bytearray(data[:64]);header[4:8]=bytes(4)
+    if fields[0]!=0x27051956 or zlib.crc32(header)!=fields[1] or fields[7:11]!=(5,22,3,1):
+        raise ValueError("Invalid ARM64 gzip legacy initrd header")
+    if fields[3]!=len(data)-64 or zlib.crc32(data[64:])!=fields[6]:
+        raise ValueError("Invalid legacy initrd payload CRC")
+    if gzip.decompress(data[64:])!=expected:raise ValueError("CE initramfs changed during packaging")
+
+
+def check_media_modules(repo, system):
+    roots=list(repo.glob("build.*/build/media_modules-aml-*"))
+    if len(roots)!=1:raise ValueError("Expected one built media module tree")
+    modules=[p for p in roots[0].rglob("*.ko") if all(not part.startswith('.') for part in p.relative_to(roots[0]).parts)]
+    expected={p.name for p in modules}
+    if not expected or len(expected)!=len(modules):raise ValueError("Empty or ambiguous built media modules")
+    tool=shutil.which("unsquashfs")
+    if not tool:raise ValueError("unsquashfs is required to audit SYSTEM media modules")
+    listing=subprocess.check_output([tool,"-l",str(system)],text=True)
+    actual={pathlib.PurePosixPath(line.strip()).name for line in listing.splitlines()
+            if '/media_modules-aml/' in line and line.rstrip().endswith('.ko')}
+    if actual!=expected:
+        raise ValueError(f"SYSTEM media modules mismatch: missing={sorted(expected-actual)}, extra={sorted(actual-expected)}")
+    return sorted(actual)
+
+
 def prepare(repo):
     state = json.loads((repo / ".e900-profile.json").read_text())
     if state["profile"] != "decoder" or state.get("board_dtb") != board.BOARD:
@@ -79,7 +148,7 @@ def prepare(repo):
         if len(matches) != 1:
             raise ValueError(f"Expected one built host tool: {name}")
         tools[name] = str(matches[0])
-    script_source = PORT / "boards/e900-usb-autoscript.src"
+    script_source = PORT / "boards/e900-usb-image.src"
     source_bytes = script_source.read_bytes()
     forbidden = {"saveenv", "defenv", "store", "mmc", "nand", "reset"}
     for line in source_bytes.decode().splitlines():
@@ -98,15 +167,6 @@ def prepare(repo):
                         "-C", "none", "-n", "E900 USB test", "-d", str(script_source), str(script)], check=True)
         check_script(script, source_bytes)
         image_argument = str(raw) + "@@" + str(offset)
-        entries = {"dtb.img": dtb, "aml_autoscript": script, "s905_autoscript": script, "cfgload": script}
-        readback = {}
-        for name, source in entries.items():
-            subprocess.run([tools["mcopy"], "-i", image_argument, "-o", str(source), "::/" + name], check=True)
-            copied = temporary / (name + ".readback")
-            subprocess.run([tools["mcopy"], "-i", image_argument, "::/" + name, str(copied)], check=True)
-            if copied.read_bytes() != source.read_bytes():
-                raise ValueError(f"FAT readback mismatch: {name}")
-            readback[name] = sha256(copied)
         # Also verify this is a complete CE image, with the kernel just built.
         kernel = temporary / "kernel.img"
         subprocess.run([tools["mcopy"], "-i", image_argument, "::/kernel.img", str(kernel)], check=True)
@@ -124,6 +184,24 @@ def prepare(repo):
         expected_system = source_image.with_name(source_image.name[:-len("-Generic.img.gz")] + ".system")
         if not expected_system.is_file() or sha256(system) != sha256(expected_system):
             raise ValueError("USB SYSTEM does not match this build")
+        images=list(repo.glob("build.*/build/linux-*/arch/arm64/boot/Image"))
+        if len(images)!=1:raise ValueError("Expected one raw ARM64 Image")
+        ramdisk=boot_payloads(kernel,images[0])
+        packed=temporary/"initrd.gz";packed.write_bytes(gzip.compress(ramdisk,mtime=0))
+        initrd=temporary/"e900-uInitrd"
+        subprocess.run([tools["mkimage"],"-A","arm64","-O","linux","-T","ramdisk",
+                        "-C","gzip","-n","E900 original CE initramfs","-d",str(packed),str(initrd)],check=True)
+        check_initrd(initrd,ramdisk)
+        media_modules=check_media_modules(repo,system)
+        entries={"dtb.img":dtb,"e900-Image":images[0],"e900-uInitrd":initrd,
+                 "aml_autoscript":script,"s905_autoscript":script,"cfgload":script}
+        readback={}
+        for name,source in entries.items():
+            subprocess.run([tools["mcopy"],"-i",image_argument,"-o",str(source),"::/"+name],check=True)
+            copied=temporary/(name+".readback")
+            subprocess.run([tools["mcopy"],"-i",image_argument,"::/"+name,str(copied)],check=True)
+            if copied.read_bytes()!=source.read_bytes():raise ValueError(f"FAT readback mismatch: {name}")
+            readback[name]=sha256(copied)
         readback["kernel.img"] = sha256(kernel)
         readback["SYSTEM"] = sha256(system)
         compressed = temporary / output.name
@@ -134,11 +212,13 @@ def prepare(repo):
     digest = sha256(output)
     checksum = output.with_name(output.name + ".sha256")
     checksum.write_text(f"{digest}  {output.name}\n")
-    metadata = dict(schema=1, run_id=os.environ.get("GITHUB_RUN_ID", "local"),
+    metadata = dict(schema=2, run_id=os.environ.get("GITHUB_RUN_ID", "local"),
                     run_attempt=os.environ.get("GITHUB_RUN_ATTEMPT", "local"),
                     image=str(output.relative_to(repo)), sha256=digest, board=validated,
                     profile_state_sha256=sha256(repo / ".e900-profile.json"),
                     boot_script_sha256=sha256(script_source), fat_readback=readback,
+                    boot_method="booti / raw ARM64 Image / original CE initramfs",
+                    initramfs_sha256=hashlib.sha256(ramdisk).hexdigest(), media_modules=media_modules,
                     hardware_tested=False, intended_use="external USB test only")
     marker.write_text(json.dumps(metadata, indent=2) + "\n")
     output.with_name(output.name + ".json").write_text(json.dumps(metadata, indent=2) + "\n")

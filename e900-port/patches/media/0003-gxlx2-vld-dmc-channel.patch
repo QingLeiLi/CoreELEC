@@ -1,0 +1,57 @@
+Subject: [EXPERIMENTAL] use legacy VLD DMC bit13 for GXLX2
+
+Pinned-source equivalent of the one-boot hardware experiment.
+Full ARM64 source build remains pending.
+
+diff --git a/drivers/frame_provider/decoder/utils/vdec.c b/drivers/frame_provider/decoder/utils/vdec.c
+--- a/drivers/frame_provider/decoder/utils/vdec.c
++++ b/drivers/frame_provider/decoder/utils/vdec.c
+@@ -675,6 +675,15 @@
+ 	}
+ }
+ 
++/* GXLX2 retains the legacy VLD DMC channel despite its newer CPU ID. */
++static unsigned int vdec_vld_dmc_mask(void)
++{
++	if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A &&
++	    get_cpu_major_id() != AM_MESON_CPU_MAJOR_ID_GXLX2)
++		return 1U << 21;
++	return 1U << 13;
++}
++
+ static void vdec_disable_DMC(struct vdec_s *vdec)
+ {
+ 	/*close first,then wait pedding end,timing suggestion from vlsi*/
+@@ -686,9 +695,7 @@
+ 		return;
+ 
+ 	if (input->target == VDEC_INPUT_TARGET_VLD) {
+-		mask = (1 << 13);
+-		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
+-			mask = (1 << 21);
++		mask = vdec_vld_dmc_mask();
+ 	} else if (input->target == VDEC_INPUT_TARGET_HEVC) {
+ 		mask = (1 << 4); /*hevc*/
+ 		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
+@@ -728,9 +735,7 @@
+ 		return;
+ 
+ 	if (input->target == VDEC_INPUT_TARGET_VLD) {
+-		mask = (1 << 13);
+-		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
+-			mask = (1 << 21);
++		mask = vdec_vld_dmc_mask();
+ 	} else if (input->target == VDEC_INPUT_TARGET_HEVC) {
+ 		mask = (1 << 4); /*hevc*/
+ 		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
+@@ -3930,9 +3935,7 @@
+ 
+ 	if (get_cpu_major_id() <= AM_MESON_CPU_MAJOR_ID_M8B)
+ 		return;
+-	mask = 1 << 13; /*bit13: DOS VDEC interface*/
+-	if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
+-		mask = 1 << 21; /*bit21: DOS VDEC interface*/
++	mask = vdec_vld_dmc_mask();
+ 
+ 	spin_lock_irqsave(&vdec_spin_lock, flags);
+ 	codec_dmcbus_write(DMC_REQ_CTRL,
