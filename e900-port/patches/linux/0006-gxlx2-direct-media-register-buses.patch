@@ -1,12 +1,23 @@
-Subject: [EXPERIMENTAL] register the seven verified GXLX2 media buses
+Subject: [EXPERIMENTAL] publish verified GXLX2 media buses after device init
 
-Pinned-source equivalent of the one-boot hardware experiment.
-Full ARM64 source build remains pending.
+Early registration prevents boot; blacklisting it plus runtime registration
+works. Diagnostic75 also boots when the unchanged native registration function
+runs after the final existing late initcall, without blacklist or helper.
+This source candidate uses late_initcall_sync for GXLX2 only. Its exact linked
+position and full ARM build still require hardware regression.
 
 diff --git a/drivers/amlogic/media/common/arch/registers/register_ops_m8.c b/drivers/amlogic/media/common/arch/registers/register_ops_m8.c
 --- a/drivers/amlogic/media/common/arch/registers/register_ops_m8.c
 +++ b/drivers/amlogic/media/common/arch/registers/register_ops_m8.c
-@@ -78,6 +78,20 @@
+@@ -15,6 +15,7 @@
+  *
+  */
+ 
++#include <linux/init.h>
+ #include <linux/amlogic/media/registers/register_ops.h>
+ #include <linux/amlogic/media/registers/register_map.h>
+ #include <linux/amlogic/media/utils/log.h>
+@@ -78,6 +79,20 @@
  	{IO_DMC_BUS, 0, codecio_read_dmcbus, codecio_write_dmcbus},
  };
  
@@ -27,14 +38,31 @@ diff --git a/drivers/amlogic/media/common/arch/registers/register_ops_m8.c b/dri
  static int __init vdec_reg_ops_init(void)
  {
  	int cpus[] = REGISTER_FOR_CPU;
-@@ -129,6 +143,10 @@
+@@ -129,6 +144,10 @@
  		}
  	}
  
++	/* Early publication enables unsafe GXLX2 accesses during device init. */
 +	if (is_meson_gxlx2_cpu())
-+		return register_reg_ops_per_cpu(MESON_CPU_MAJOR_ID_GXLX2,
-+			gxlx2_ops, ARRAY_SIZE(gxlx2_ops));
++		return 0;
 +
  	register_reg_ops_mgr(cpus, m8_ops,
  		sizeof(m8_ops) / sizeof(struct chip_register_ops));
  
+@@ -139,3 +158,16 @@
+ }
+ 
+ postcore_initcall(vdec_reg_ops_init);
++
++/* GXLX2 boots with the same seven callbacks published after device init.
++ * Other SoCs keep their original postcore registration and bus tables.
++ * Keep this table in __initdata: late initcalls run before free_initmem().
++ */
++static int __init gxlx2_reg_ops_late_init(void)
++{
++	if (!is_meson_gxlx2_cpu())
++		return 0;
++	return register_reg_ops_per_cpu(MESON_CPU_MAJOR_ID_GXLX2,
++		gxlx2_ops, ARRAY_SIZE(gxlx2_ops));
++}
++late_initcall_sync(gxlx2_reg_ops_late_init);

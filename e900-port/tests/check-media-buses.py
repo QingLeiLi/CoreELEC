@@ -30,16 +30,18 @@ with tempfile.TemporaryDirectory(prefix='e900-media-buses-') as directory:
 #include <stdlib.h>
 #define __init
 #define __initdata
-#define postcore_initcall(x)
+#define postcore_initcall(x) static int (*early_init)(void)=x
+#define late_initcall_sync(x) static int (*late_init)(void)=x
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 #define MESON_CPU_MAJOR_ID_GXLX2 0x2a
 struct chip_register_ops { int bus_type,ext_offset; int (*read)(unsigned); void (*write)(unsigned,unsigned); int r_cnt,w_cnt; };
-static int cpu,calls,count;
+static int cpu,calls,count,forced_error;
 static struct chip_register_ops result[17];
 static int get_cpu_type(void) { return cpu; }
 static bool is_meson_gxlx2_cpu(void) { return cpu==0x2a; }
 static int register_reg_ops_per_cpu(int id,struct chip_register_ops *ops,int n) {
  if(id!=cpu) return 0;
+ if(forced_error) return forced_error;
  calls++;count+=n;for(int i=0;i<n;i++)result[ops[i].bus_type]=ops[i];return 0;
 }
 static int register_reg_ops_mgr(int *ids,struct chip_register_ops *ops,int n) {
@@ -51,17 +53,22 @@ static int register_reg_ops_mgr(int *ids,struct chip_register_ops *ops,int n) {
         harness+=('static int '+name+'(unsigned r) { return (int)r; }\n') if '_read_' in name else ('static void '+name+'(unsigned r,unsigned v) { (void)r;(void)v; }\n')
     harness+=source+r'''
 int main(int argc,char **argv) {
- assert(argc==2);cpu=(int)strtol(argv[1],NULL,0);assert(vdec_reg_ops_init()==0);
+ assert(argc==2);cpu=(int)strtol(argv[1],NULL,0);assert(early_init()==0);
  if(cpu==0x2a) {
+  assert(calls==0 && count==0); /* No early GXLX2 interface publication. */
+  assert(late_init()==0);
   assert(calls==1 && count==7);
   int expected[]={IO_DOS_BUS,IO_AO_BUS,IO_HHI_BUS,IO_C_BUS,IO_VC_BUS,IO_VPP_BUS,IO_DMC_BUS};
   for(int i=0;i<7;i++){int b=expected[i];assert(result[b].read && result[b].write);assert(result[b].ext_offset==(b==IO_HHI_BUS?-0x1000:0));}
   assert(!result[IO_PARSER_BUS].read && !result[IO_AIU_BUS].read && !result[IO_DEMUX_BUS].read && !result[IO_RESET_BUS].read);
   assert(result[IO_HHI_BUS].read==codecio_read_hiubus);
   assert(result[IO_DMC_BUS].read==codecio_read_dmcbus);
+  forced_error=-12;assert(late_init()==-12); /* Preserve allocation failure. */
  } else if(cpu==0x26) {
+  assert(late_init()==0);
   assert(calls==0 && count==0); /* Existing absent registration is preserved. */
  } else {
+  int before=calls;assert(late_init()==0 && calls==before);
   assert(calls==2 && count==13);
   assert(result[IO_PARSER_BUS].read && result[IO_AIU_BUS].read);
   assert(result[IO_PARSER_BUS].ext_offset==(cpu>MESON_CPU_MAJOR_ID_TXL && cpu!=MESON_CPU_MAJOR_ID_GXLX?0xf00:0));
@@ -90,5 +97,5 @@ int main(void) {
 ''')
     subprocess.run([compiler,'-std=c99','-Wall','-Werror',str(c),'-o',str(root/'mask')],check=True)
     subprocess.run([str(root/'mask')],check=True)
-print('PASS: real registration installs seven verified GXLX2 buses and preserves existing SoC tables')
+print('PASS: GXLX2 publishes no early buses, installs seven at late sync init and propagates failures; other SoC paths preserved')
 print('PASS: all three VLD DMC paths share bit13 for GXLX2; other CPU masks preserved')
