@@ -1,0 +1,9 @@
+[Unit]
+Description=E900 early GPU initialization evidence capture
+DefaultDependencies=no
+Before=systemd-udev-trigger.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/busybox sh /run/e900-kernel-capture.sh
+TimeoutStopSec=2s

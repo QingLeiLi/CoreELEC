@@ -349,3 +349,27 @@ available, and brackets kernel-overlays-setup. The pre-switch RAM marker now
 uses /sysroot/dev/mem after the /dev move. Normal CE init flow is retained;
 kernel, DT and minimal bootloader scripts are unchanged. Shell syntax and
 archive preservation checks passed. Hardware outcome remains pending.
+
+## Full system reachable over SSH; GPU initialization incomplete
+
+Trial31 was reachable at 192.168.31.11 with CoreELEC 21.3, Linux 4.9.269,
+working SSH and STORAGE expanded to 27.9GiB. Kodi waited behind remote-config
+while modprobe meson-ir slept in __driver_attach. A /run-only service drop-in
+(KillMode=process, TimeoutStopSec=3s) allowed stopping the parent without waiting
+for its blocked child; Kodi then ran but exited with EGL_BAD_ALLOC. It was
+stopped to avoid repeated GUI failures. The Mali m450 userspace library was
+correctly selected, but /dev/mali was absent and /sys/module/mali/initstate
+remained coming. /proc/modules reported Loading; kernel taint was 4224
+(out-of-tree plus Oops). No complete Oops remained in the rotated journals.
+IR may be a secondary victim of a device lock left held after an Oops; this
+is a hypothesis, not a demonstrated root cause. No module unload was forced.
+
+SSH subsequently stopped responding without a requested reboot. Mac-to-router
+connectivity remained healthy. No replacement initrd was deployed after that
+disconnection. Fixed GPU source commit was retrieved for local analysis.
+
+Prepared trial32 adds a runtime-only service before udev coldplug, with bounded
+90-sample dmesg snapshots into /storage/e900-kernel32. On Oops taint it freezes
+a fresh snapshot after two seconds, including module/process evidence. Original
+normal-init entries and switch_root remain. Host checks covered clean timeout
+and Oops capture branches. Trial32 hardware deployment is pending connectivity.
