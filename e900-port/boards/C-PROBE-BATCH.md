@@ -322,3 +322,16 @@ old evidence bytes. sync followed by blockdev --flushbufs /dev/block/sda made
 file and raw reads agree. Revalidate the FAT mapping and expected bytes before
 using the existing guarded evidence slot; never infer a changed mapping from
 stale whole-device cache alone.
+
+Minimal-I/O transport29 reached diagnostic PID1: E9C28.TXT proof, E9D28.TXT
+and E9A28.TXT recovered; Android reports e9_entry=reached/e9_log=passed and
+Netac capacity 60825600 sectors. Fixed framebuffer reserved 0x3dc00000/36MiB,
+osd probe OK; DI probe OK. OSD RDMA restart messages persist, so graphics is
+not validated. One successful reduced-I/O trial does not establish the USB
+failure mechanism. Evidence is preserved privately under transport29-results.
+
+Next trial full-minimal30 keeps the passing guarded kernel and byte-identical
+fixed DT, retains minimal I/O, and restores the ce25 normal CE init with
+progress hooks. The original switch_root/systemd flow remains. This trial
+does not intentionally reboot Android after collecting logs. Expected progress
+files: E9BOOT.TXT/E9CELOG.TXT/E9CECMD.TXT after /flash is available.
