@@ -46,6 +46,13 @@ def invalidated_packages(previous, state):
     if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools", "megatools"}:
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
+    old_install = {entry["package"]: entry for entry in previous.get("package_install_fixes", [])}
+    new_install = {entry["package"]: entry for entry in state.get("package_install_fixes", [])}
+    changed_install = {name for name in old_install.keys() | new_install.keys()
+                       if old_install.get(name) != new_install.get(name)}
+    if changed_install - {"media_modules-aml"}:
+        raise RuntimeError("Unexpected package installation policy change")
+    packages.update(changed_install)
     if previous.get("build_options") != state.get("build_options"):
         packages.update(["linux", "media_modules-aml"])
     return sorted(packages)
@@ -255,6 +262,28 @@ def host_codegen_fix(repo):
     return relative, content, metadata
 
 
+def media_module_install_fix(repo):
+    relative = "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk"
+    original = (repo / relative).read_text()
+    old = r"""    find $PKG_BUILD/ -name \*.ko -not -path '*/\.*' -exec cp {} $INSTALL/$(get_full_module_dir)/$PKG_NAME \;"""
+    new = r"""  (
+    cd "$PKG_BUILD" || exit 1
+    find . -path '*/.*' -prune -o -type f -name \*.ko -exec cp {} "$INSTALL/$(get_full_module_dir)/$PKG_NAME" \;
+  )
+  if [ -z "$(find "$INSTALL/$(get_full_module_dir)/$PKG_NAME" -maxdepth 1 -type f -name \*.ko -print -quit)" ]; then
+    echo "No media modules were installed" >&2
+    return 1
+  fi"""
+    normalized = original.replace(new, old)
+    if (hashlib.sha256(normalized.encode()).hexdigest() != "c6b45a180ceea205066c255f2fabe8329c35eae05baebb2b65054e3583597438"
+            or normalized.count(old) != 1):
+        raise RuntimeError("Unexpected media module package recipe; refusing local edits")
+    content = normalized.replace(old, new)
+    metadata = dict(package="media_modules-aml", policy="relative-module-discovery-v1", destination=relative,
+                    file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -263,6 +292,7 @@ def install(repo, profile):
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     validate_packages(repo)
     host_path, host_content, host_metadata = host_codegen_fix(repo)
+    media_path, media_content, media_metadata = media_module_install_fix(repo)
     source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
                     wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
                     u_boot_tools_download_fix(repo), megatools_download_fix(repo)]
@@ -284,6 +314,7 @@ def install(repo, profile):
                             sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
     state = dict(profile=profile, pins=PINS, patches=entries,
                  source_downloads=[entry[2] for entry in source_fixes],
+                 package_install_fixes=[media_metadata],
                  host_codegen=host_metadata,
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
                  status="experimental-unvalidated")
@@ -324,6 +355,7 @@ def install(repo, profile):
     for source_path, source_content, _ in source_fixes:
         (repo / source_path).write_text(source_content)
     (repo / host_path).write_text(host_content)
+    (repo / media_path).write_text(media_content)
     if option_content:
         option_destination.parent.mkdir(exist_ok=True)
         option_destination.write_text(option_content)

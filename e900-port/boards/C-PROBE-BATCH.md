@@ -428,3 +428,36 @@ DTS preprocessing/dtc validation, installer guards and cache logic (kernel/media
 rebuild while toolchain is retained). The new source kernel has NOT been fully
 compiled or hardware-tested; live success uses the existing diagnostic kernel.
 No GitHub push or workflow dispatch was performed.
+
+## Normal boot and media-module audit (36–41)
+
+Normal36 removes probe/checkpoint writes and repeat suppression and uses the
+original pinned CE initrd. Two ordinary warm reboots had distinct boot IDs,
+Mali live, no Oops and Kodi running with no restarts. The existing SYSTEM hash
+was revalidated. Hardware HDMI is still HPD=0; the user display override stays.
+
+A generated/independently parsed H.264 Main 720p30 60s sample revealed missing
+amstream devices. The artifact build contained 28 media .ko files, while SYSTEM
+had none. The package used absolute find paths with a hidden-component filter;
+its .e900-work ancestor excluded every .ko. A host reproduction proved old=0
+versus relative discovery=1 visible module. The installer now normalizes the
+pinned recipe to relative discovery, rejects empty installs, and tracks a
+package_install_fixes policy. Migrating that field invalidates only media,
+retaining kernel/toolchain. Real recipe execution tests cover hidden roots,
+hidden intermediates, firmware copying, empty output and local-edit refusal.
+
+Runtime-only overlay38 restored matching-vermagic modules without forced
+loading or persistent overlay config. media_clock, firmware, decoder_common,
+stream_input and amvdec_mh264 initialized, creating amstream nodes. Actual
+H.264 playback still produced zero frames/data/interrupts. SysRq CPU backtraces
+located infinite DMC waits in vdec_reset_core and vdec_release. This was not
+called successful decoding. strace was explicitly terminated and detached.
+
+Read-only MMIO at DMC base 0xc8838000 confirmed REQ_CTRL(0)=0xffff and
+CHAN_STS(0x32)=0xfffff: bit13 exists/high, bit21 remains zero. The inherited
+CPU>=G12A logic selects bit21 for GXLX2. Candidate41 changes exactly three
+MOV-immediate instructions (init/reset/release) in the pinned decoder_common
+ELF, leaving all other bytes/relocations intact. No firmware/HEVC changes.
+It is a device-specific binary experiment, not a validated generic patch.
+Evidence was saved and candidate41 staged before recovery reboot; the runtime
+overlay has not been made persistent. Original normal boot remains on USB.

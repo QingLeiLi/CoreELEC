@@ -129,6 +129,7 @@ jobs:
           export E900_CE_REFERENCE="$E900_WORK_ROOT/CoreELEC-$PROFILE"
           python3 "$PORT_ROOT/tests/check-local.py"
           python3 "$PORT_ROOT/tests/check-di-clock.py"
+          python3 "$PORT_ROOT/tests/check-media-install.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"
           python3 "$PORT_ROOT/tests/check-usb-image.py"
 
