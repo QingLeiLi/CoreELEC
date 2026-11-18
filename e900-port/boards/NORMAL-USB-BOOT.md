@@ -47,3 +47,12 @@ ramdisk from Image.lzo and wraps it as an ARM64 gzip legacy initrd. ARM64
 header/load bounds, init executable, ramdisk CRCs, all FAT payload readbacks,
 and SYSTEM/build provenance are checked. This updated pipeline passes host
 FAT/SquashFS fixture tests; a fresh full ARM source build remains pending.
+
+
+Later display isolation and persistent-console validation are documented in
+[DISPLAY-PIPELINE.md](DISPLAY-PIPELINE.md). CSC=0 permits 60Hz VSYNC and a 60s
+H.264 test reaching 1799 observed frames and normal EOF, but remains a diagnostic
+bypass. The runtime DT now restores ramoops compatible (SHA256 6d1fbd5d99216d1c54a22b05ce840eb1939bcd1d05e419653f53f7e212818565),
+without changing kernel/loader/initrd. The original pinned normal kit above is
+historical and still contains e9trace; do not confuse its DT with the restored
+runtime logger. Warm-reboot marker recovery was verified on the restored DT.

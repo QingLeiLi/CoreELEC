@@ -23,7 +23,7 @@ def sections(data):
     names=data[rows[index][4]:rows[index][4]+rows[index][5]]
     return {names[s[0]:].split(b'\0',1)[0].decode():s for s in rows}
 
-def make(template,symbols,output):
+def make(template,symbols,output,mask_vsync=False):
     assert not output.exists()
     data=template.read_bytes();assert hashlib.sha256(data).hexdigest()==TEMPLATE_SHA
     sec=sections(data);this=sec['.gnu.linkonce.this_module'];raw=data[this[4]:this[4]+this[5]]
@@ -38,6 +38,11 @@ def make(template,symbols,output):
     buses=[(0,0,'dosbus'),(1,0,'aobus'),(2,-0x1000,'hiubus'),(3,0,'cbus'),(4,0,'vcbus'),(13,0,'vcbus'),(14,0,'dmcbus')]
     for name,value in s.items():
         if name not in {'_text','_etext','amports_ops'}:assert lo<=value<hi,name
+    irq_call=''
+    if mask_vsync:
+        irq=audit['vsync_irq']
+        assert irq['number']==27 and set(irq['handlers'])=={'osd-vsync','vsync'}
+        irq_call='((void (*)(unsigned int))0x%xULL)(27);' % s['disable_irq']
     entries=[]
     for bus,offset,name in buses:
         entries.append('{%d,%d,(read_fn)0x%xULL,(write_fn)0x%xULL,0,0}'%(bus,offset,s['codecio_read_'+name],s['codecio_write_'+name]))
@@ -49,6 +54,7 @@ struct chip_register_ops { int bus_type,ext_offset;read_fn read;write_fn write;i
 _Static_assert(sizeof(struct chip_register_ops)==32,"Kernel ops ABI");
 static struct chip_register_ops ops[] = { ENTRIES };
 __attribute__((section(".init.text"))) int init_module(void) {
+ IRQ_CALL
  int result=((int (*)(int,struct chip_register_ops*,int))REGAPI)(42,ops,7);
  if (result) return result;
  int value=((int (*)(unsigned int,unsigned int))READAPI)(14,0x32);
@@ -71,7 +77,7 @@ __attribute__((section(".modinfo"),used))
 static const char info[]="license=GPL\\0vermagic=VERMAGIC\\0name=e900_regops\\0description=Temporary GXLX2 direct-bus registration\\0";
 asm(".pushsection .plt,\\"ax\\",%progbits\\n.byte 0\\n.popsection\\n");
 '''
-    source=source.replace('ENTRIES',','.join(entries)).replace('REGAPI',hex(s['register_reg_ops_per_cpu'])+'ULL').replace('READAPI',hex(s['codec_reg_read'])+'ULL').replace('PRINTAPI',hex(s['printk'])+'ULL').replace('VERSION_BYTES',','.join(str(x) for x in record)).replace('VERMAGIC',VERMAGIC)
+    source=source.replace('IRQ_CALL',irq_call).replace('ENTRIES',','.join(entries)).replace('REGAPI',hex(s['register_reg_ops_per_cpu'])+'ULL').replace('READAPI',hex(s['codec_reg_read'])+'ULL').replace('PRINTAPI',hex(s['printk'])+'ULL').replace('VERSION_BYTES',','.join(str(x) for x in record)).replace('VERMAGIC',VERMAGIC)
     # Generate actual C string escapes, not doubled source backslashes.
     source=source.replace('\\\\','\\')
     output.mkdir(parents=True);c=output/'e900_regops.c';c.write_text(source)
@@ -89,10 +95,11 @@ asm(".pushsection .plt,\\"ax\\",%progbits\\n.byte 0\\n.popsection\\n");
             assert relocation in {257,264,266,268,269},relocation
     sym=gs['.symtab'];rows=[struct.unpack_from('<IBBHQQ',generated,sym[4]+i*24) for i in range(sym[5]//24)]
     assert not any(row[3]==0 and row[0]!=0 for row in rows),'Unresolved external symbol'
-    (output/'helper-provenance.json').write_text(json.dumps({'boot_id':audit['boot_id'],'template_sha256':TEMPLATE_SHA,'module_sha256':hashlib.sha256(generated).hexdigest(),'vermagic':VERMAGIC,'buses':[x[0] for x in buses],'purpose':'Temporary direct bus registration via existing kernel API','persistent':False,'hardware_tested':False},indent=2)+'\n')
+    (output/'helper-provenance.json').write_text(json.dumps({'boot_id':audit['boot_id'],'template_sha256':TEMPLATE_SHA,'module_sha256':hashlib.sha256(generated).hexdigest(),'vermagic':VERMAGIC,'buses':[x[0] for x in buses],'purpose':'Temporary direct bus registration via existing kernel API','persistent':False,'masked_vsync_irq':27 if mask_vsync else None,'mask_recovery':'reboot restores IRQ state' if mask_vsync else None,'hardware_tested':False},indent=2)+'\n')
     print('Prepared helper with matching module ABI/version CRC; no unresolved external symbols')
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['template','symbols','output']:p.add_argument(name,type=Path)
-    a=p.parse_args();make(a.template,a.symbols,a.output)
+    p.add_argument('--mask-vsync',action='store_true',help='One-boot isolation: mask audited shared VSYNC IRQ27 before registration; reboot restores it')
+    a=p.parse_args();make(a.template,a.symbols,a.output,a.mask_vsync)
