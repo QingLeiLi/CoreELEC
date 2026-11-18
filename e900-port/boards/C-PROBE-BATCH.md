@@ -289,3 +289,14 @@ PATH; generate reset ledger profile control27. Verify the actual on-device
 kernel and original trace DT match the successful reference before replacing
 scripts. This test requests automatic reboot after logs, unlike normal CE.
 The lack of a new marker/file still cannot independently prove fault cause.
+
+## Isolate framebuffer DT reservation (control28)
+
+control27 proved diagnostic PID1 and log export with CE bootargs and the old
+trace DT. control28 changes only the DT framebuffer reservation to the fixed
+reg from ce25. The guarded kernel and CE bootargs are unchanged. Diagnostic
+PID1 only versions output names and RAM markers: E9C28.TXT/E9D28.TXT/E9A28.TXT,
+marker e9280001. FDT decoding confirms that framebuffer reservation properties
+are the only differences versus the passing control27 DT; both display nodes
+remain enabled. Keep this separate from the previous headless/normal-init
+attempts so failure or success has an interpretable single-variable boundary.
