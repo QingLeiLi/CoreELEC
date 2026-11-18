@@ -335,3 +335,17 @@ fixed DT, retains minimal I/O, and restores the ce25 normal CE init with
 progress hooks. The original switch_root/systemd flow remains. This trial
 does not intentionally reboot Android after collecting logs. Expected progress
 files: E9BOOT.TXT/E9CELOG.TXT/E9CECMD.TXT after /flash is available.
+
+full-minimal30 returned Android with the init-entry RAM marker. Recovered logs
+prove normal CE init mounted SYSTEM and STORAGE and reached the checkpoint
+before_prepare_sysroot. This is not a proven stall there: prepare_sysroot
+moves /flash into /sysroot/flash, invalidating the original export path. A
+read-only ext4 inspection found only lost+found in STORAGE, no init.log; final
+switch_root was not established.
+
+Trial31 corrects instrumentation to discover /flash or /sysroot/flash and
+/dev or /sysroot/dev, /proc or /sysroot/proc. Export includes init output when
+available, and brackets kernel-overlays-setup. The pre-switch RAM marker now
+uses /sysroot/dev/mem after the /dev move. Normal CE init flow is retained;
+kernel, DT and minimal bootloader scripts are unchanged. Shell syntax and
+archive preservation checks passed. Hardware outcome remains pending.

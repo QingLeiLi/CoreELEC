@@ -72,15 +72,24 @@ def make(kit, output, mkimage, dtc, headless=False, proof_file=None):
     hook = '''
 # E900 trial: keep original CE flow, export checkpoints only after /flash exists.
 e9_export() {
-  echo "$1" >/tmp/e9-current-step
-  echo "e900 ce25: $1" >/dev/kmsg
-  if /usr/bin/busybox mountpoint -q /flash; then
-    if /usr/bin/busybox mount -o remount,rw /flash; then
-      echo "E900 ce25 checkpoint=$1" >/flash/E9BOOT.TXT
-      /usr/bin/busybox dmesg >/flash/E9CELOG.TXT
-      /usr/bin/busybox cat /proc/cmdline >/flash/E9CECMD.TXT
+  [ ! -d /tmp ] || echo "$1" >/tmp/e9-current-step
+  e9_dev=/dev
+  [ -e /dev/kmsg ] || e9_dev=/sysroot/dev
+  echo "e900 ce25: $1" >"$e9_dev/kmsg"
+  e9_flash=
+  for e9_path in /flash /sysroot/flash; do
+    if /usr/bin/busybox mountpoint -q "$e9_path"; then e9_flash="$e9_path"; break; fi
+  done
+  if [ -n "$e9_flash" ]; then
+    if /usr/bin/busybox mount -o remount,rw "$e9_flash"; then
+      echo "E900 ce25 checkpoint=$1" >"$e9_flash/E9BOOT.TXT"
+      /usr/bin/busybox dmesg >"$e9_flash/E9CELOG.TXT"
+      e9_proc=/proc
+      [ -f /proc/cmdline ] || e9_proc=/sysroot/proc
+      /usr/bin/busybox cat "$e9_proc/cmdline" >"$e9_flash/E9CECMD.TXT"
+      [ ! -f "$e9_dev/init.log" ] || /usr/bin/busybox cp "$e9_dev/init.log" "$e9_flash/E9INIT.TXT"
       /usr/bin/busybox sync
-      /usr/bin/busybox mount -o remount,ro /flash
+      /usr/bin/busybox mount -o remount,ro "$e9_flash"
     fi
   fi
 }
@@ -126,9 +135,10 @@ e9_export init_entered
     init=init.replace(anchor,hook+'\n'+anchor,1)
     assert init.count('  $BOOT_STEP\n')==1
     init=init.replace('  $BOOT_STEP\n','  e9_export "before_$BOOT_STEP"\n  $BOOT_STEP\n  e9_export "after_$BOOT_STEP"\n',1)
+    init=init.replace('/usr/bin/busybox chroot /sysroot /usr/sbin/kernel-overlays-setup', 'e9_export before_kernel_overlays\n/usr/bin/busybox chroot /sysroot /usr/sbin/kernel-overlays-setup\ne9_export after_kernel_overlays', 1)
     switch='exec /usr/bin/busybox switch_root /sysroot /usr/lib/systemd/systemd $INIT_ARGS $INIT_UNIT'
     assert init.count(switch)==1
-    init=init.replace(switch,'e9_export before_switch_root\n/usr/bin/busybox dd if=/e9-full-switch.bin of=/dev/mem bs=1 seek=122679296 count=4 2>/dev/null\n'+switch,1)
+    init=init.replace(switch,'e9_export before_switch_root\n/usr/bin/busybox dd if=/e9-full-switch.bin of=/sysroot/dev/mem bs=1 seek=122679296 count=4 2>/dev/null\n'+switch,1)
     assert init.count('e9_export before_switch_root')==1
     result=[]
     for name,fields,body in entries:
