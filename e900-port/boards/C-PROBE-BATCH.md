@@ -389,3 +389,21 @@ the ln applet, so its sysinit wants symlink was never created. The corrected
 generator uses a regular sysinit.target.d drop-in Wants= instead, copied with
 the existing cp applet. Live SSH journal retrieval supplied the Oops regardless.
 Trial33 uses that corrected runtime capture alongside the MP2 DT.
+
+Trial33 hardware result: new boot ID confirmed and live DT num_of_pp=2. Mali
+is live and /dev/mali exists; kernel taint is 4096 (out-of-tree), without Oops.
+remote-config completes normally. This supports PP2 probing as the cause of
+the prior GPU abort and secondary platform-driver lock blockage. Kodi starts
+with EGL 1.4 / ARM / Mali-450 MP, no restarts, and reaches the CE wizard.
+However an actual Kodi screenshot is black; this is not validated GUI output.
+HPD=0, empty disp_cap and ProbeResolutions failed. FreeType can open arial.ttf
+successfully via ctypes despite Kodi font loading errors. Trial34 temporarily
+sets the supported CE userdata disp_cap override to 1080p60hz, preserving the
+previous absence and guisettings under /storage/e900-display34, to test invalid
+resolution geometry while the display is disconnected.
+
+The corrected early capture service did run and completed its bounded clean
+case, reporting no Oops within 90 samples. GPU evidence and screenshots are
+kept privately. Ordinary shutdown on the old Oops kernel was stuck; a reboot
+request alone was not treated as success. Boot ID and DT property proved the
+actual transition before reporting the fix.
