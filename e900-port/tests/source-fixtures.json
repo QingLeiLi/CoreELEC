@@ -302,5 +302,29 @@
     "git_blob_sha1": "8fd7a027fc8220b0a76d986f2eb629f7ae36cb07",
     "sha256": "7c949d05777a7a5ea5099a19f0a913b8068965dbf29493964e3ab18c1e587af0",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c",
+    "git_blob_sha1": "52d23632cb540d58e8bed619e584e4964a1bb770",
+    "sha256": "64f15b7dbe3f1864102f80cebf9832eddd87b388e5c3f8b91150be7f126e434b",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/amvecm/amvecm.h",
+    "git_blob_sha1": "4df17792397b39281759c258a9ee79ef8226937b",
+    "sha256": "9306f9caad7c55e30b74de8b91177f4390557e41c7c0a3116fc7aa440786d577",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.h",
+    "git_blob_sha1": "2b5fd655a3f70bb90304d24809f0c23f38d80ff7",
+    "sha256": "15703042d46fad1add8565da95e4990c681254bc1370da7fda104d4ef1555ef5",
+    "verified": true
   }
 ]

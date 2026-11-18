@@ -1,0 +1,41 @@
+Subject: [EXPERIMENTAL] avoid unsupported POST2 matrix access on GXLX2
+
+A one-branch runtime experiment keeps CSC=7 and normal register flushing
+while bypassing only the POST2 selector. Other SoCs retain their existing
+behavior. Full ARM source compilation remains pending.
+
+diff --git a/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c b/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
+--- a/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
++++ b/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
+@@ -20,6 +20,7 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/amlogic/media/vfm/vframe.h>
+ #include <linux/amlogic/media/amvecm/amvecm.h>
+ #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
+@@ -3631,6 +3632,12 @@
+ 	if (disable_flush_flag)
+ 		return;
+ 
++	/* P291's GXL VPU profile cannot access the G12A POST2 register bank.
++	 * Keep CSC and the other matrix selectors active on GXLX2.
++	 */
++	if (is_meson_gxlx2_cpu() && mtx_sel == POST2_MTX)
++		return;
++
+ 	if (mtx_sel == VD1_MTX) {
+ 		matrix_coef00_01 = VPP_VD1_MATRIX_COEF00_01;
+ 		matrix_coef02_10 = VPP_VD1_MATRIX_COEF02_10;
+@@ -3739,6 +3746,10 @@
+ 
+ void mtx_init(enum vpp_matrix_e mtx_sel, enum mtx_csc_e mtx_csc, int mtx_on)
+ {
++	/* Apply the same POST2 scope to the companion initializer. */
++	if (is_meson_gxlx2_cpu() && mtx_sel == POST2_MTX)
++		return;
++
+ 	switch (mtx_sel) {
+ 	case VD1_MTX:
+ 		VSYNC_WRITE_VPP_REG_BITS(VPP_VD1_MATRIX_EN_CTRL, mtx_on, 0, 1);

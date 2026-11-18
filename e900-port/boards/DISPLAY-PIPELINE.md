@@ -1,10 +1,12 @@
 # E900 GXLX2 display pipeline experiments (50–56)
 
-Current working state uses the tested clock-guard kernel/MP2 DT, a runtime-only
+Trial55 reference state used the tested clock-guard kernel/MP2 DT, a runtime-only
 seven-bus registration helper, candidate44 VLD DMC module overlay, and runtime
 `/sys/module/am_vecm/parameters/csc_en=0`. Nothing in this experiment installs
 the overlay/helper or parameter into persistent startup. A reboot returns to
 the normal USB baseline. eMMC and bootloader environment remain untouched.
+
+Later trials restored CSC=7 using a POST2-only guard; see [POST2 validation](POST2-VALIDATION.md).
 
 ## Evidence
 

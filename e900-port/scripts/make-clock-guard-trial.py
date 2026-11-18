@@ -24,7 +24,10 @@ def make(original_path, output):
     reset = load("guard_reset", "make-reset-entry-image.py")
     original = original_path.read_bytes()
     assert hashlib.sha256(original).hexdigest() == trace.PINNED_IMAGE
-    scratch, hook = 0xcf1350, 0xcd4e04
+    # Linker padding after __idmap_text_end, below _etext. The earlier
+    # slot 0xcf1350 was __cpu_soft_restart and must remain intact.
+    scratch, hook = 0xcfff00, 0xcd4e04
+    assert original[scratch:scratch + 28] == bytes(28)
     assert struct.unpack_from("<I", original, hook)[0] == 0x97dfbc37
     delta = 0xcd4e08 - (scratch + 12)
     assert -(1 << 20) <= delta < (1 << 20)
@@ -52,7 +55,8 @@ def make(original_path, output):
     (output / "guard-provenance.json").write_text(json.dumps(dict(
         original_sha256=trace.PINNED_IMAGE, image_sha256=hashlib.sha256(image).hexdigest(),
         hook=hook, scratch=scratch, instructions=[hex(w) for w in words],
-        trial="NULL/ERR_PTR clock guard only; not final GXLX2 clock adaptation", hardware_tested=False), indent=2) + "\n")
+        trial="NULL/ERR_PTR clock guard only; not final GXLX2 clock adaptation",
+        zero_padding_stub=True, cpu_soft_restart_preserved=True, hardware_tested=False), indent=2) + "\n")
     print("Prepared missing-clock guard trial:", output)
 
 

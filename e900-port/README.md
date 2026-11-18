@@ -2,7 +2,7 @@
 
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。
 
-当前已通过外置 USB 启动 Linux 4.9.269，Mali-450 MP2、Kodi 离屏 GUI 和输入导航可用。H.264 在临时修复及 CSC 隔离下完成一分钟播放，最终读到 1799 帧、无丢帧或解码错误并正常 EOF；VSYNC/RDMA 持续运行。CSC=0 是诊断绕过，精确颜色处理修复、物理 HDMI 和声音尚未完成。当前显示 HPD=0；保留 CSC 时强制模式曾失联并自动重启。见 [显示路径诊断](boards/DISPLAY-PIPELINE.md)。
+当前已通过外置 USB 启动 Linux 4.9.269，Mali-450 MP2、Kodi 离屏 GUI 和输入导航可用。POST2 单点保护可在 CSC=7、正常寄存器刷新下完成一分钟 H.264 播放；源码等价修复已通过宿主检查，完整 ARM 构建、物理 HDMI 和声音仍待验证。当前 HPD=0，不能由离屏截图推断电视实际画面。见 [显示路径诊断](boards/DISPLAY-PIPELINE.md) 和 [POST2 验证记录](boards/POST2-VALIDATION.md)。
 
 任务 `43886158436` 完成了初版完整构建，但 SYSTEM 漏装全部媒体模块；已修正隐藏构建路径过滤问题。最新源码还补齐 MP2/固定 framebuffer、DI 可选时钟、七条媒体总线注册和 VLD DMC 通道。等价运行实验不代表这些源码已完成全量 ARM 编译。镜像打包已切到实测的 `booti` 布局，并检查 SYSTEM 的实际模块清单，详见 [当前启动与验证状态](boards/NORMAL-USB-BOOT.md)。仍是实验性适配，eMMC 保持禁用。
 
@@ -34,6 +34,7 @@ docker pull --platform linux/amd64 ubuntu:22.04
 | `patches/linux/0005-gxlx2-optional-di-clock.patch` | 缺失 DI 可选 clkb 时处理 ENOENT | 等价二进制守卫已启动；源码宿主逻辑测试通过，ARM 构建待做 |
 | `patches/linux/0006-gxlx2-direct-media-register-buses.patch` | 注册已核对的七条媒体总线 | 临时模块实测读取寄存器及首批解码帧；源码 ARM 构建待做 |
 | `patches/media/0003-gxlx2-vld-dmc-channel.patch` | VLD 启用/停止/复位使用 bit13 | 等价模块实验可正常停止；源码宿主范围测试通过，ARM 构建待做 |
+| `patches/linux/0007-gxlx2-post2-matrix-guard.patch` | GXLX2 避免访问当前 VPU 配置不支持的 POST2 矩阵 | 单点二进制实验及宿主 I/O 等价检查通过；ARM 源码构建待做 |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
