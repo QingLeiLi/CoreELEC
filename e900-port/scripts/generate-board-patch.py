@@ -19,7 +19,7 @@ name = "gxlx2_p291_1g_e900v21c"
 new = old.replace(anchor, anchor + f"dtb-$(CONFIG_ARM64) += coreelec-gxl/{name}.dtb\n")
 destination = f"arch/arm64/boot/dts/amlogic/coreelec-gxl/{name}.dts"
 parts = ["Subject: [EXPERIMENTAL] add E900V21C GXLX2 1GB USB board\n\n",
-         "Hardware validation is pending; internal MMC controllers are disabled.\n\n",
+         "USB boot and Mali MP2 initialization tested; HDMI output validation remains pending.\n\n",
          f"diff --git a/{makefile} b/{makefile}\n"]
 parts.extend(difflib.unified_diff(old.splitlines(True), new.splitlines(True),
                                 fromfile="a/" + makefile, tofile="b/" + makefile))

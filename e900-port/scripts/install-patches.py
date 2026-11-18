@@ -19,7 +19,8 @@ PROFILES = {
 }
 PROFILES["hdmi"] = PROFILES["identify"] + ["linux/0002-gxlx2-opt-in-hdmi-transport.patch"]
 PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-registration.patch",
-                                         "linux/0003-e900v21c-usb-board.patch"]
+                                         "linux/0003-e900v21c-usb-board.patch",
+                                         "linux/0005-gxlx2-optional-di-clock.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
 HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")

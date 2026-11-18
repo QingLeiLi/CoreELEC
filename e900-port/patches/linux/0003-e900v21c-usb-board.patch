@@ -1,6 +1,6 @@
 Subject: [EXPERIMENTAL] add E900V21C GXLX2 1GB USB board
 
-Hardware validation is pending; internal MMC controllers are disabled.
+USB boot and Mali MP2 initialization tested; HDMI output validation remains pending.
 
 diff --git a/arch/arm64/boot/dts/amlogic/Makefile b/arch/arm64/boot/dts/amlogic/Makefile
 --- a/arch/arm64/boot/dts/amlogic/Makefile
@@ -17,7 +17,7 @@ diff --git a/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
 new file mode 100644
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,89 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/* Experimental E900V21C 5800-2ATA411, GXLX2, 1GB. USB boot only. */
 +#include "gxl_p212_1g.dts"
@@ -44,9 +44,10 @@ new file mode 100644
 +
 +		/* The old boot firmware uses 0x3dc00000 for its framebuffer. */
 +		linux,meson-fb {
-+			size = <0x0 0x02400000>;
-+			alignment = <0x0 0x00400000>;
-+			alloc-ranges = <0x0 0x3dc00000 0x0 0x02400000>;
++			/delete-property/ size;
++			/delete-property/ alignment;
++			/delete-property/ alloc-ranges;
++			reg = <0x0 0x3dc00000 0x0 0x02400000>;
 +		};
 +	};
 +
@@ -92,4 +93,17 @@ new file mode 100644
 +	/* Internal RMII needs no external RGMII pin mux. */
 +	pinctrl-names = "internal_eth_pins";
 +	pinctrl-0 = <>;
++};
++
++/* Original P291 Android DT exposes PP0 and PP1 only. Accessing PP2's MMU
++ * at 0xd00c6004 caused a synchronous external abort on this hardware.
++ */
++&gpu {
++	num_of_pp = <2>;
++	sc_mpp = <2>;
++	pmu_domain_config = <1 2 4 0 0 0 0 0 0 1 2 0>;
++	interrupts = <0 160 4>, <0 161 4>, <0 162 4>, <0 163 4>,
++		     <0 164 4>, <0 165 4>, <0 166 4>, <0 167 4>;
++	interrupt-names = "IRQGP", "IRQGPMMU", "IRQPP", "IRQPMU",
++			  "IRQPP0", "IRQPPMMU0", "IRQPP1", "IRQPPMMU1";
 +};

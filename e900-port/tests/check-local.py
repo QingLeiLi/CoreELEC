@@ -52,7 +52,7 @@ with tempfile.TemporaryDirectory(prefix="e900-port-check-") as directory:
         for patch in sorted((ROOT / "patches" / package).glob("*.patch")):
             run(["git", "apply", "--check", patch], fixtures[package])
             run(["git", "apply", patch], fixtures[package])
-    print("PASS: five patches apply sequentially to verified pinned source files")
+    print("PASS: all source patches apply sequentially to verified pinned source files")
 
     compiler = shutil.which("clang") or shutil.which("cc")
     assert compiler, "A host C compiler is needed"
@@ -227,7 +227,7 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
         installer.install(decoder, "decoder")
         installer.install(decoder, "decoder")
         state = json.loads((decoder / ".e900-profile.json").read_text())
-        assert state["board_dtb"] == "gxlx2_p291_1g_e900v21c" and len(state["patches"]) == 5
+        assert state["board_dtb"] == "gxlx2_p291_1g_e900v21c" and len(state["patches"]) == len(installer.PROFILES["decoder"])
         options = decoder / ".coreelec/options"
         assert options.read_bytes() == (ROOT / "boards/usb-build.options").read_bytes()
         options.write_text(options.read_text() + "# user edit\n")

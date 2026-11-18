@@ -262,5 +262,29 @@
     "git_blob_sha1": "551b1e02f7c8bcff7b72168f0481218f1067ffb5",
     "sha256": "42928617bbbb10389bde230bc4cea99d7c318172481850dcff19fc0715dae2d9",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "arch/arm64/kernel/head.S",
+    "git_blob_sha1": "3a01ee59453f5156623b875ebae10d99e864b7b0",
+    "sha256": "a093a03b80b5ca1798fce6d589ac8e614b4fb5df1ad25f0c0a97ded1bc6e218b",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "init/main.c",
+    "git_blob_sha1": "1c9fa82d9b2e134605f578789521d1f154dfe271",
+    "sha256": "b30cfbfb8c1a9d2c35fd39167a07d9633c3851d51c0904584fc3e79dc3736858",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/deinterlace/deinterlace.c",
+    "git_blob_sha1": "b34c3cc8e0103efb7530a00ea18a7392c6e556d6",
+    "sha256": "bbc4db192bbb703752cd8c606dbdc2848fb3a42cd7677eaa34adc4d31aebfe3b",
+    "verified": true
   }
 ]

@@ -407,3 +407,24 @@ case, reporting no Oops within 90 samples. GPU evidence and screenshots are
 kept privately. Ordinary shutdown on the old Oops kernel was stuck; a reboot
 request alone was not treated as success. Boot ID and DT property proved the
 actual transition before reporting the fix.
+
+Trial34 confirmed visible GUI rendering: official Kodi screenshot at 1920x1080
+shows the complete CoreELEC welcome wizard, background and fonts. A subsequent
+Up action moved focus from Next to English, confirmed by a second screenshot.
+The temporary supported disp_cap override removed the invalid blank-resolution
+GUI geometry and font-loading failures with HPD=0. This proves offscreen GUI
+and event navigation, not physical HDMI pixels or hardware remote key mapping.
+The override remains documented under /storage/e900-display34 until the user
+can reconnect/enable the display. Do not delete it while HPD stays zero.
+
+Source consolidation now includes fixed framebuffer reg and MP2 resources in
+the generated board patch. A new GXLX2-only DI clock patch converts precisely
+the observed ENOENT optional-clkb lookup into NULL, matching the tested binary
+guard for this hardware; valid handles, defer errors and other SoCs retain
+existing behavior. Added pinned GPL fixtures also cover the optional source
+trace patch, which previously lacked its head.S/main.c host fixtures.
+Host checks pass: all patch application, real extracted DI lookup scope, board
+DTS preprocessing/dtc validation, installer guards and cache logic (kernel/media
+rebuild while toolchain is retained). The new source kernel has NOT been fully
+compiled or hardware-tested; live success uses the existing diagnostic kernel.
+No GitHub push or workflow dispatch was performed.

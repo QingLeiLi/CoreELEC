@@ -24,9 +24,10 @@
 
 		/* The old boot firmware uses 0x3dc00000 for its framebuffer. */
 		linux,meson-fb {
-			size = <0x0 0x02400000>;
-			alignment = <0x0 0x00400000>;
-			alloc-ranges = <0x0 0x3dc00000 0x0 0x02400000>;
+			/delete-property/ size;
+			/delete-property/ alignment;
+			/delete-property/ alloc-ranges;
+			reg = <0x0 0x3dc00000 0x0 0x02400000>;
 		};
 	};
 

@@ -75,7 +75,14 @@ def validate(path):
     assert cells(cma["alloc-ranges"]) == [0, 0x5000000, 0, 0x400000]
     assert "no-memory" not in nodes["/secmon"]
     framebuffer = nodes["/reserved-memory/linux,meson-fb"]
-    assert cells(framebuffer["alloc-ranges"]) == [0, 0x3dc00000, 0, 0x2400000]
+    assert cells(framebuffer["reg"]) == [0, 0x3dc00000, 0, 0x2400000]
+    assert not any(k in framebuffer for k in ["size", "alignment", "alloc-ranges"])
+    gpu = nodes["/mali@d00c0000"]
+    assert cells(gpu["num_of_pp"]) == [2] and cells(gpu["sc_mpp"]) == [2]
+    assert cells(gpu["pmu_domain_config"]) == [1, 2, 4, 0, 0, 0, 0, 0, 0, 1, 2, 0]
+    assert cells(gpu["interrupts"]) == [v for irq in range(160, 168) for v in [0, irq, 4]]
+    assert gpu["interrupt-names"].rstrip(b"\0").split(b"\0") == [
+        b"IRQGP", b"IRQGPMMU", b"IRQPP", b"IRQPMU", b"IRQPP0", b"IRQPPMMU0", b"IRQPP1", b"IRQPPMMU1"]
     assert nodes["/meson-fb"]["logo_addr"] == b"0x3dc00000\0"
     assert cells(nodes["/usb2phy@d0078000"]["portnum"]) == [2]
     assert cells(nodes["/usb3phy@d0078080"]["portnum"]) == [0]
