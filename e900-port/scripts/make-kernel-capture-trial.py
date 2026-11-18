@@ -23,15 +23,15 @@ def make(source, output, mkimage):
     anchor = 'e9_export before_kernel_overlays\n'
     assert init.count(anchor) == 1
     hook = '''# Install only into this boot's runtime systemd configuration.
-/usr/bin/busybox mkdir -p /sysroot/run/systemd/system/sysinit.target.wants
+/usr/bin/busybox mkdir -p /sysroot/run/systemd/system/sysinit.target.d
 /usr/bin/busybox cp /e9-capture.service /sysroot/run/systemd/system/e900-kernel-capture.service
 /usr/bin/busybox cp /e9-capture.sh /sysroot/run/e900-kernel-capture.sh
-/usr/bin/busybox ln -s ../e900-kernel-capture.service /sysroot/run/systemd/system/sysinit.target.wants/e900-kernel-capture.service
+/usr/bin/busybox cp /e9-capture-target.conf /sysroot/run/systemd/system/sysinit.target.d/e900-capture.conf
 '''
     init = init.replace(anchor, hook+anchor, 1)
     result = [(n,f,init.encode() if n == 'init' else b) for n,f,b in entries]
     inode = max(f[0] for _,f,_ in entries)+1
-    for name,file in [('e9-capture.service','e900-kernel-capture.service'),('e9-capture.sh','e900-kernel-capture.sh')]:
+    for name,file in [('e9-capture.service','e900-kernel-capture.service'),('e9-capture.sh','e900-kernel-capture.sh'),('e9-capture-target.conf','e900-kernel-capture-target.conf')]:
         body = (PORT/'boards'/file).read_bytes()
         result.append((name,[inode,0o100644,0,0,1,0,len(body),0,0,0,0,0,0],body))
         inode += 1

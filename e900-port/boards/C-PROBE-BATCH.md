@@ -373,3 +373,19 @@ Prepared trial32 adds a runtime-only service before udev coldplug, with bounded
 a fresh snapshot after two seconds, including module/process evidence. Original
 normal-init entries and switch_root remain. Host checks covered clean timeout
 and Oops capture branches. Trial32 hardware deployment is pending connectivity.
+
+Trial32 reached SSH again and preserved the live/journal Mali Oops: synchronous
+external abort at virtual 0xffffff8008831004, PFN d00c6, while resetting a Mali
+MMU. Stack: _mali_osk_mem_ioread32 -> mali_mmu_enable_stall/mali_mmu_reset ->
+mali_mmu_create -> mali_create_group -> mali_parse_config_groups. The private
+Android P291 reference exposes num_of_pp=2, sc_mpp=2 and only PP0/PP1 IRQs;
+the inherited P212 CE node exposed PP2 as well. Trial33 copies exactly those
+five GPU properties (count, scaling count, PMU domains, IRQ values and names)
+from the verified Android reference, preserving all clock/DVFS/reg settings.
+This tests nonexistent PP2 access as the Oops cause; it is not yet validation.
+
+Trial32 capture service was installed but not started: initrd BusyBox lacks
+the ln applet, so its sysinit wants symlink was never created. The corrected
+generator uses a regular sysinit.target.d drop-in Wants= instead, copied with
+the existing cp applet. Live SSH journal retrieval supplied the Oops regardless.
+Trial33 uses that corrected runtime capture alongside the MP2 DT.

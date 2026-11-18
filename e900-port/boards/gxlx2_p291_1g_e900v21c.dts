@@ -73,3 +73,16 @@
 	pinctrl-names = "internal_eth_pins";
 	pinctrl-0 = <>;
 };
+
+/* Original P291 Android DT exposes PP0 and PP1 only. Accessing PP2's MMU
+ * at 0xd00c6004 caused a synchronous external abort on this hardware.
+ */
+&gpu {
+	num_of_pp = <2>;
+	sc_mpp = <2>;
+	pmu_domain_config = <1 2 4 0 0 0 0 0 0 1 2 0>;
+	interrupts = <0 160 4>, <0 161 4>, <0 162 4>, <0 163 4>,
+		     <0 164 4>, <0 165 4>, <0 166 4>, <0 167 4>;
+	interrupt-names = "IRQGP", "IRQGPMMU", "IRQPP", "IRQPMU",
+			  "IRQPP0", "IRQPPMMU0", "IRQPP1", "IRQPPMMU1";
+};
