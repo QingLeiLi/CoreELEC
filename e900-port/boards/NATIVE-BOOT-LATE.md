@@ -1,5 +1,9 @@
 # GXLX2 native boot: registration ordering
 
+Update 2026-11-19: the unmodified source-built run 44441905557 has booted.
+See [runtime and unattended results](NATIVE-RUN-44441905557.md); physical
+HDMI playback remains pending because HPD is 0.
+
 The first nine-patch source build (58a677f, run 44288134295) did not boot on
 E900V21C. Its files and all 28 SYSTEM media modules passed offline readback.
 The following controls isolate registration ordering without requiring another

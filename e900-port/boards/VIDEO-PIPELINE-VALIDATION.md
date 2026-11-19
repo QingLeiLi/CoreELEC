@@ -1,5 +1,9 @@
 # GXLX2 playback black screen: source candidate
 
+Update 2026-11-19: the unmodified source-built run 44441905557 has booted.
+See [runtime and unattended results](NATIVE-RUN-44441905557.md); physical
+HDMI playback remains pending because HPD is 0.
+
 On 2026-11-19 the user confirmed working HDMI menus and remote navigation,
 but H.264 playback caused a physical black screen that persisted after stop.
 A Kodi screenshot during the fault still contained the menu. Restarting Kodi

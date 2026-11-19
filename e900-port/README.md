@@ -31,11 +31,11 @@ docker pull --platform linux/amd64 ubuntu:22.04
 | `patches/linux/0002-gxlx2-opt-in-hdmi-transport.patch` | 用独立 DT 属性启用 DWC/TOP 直接访问，保留 GXL PHY 配置 | 本地映射/分流测试及云端内核编译通过，硬件未验证 |
 | `patches/media/0002-gxlx2-experimental-clock-registration.patch` | 将 GXLX2 加入现有共享时钟注册列表 | 入口已编译通过；能力分支尚未完整审查 |
 | `patches/linux/0003-e900v21c-usb-board.patch` | 注册 E900V21C 1GB USB 实验板级 DTS | MP2/固定 framebuffer 运行实验通过；更新源码已通过 DTB 检查 |
-| `patches/linux/0005-gxlx2-optional-di-clock.patch` | 缺失 DI 可选 clkb 时处理 ENOENT | 等价二进制守卫已启动；源码宿主逻辑测试通过，ARM 构建待做 |
-| `patches/linux/0006-gxlx2-direct-media-register-buses.patch` | GXLX2 在晚期初始化注册七条已核对的媒体总线 | 早期注册导致启动失败；诊断内核晚期原生注册已启动，修订源码仍待 ARM 构建回归，见 [记录](boards/NATIVE-BOOT-LATE.md) |
+| `patches/linux/0005-gxlx2-optional-di-clock.patch` | 缺失 DI 可选 clkb 时处理 ENOENT | 源码 ARM 构建、启动及无显示器下解码器启动/释放通过；实际视频待验 |
+| `patches/linux/0006-gxlx2-direct-media-register-buses.patch` | GXLX2 在晚期初始化注册七条已核对的媒体总线 | 修订源码 ARM 构建及原生晚期注册启动通过，无 blacklist/helper；见 [实机记录](boards/NATIVE-RUN-44441905557.md) |
 | `patches/media/0003-gxlx2-vld-dmc-channel.patch` | VLD 启用/停止/复位使用 bit13 | 等价模块实验可正常停止；源码宿主范围测试通过，ARM 构建待做 |
-| `patches/linux/0007-gxlx2-post2-matrix-guard.patch` | GXLX2 避免访问当前 VPU 配置不支持的 POST2 矩阵 | 单点二进制实验及宿主 I/O 等价检查通过；ARM 源码构建待做 |
-| `patches/linux/0008-gxlx2-legacy-video-pipeline.patch` | GXLX2 保留旧式视频混合策略与 MIF 表选择 | 实际初始化分支宿主检查通过；尚未 ARM 构建或验证视频，见 [记录](boards/VIDEO-PIPELINE-VALIDATION.md) |
+| `patches/linux/0007-gxlx2-post2-matrix-guard.patch` | GXLX2 避免访问当前 VPU 配置不支持的 POST2 矩阵 | 源码 ARM 构建、启动及无显示器解码器启动/释放通过；实际显示待验 |
+| `patches/linux/0008-gxlx2-legacy-video-pipeline.patch` | GXLX2 保留旧式视频混合策略与 MIF 表选择 | 源码 ARM 构建及启动通过，运行时 legacy_vpp=1；无 HDMI，黑屏修复仍待验，见 [实机记录](boards/NATIVE-RUN-44441905557.md) |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
