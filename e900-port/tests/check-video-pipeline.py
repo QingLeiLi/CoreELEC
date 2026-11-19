@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Compile real initialization selection blocks; this is not a full kernel build."""
-import hashlib,json,os,re,shutil,subprocess,tempfile
+import hashlib,json,os,re,shutil,subprocess,tempfile,textwrap
 from pathlib import Path
 PORT=Path(__file__).resolve().parents[1]
 AUDIT=Path(os.environ.get('E900_AUDIT_ROOT',PORT.parent/'coreelec-audit'))
@@ -19,7 +19,10 @@ def selections(source):
     e=source.index('{',q);depth=1;q=e+1
     while depth:
         depth+=(source[q]=='{')-(source[q]=='}');q+=1
-    return source[a:b]+'\n'+source[c:q]
+    # The snippets came from different nesting depths. Normalize each one
+    # independently before placing both at the same harness function scope.
+    return textwrap.indent('\n'.join(textwrap.dedent(part)
+                                    for part in (source[a:b],source[c:q])), '    ')
 with tempfile.TemporaryDirectory(prefix='e900-video-policy-') as tmp:
     root=Path(tmp);dest=root/FILE;dest.parent.mkdir(parents=True);dest.write_text(original)
     subprocess.run(['git','apply',str(PORT/'patches/linux/0008-gxlx2-legacy-video-pipeline.patch')],cwd=root,check=True)
@@ -65,7 +68,7 @@ int main(void){
  return 0;
 }
 ''')
-    subprocess.run([shutil.which('clang') or 'cc','-std=c99','-Wall','-Werror',str(c),'-o',str(root/'test')],check=True)
+    subprocess.run([shutil.which('clang') or 'cc','-std=c99','-Wall','-Wmisleading-indentation','-Werror',str(c),'-o',str(root/'test')],check=True)
     subprocess.run([str(root/'test')],check=True)
 print('PASS: actual VPP/MIF initialization blocks select legacy for GXLX2; all other CPU IDs and revision states match upstream')
 print('PENDING: full ARM compilation, remaining family checks and physical playback')
