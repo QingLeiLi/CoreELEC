@@ -1,0 +1,39 @@
+Subject: [EXPERIMENTAL] keep P291 video blend and MIF selection on legacy VPP
+
+Live GXLX2 uses a GXL OSD profile but video_early_init selects the G12
+blend policy and MIF table because 0x2a >= 0x28. Exclude only GXLX2 at
+these two initialization decisions. Preserve all other SoC selections.
+This source candidate still requires ARM compilation and physical playback
+validation; it does not claim to fix all numeric CPU-family checks.
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -25,6 +25,7 @@
+ #include <linux/io.h>
+ #include <linux/mm.h>
+ #include <linux/amlogic/major.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/err.h>
+ #include <linux/mutex.h>
+ #include <linux/platform_device.h>
+@@ -6843,7 +6844,9 @@
+ {
+ 	int r = 0, i;
+ 
+-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
++	/* P291 uses the legacy VPP/OSD profile despite its numeric CPU ID. */
++	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++	    !is_meson_gxlx2_cpu())
+ 		legacy_vpp = false;
+ 
+ 	/* check super scaler support status */
+@@ -6963,7 +6966,8 @@
+ 		memcpy(&vd_layer[1].vd_afbc_reg,
+ 		       &vd_afbc_reg_array[1],
+ 		       sizeof(struct hw_afbc_reg_s));
+-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
++		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++		    !is_meson_gxlx2_cpu()) {
+ 			memcpy(&vd_layer[0].vd_mif_reg,
+ 			       &vd_mif_reg_g12_array[0],
+ 			       sizeof(struct hw_vd_reg_s));

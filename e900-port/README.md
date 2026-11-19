@@ -35,6 +35,7 @@ docker pull --platform linux/amd64 ubuntu:22.04
 | `patches/linux/0006-gxlx2-direct-media-register-buses.patch` | GXLX2 在晚期初始化注册七条已核对的媒体总线 | 早期注册导致启动失败；诊断内核晚期原生注册已启动，修订源码仍待 ARM 构建回归，见 [记录](boards/NATIVE-BOOT-LATE.md) |
 | `patches/media/0003-gxlx2-vld-dmc-channel.patch` | VLD 启用/停止/复位使用 bit13 | 等价模块实验可正常停止；源码宿主范围测试通过，ARM 构建待做 |
 | `patches/linux/0007-gxlx2-post2-matrix-guard.patch` | GXLX2 避免访问当前 VPU 配置不支持的 POST2 矩阵 | 单点二进制实验及宿主 I/O 等价检查通过；ARM 源码构建待做 |
+| `patches/linux/0008-gxlx2-legacy-video-pipeline.patch` | GXLX2 保留旧式视频混合策略与 MIF 表选择 | 实际初始化分支宿主检查通过；尚未 ARM 构建或验证视频，见 [记录](boards/VIDEO-PIPELINE-VALIDATION.md) |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
