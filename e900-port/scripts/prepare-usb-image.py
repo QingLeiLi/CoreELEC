@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import struct
 import subprocess
@@ -25,6 +26,22 @@ def sha256(path):
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def current_image(repo):
+    """Use CE's current build identity, never cache order or file timestamps."""
+    identities = list(repo.glob("build.*/BUILD_FILENAME"))
+    if len(identities) != 1:
+        raise ValueError(f"Expected one BUILD_FILENAME, found {len(identities)}")
+    name = identities[0].read_text().strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]*", name):
+        raise ValueError("Invalid BUILD_FILENAME basename")
+    image = repo / "target" / (name + "-Generic.img.gz")
+    system = repo / "target" / (name + ".system")
+    if not image.is_file() or image.is_symlink():
+        available = sorted(p.name for p in (repo / "target").glob("*-Generic.img.gz"))
+        raise ValueError(f"Current build Generic image missing: {image.name}; available={available}")
+    return image, system, name
 
 
 def fat_offset(path):
@@ -138,10 +155,7 @@ def prepare(repo):
     marker.unlink(missing_ok=True)
     dtb = board.find_board(repo)
     validated = board.validate(dtb)
-    candidates = list((repo / "target").glob("*-Generic.img.gz"))
-    if len(candidates) != 1:
-        raise ValueError(f"Expected one Generic image, found {len(candidates)}")
-    source_image = candidates[0]
+    source_image, expected_system, build_name = current_image(repo)
     tools = {}
     for name in ["mcopy", "mkimage"]:
         matches = list(repo.glob(f"build.*/toolchain/bin/{name}"))
@@ -181,7 +195,6 @@ def prepare(repo):
         with system.open("rb") as stream:
             if stream.read(4) != b"hsqs":
                 raise ValueError("SYSTEM is not a SquashFS filesystem")
-        expected_system = source_image.with_name(source_image.name[:-len("-Generic.img.gz")] + ".system")
         if not expected_system.is_file() or sha256(system) != sha256(expected_system):
             raise ValueError("USB SYSTEM does not match this build")
         images=list(repo.glob("build.*/build/linux-*/arch/arm64/boot/Image"))
@@ -214,6 +227,7 @@ def prepare(repo):
     checksum.write_text(f"{digest}  {output.name}\n")
     metadata = dict(schema=2, run_id=os.environ.get("GITHUB_RUN_ID", "local"),
                     run_attempt=os.environ.get("GITHUB_RUN_ATTEMPT", "local"),
+                    build_filename=build_name, source_image=str(source_image.relative_to(repo)),
                     image=str(output.relative_to(repo)), sha256=digest, board=validated,
                     profile_state_sha256=sha256(repo / ".e900-profile.json"),
                     boot_script_sha256=sha256(script_source), fat_readback=readback,

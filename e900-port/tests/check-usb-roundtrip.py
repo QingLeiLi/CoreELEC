@@ -32,6 +32,8 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     (toolchain / "mcopy").symlink_to(mtools / "mcopy")
     kernel = repo / "build.test/build/linux-test/arch/arm64/boot/Image.lzo"
     kernel.parent.mkdir(parents=True)
+    identity = repo / "build.test/BUILD_FILENAME"
+    identity.write_text("CoreELEC-test\n")
     def newc(name,body,mode):
         fields=[1,mode,0,0,1,0,len(body),0,0,0,0,len(name)+1,0]
         head=b"070701"+b"".join(f"{v:08x}".encode() for v in fields)+name.encode()+b"\0"
@@ -80,7 +82,16 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     compressed = target / "CoreELEC-test-Generic.img.gz"
     with raw.open("rb") as source, gzip.open(compressed, "wb") as destination:
         shutil.copyfileobj(source, destination)
+    # Incremental caches retain old timestamped releases. Even a newer stale
+    # file must not be selected or deleted in place of this build's image.
+    stale = target / "CoreELEC-stale-Generic.img.gz"
+    stale.write_bytes(b"stale cached image; must never be opened")
+    os.utime(compressed, (1, 1))
+    assert stale.stat().st_mtime > compressed.stat().st_mtime
     metadata = usb.prepare(repo)
+    assert metadata['source_image'] == 'target/' + compressed.name
+    assert metadata['build_filename'] == 'CoreELEC-test'
+    assert stale.read_bytes() == b"stale cached image; must never be opened"
     assert set(metadata["fat_readback"]) == {"dtb.img", "e900-Image", "e900-uInitrd", "aml_autoscript", "s905_autoscript", "cfgload", "kernel.img", "SYSTEM"}
     assert metadata['media_modules']==sorted(names)
     assert metadata['boot_method'].startswith('booti /')
@@ -104,6 +115,33 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     result = json.loads((exported / "build-metadata.json").read_text())
     assert result["usb_image_prepared"] is False
     assert not list((exported / "target").glob("*.img.gz"))
+    # Never fall back to an old cached image if the current build is absent.
+    identity.write_text('CoreELEC-missing\n')
+    try:
+        usb.prepare(repo)
+    except ValueError as exc:
+        assert 'Current build Generic image missing' in str(exc)
+    else:
+        raise AssertionError('Old cached image substituted for missing current build')
+    assert not (repo / '.e900-usb-image.json').exists()
+    for bad in ['../CoreELEC-test', '/tmp/CoreELEC-test', '', 'CoreELEC-test\nother']:
+        identity.write_text(bad)
+        try: usb.current_image(repo)
+        except ValueError as exc: assert 'Invalid BUILD_FILENAME' in str(exc)
+        else: raise AssertionError('Invalid build identity accepted')
+    identity.unlink()
+    try: usb.current_image(repo)
+    except ValueError as exc: assert 'Expected one BUILD_FILENAME, found 0' in str(exc)
+    else: raise AssertionError('Missing build identity accepted')
+    identity.write_text('CoreELEC-test\n')
+    other = repo / 'build.other/BUILD_FILENAME'
+    other.parent.mkdir(); other.write_text('CoreELEC-stale\n')
+    try: usb.current_image(repo)
+    except ValueError as exc: assert 'Expected one BUILD_FILENAME, found 2' in str(exc)
+    else: raise AssertionError('Ambiguous build identity accepted')
+    other.unlink(); other.parent.rmdir()
+    # Recreate the ready marker to check failed SYSTEM validation removes it.
+    (repo / '.e900-usb-image.json').write_text(json.dumps(metadata))
     system.write_bytes(b"hsqs changed build output")
     try:
         usb.prepare(repo)
@@ -114,5 +152,6 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-roundtrip-") as directory:
     assert not (repo / ".e900-usb-image.json").exists()
     print("PASS: real mtools/mkimage FAT roundtrip, provenance export and failed-retry cleanup")
     print("PASS: mismatched SYSTEM rejects preparation and clears the ready marker")
+    print("PASS: current BUILD_FILENAME selects among cached releases; missing/unsafe/ambiguous identity fails closed")
 
 print("Synthetic payloads inside real FAT/SquashFS filesystems; source-built OS and hardware tests remain pending.")
