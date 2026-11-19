@@ -36,6 +36,7 @@ docker pull --platform linux/amd64 ubuntu:22.04
 | `patches/media/0003-gxlx2-vld-dmc-channel.patch` | VLD 启用/停止/复位使用 bit13 | 等价模块实验可正常停止；源码宿主范围测试通过，ARM 构建待做 |
 | `patches/linux/0007-gxlx2-post2-matrix-guard.patch` | GXLX2 避免访问当前 VPU 配置不支持的 POST2 矩阵 | 源码 ARM 构建、启动及无显示器解码器启动/释放通过；实际显示待验 |
 | `patches/linux/0008-gxlx2-legacy-video-pipeline.patch` | GXLX2 保留旧式视频混合策略与 MIF 表选择 | 源码 ARM 构建及启动通过，运行时 legacy_vpp=1；无 HDMI，黑屏修复仍待验，见 [实机记录](boards/NATIVE-RUN-44441905557.md) |
+| `patches/linux/0009-gxlx2-mif-selection-probe.patch` | 默认关闭的启动期 MIF 表对照；保持旧式混合策略 | 宿主分支测试通过，ARM/实机待验；见 [记录](boards/HARDWARE-VIDEO-MIF-PROBE.md) |
 
 补丁固定基线见 `pins.json`。`scripts/generate-patches.py` 从相邻 `coreelec-audit` 中经过校验的原文件生成补丁；不会修改原文件。
 
@@ -119,3 +120,5 @@ python3 tests/check-usb-roundtrip.py <本板编译后DTB> <mtools所在目录> <
 宿主工具现固定使用通用 x86-64 参数，以支持不同 runner CPU 共享后续缓存；旧 native 构建状态和 ccache 已隔离，首次切换需较大重编译。详见 [宿主 SIGILL 与可移植缓存](CLOUD.md#宿主-sigill-与可移植缓存)。这属于宿主构建策略调整，目标 ARM 指令集配置未变化。
 
 首次完整 USB 镜像的来源、哈希和验证结果见 [构建记录](tests/full-image-build-43886158436.json)。首次上机只写外置 U 盘，按 USB 启动方式测试，使用有线网络；不进行 eMMC 安装、BL301 注入或系统更新。
+
+最新显示验收：软件解码正常；H.264 硬解黑屏、HEVC 绿屏，热插拔 RDMA 恢复未解决。不能将驱动帧计数视为播放通过，详见 [视频排查记录](boards/HARDWARE-VIDEO-MIF-PROBE.md)。

@@ -70,5 +70,22 @@ int main(void){
 ''')
     subprocess.run([shutil.which('clang') or 'cc','-std=c99','-Wall','-Wmisleading-indentation','-Werror',str(c),'-o',str(root/'test')],check=True)
     subprocess.run([str(root/'test')],check=True)
+    # The diagnostic switch must not silently change the default or any other
+    # SoC. Exercise the real post-patch selection blocks in both boot modes.
+    subprocess.run(['git','apply',str(PORT/'patches/linux/0009-gxlx2-mif-selection-probe.patch')],cwd=root,check=True)
+    probed=dest.read_text()
+    assert 'static bool gxlx2_g12_mif;' in probed
+    assert 'module_param_named(gxlx2_g12_mif, gxlx2_g12_mif, bool, 0444);' in probed
+    harness=c.read_text().replace(new,selections(probed))
+    harness=harness.replace('static unsigned cpu;', 'static bool gxlx2_g12_mif;\nstatic unsigned cpu;')
+    harness=harness.replace('return revb;', 'return revb && cpu==0x2f;')
+    harness=harness.replace('r<2;', 'r<4;')
+    harness=harness.replace('revb=r;', 'revb=r&1;gxlx2_g12_mif=(r>>1)&1;')
+    harness=harness.replace('&vd_mif_reg_legacy_array[i],sizeof(struct hw_vd_reg_s)',
+                            '&(gxlx2_g12_mif ? vd_mif_reg_g12_array : vd_mif_reg_legacy_array)[i],sizeof(struct hw_vd_reg_s)')
+    c.write_text(harness)
+    subprocess.run([shutil.which('clang') or 'cc','-std=c99','-Wall','-Wmisleading-indentation','-Werror',str(c),'-o',str(root/'probe-test')],check=True)
+    subprocess.run([str(root/'probe-test')],check=True)
 print('PASS: actual VPP/MIF initialization blocks select legacy for GXLX2; all other CPU IDs and revision states match upstream')
+print('PASS: boot-only MIF probe defaults to legacy; enabling it changes only GXLX2 MIF selection while retaining legacy blend policy')
 print('PENDING: full ARM compilation, remaining family checks and physical playback')

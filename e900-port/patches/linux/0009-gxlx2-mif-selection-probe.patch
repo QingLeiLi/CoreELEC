@@ -1,0 +1,48 @@
+Subject: [EXPERIMENTAL] add boot-only GXLX2 video MIF selection probe
+
+Default off. Test the G12 MIF table independently of the legacy blend policy
+via amvideo.gxlx2_g12_mif=1. No direct memory/register probe or live switching.
+Log only the selected software register addresses. This diagnostic does not
+claim a confirmed hardware map or a black-screen fix.
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -85,6 +85,15 @@
+ struct video_dev_s video_dev = {0x1d00 - 0x1d00, 0x1a50 - 0x1a50};
+ struct video_dev_s *cur_dev = &video_dev;
+ bool legacy_vpp = true;
++
++/* Diagnostic only: independently test the video MIF register bank.
++ * Read-only after boot: changing a live register table is not supported.
++ * Keep default behavior and CPU identity unchanged.
++ */
++static bool gxlx2_g12_mif;
++module_param_named(gxlx2_g12_mif, gxlx2_g12_mif, bool, 0444);
++MODULE_PARM_DESC(gxlx2_g12_mif,
++	"Experimental GXLX2 G12 MIF table; legacy video blend policy retained");
+ 
+ static bool bypass_cm;
+ bool hscaler_8tap_enable[MAX_VD_LAYER];
+@@ -6967,7 +6976,7 @@
+ 		       &vd_afbc_reg_array[1],
+ 		       sizeof(struct hw_afbc_reg_s));
+ 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
+-		    !is_meson_gxlx2_cpu()) {
++		    (!is_meson_gxlx2_cpu() || gxlx2_g12_mif)) {
+ 			memcpy(&vd_layer[0].vd_mif_reg,
+ 			       &vd_mif_reg_g12_array[0],
+ 			       sizeof(struct hw_vd_reg_s));
+@@ -6991,6 +7000,13 @@
+ 			       sizeof(struct hw_vd_reg_s));
+ 		}
+ 	}
++	if (is_meson_gxlx2_cpu())
++		pr_info("e900-video: legacy_blend=%u mif=%s vd1_gen=0x%x vd1_canvas=0x%x vd1_fmt=0x%x\n",
++			legacy_vpp, gxlx2_g12_mif ? "g12" : "legacy",
++			vd_layer[0].vd_mif_reg.vd_if0_gen_reg,
++			vd_layer[0].vd_mif_reg.vd_if0_canvas0,
++			vd_layer[0].vd_mif_reg.viu_vd_fmt_ctrl);
++
+ 	vd_layer[0].layer_alpha = 0x100;
+ 
+ 	/* g12a has no alpha overflow check in hardware */
