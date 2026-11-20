@@ -334,5 +334,61 @@
     "git_blob_sha1": "ba06e5797fda0472a9b57388ec61faa22aca46cb",
     "sha256": "60e60d158cc123475c66888ff6f993d35292b032d4120072f9cc753d757146e7",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/video_sink/video.c",
+    "git_blob_sha1": "a93fd94536279f490e776eff6f1a15ed2e67f119",
+    "sha256": "46065d0f48cea1ae5b8cd15e21b00d963f7c909a8a1ef341afce3f6a07a2dd80",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/arch/registers/register_ops.c",
+    "git_blob_sha1": "b77e289e7caa8329fa455d0a52bd1a66c537906b",
+    "sha256": "917752fb0e23e5f8c3dd90a724cba25c5d66bf180d10b616d1a98f28fe23e83d",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/registers/register_ops.h",
+    "git_blob_sha1": "4d5d058a28f3d7e14dc1614e96fd7222babe620f",
+    "sha256": "b96dcc50994d39223439d6a262616c06a90ba8a108ae8ff2504e8c1b749ba34f",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/utils/vdec_reg.h",
+    "git_blob_sha1": "f258e8a561c88f3d5fd02136534cf2b5eef6797d",
+    "sha256": "417e50b6c503c7d48162f85600010b51192448780ed7d509ced3c8a5fa58214e",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/video_sink/amvideocap.c",
+    "git_blob_sha1": "bc6ba511a2a8af43f6d5e9bce864aca615277dda",
+    "sha256": "1e06d408d97352689ef4de9892bbf555e8b32576e17cfdf0cc9cb57b796727c6",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/ge2d/stretchblt.c",
+    "git_blob_sha1": "9cc6c8dd9ee20beb47d333676089c0506a1f5e40",
+    "sha256": "12aec95c28792808f0698c47c58f6566b0bef0ecfb34297ae8df6b7eccc06cba",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/ge2d/ge2d_wq.c",
+    "git_blob_sha1": "33423c7d31acf24807bf9a01d22d33ac8aec4af1",
+    "sha256": "128198d57f1614f308a27e98a448265ad854d30134b768268b4010580e726fb1",
+    "verified": true
   }
 ]

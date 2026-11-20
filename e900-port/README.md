@@ -2,7 +2,7 @@
 
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。
 
-当前已通过外置 USB 启动 Linux 4.9.269，Mali-450 MP2、Kodi 离屏 GUI 和输入导航可用。POST2 单点保护可在 CSC=7、正常寄存器刷新下完成一分钟 H.264 播放；源码等价修复已通过宿主检查，完整 ARM 构建、物理 HDMI 和声音仍待验证。当前 HPD=0，不能由离屏截图推断电视实际画面。见 [显示路径诊断](boards/DISPLAY-PIPELINE.md) 和 [POST2 验证记录](boards/POST2-VALIDATION.md)。
+当前已通过外置 USB 启动 Linux 4.9.269，物理 HDMI 上的 Kodi 菜单、遥控导航、界面音效和同一 H.264 样片的软件解码已验证。等待GE2D完成并按BGR解读后，已从硬解帧读出完整原尺寸色条；电视硬解视频仍黑屏，尚未通过HDMI播放验证。最新证据、链路边界和初始化时序问题见 [显示链路复盘](boards/DISPLAY-CHAIN-REVIEW.md)；早期 [显示路径诊断](boards/DISPLAY-PIPELINE.md) 和 [POST2记录](boards/POST2-VALIDATION.md) 仅作为过程资料。
 
 任务 `43886158436` 完成了初版完整构建，但 SYSTEM 漏装全部媒体模块；已修正隐藏构建路径过滤问题。最新源码还补齐 MP2/固定 framebuffer、DI 可选时钟、七条媒体总线注册和 VLD DMC 通道。等价运行实验不代表这些源码已完成全量 ARM 编译。镜像打包已切到实测的 `booti` 布局，并检查 SYSTEM 的实际模块清单，详见 [当前启动与验证状态](boards/NORMAL-USB-BOOT.md)。仍是实验性适配，eMMC 保持禁用。
 
@@ -105,7 +105,7 @@ python3 tests/check-host-policy.py
 
 缓存检查覆盖宿主/profile/路径隔离、相同状态重用、补丁或板级构建选项变化后的选择性清理、失败清理的重试，以及从实际 CoreELEC 目录层级导出内核与模块。GitHub 远端缓存上传/恢复仍需工作流运行验证。
 
-ARM64 内核和媒体模块已完成编译验证；Docker 镜像、本板启动、显示、音频和硬解实测仍待执行。
+既有版本的 ARM64 内核和媒体模块已完成编译及本板USB启动验证。新增0010后置视频初始化实验默认关闭；0011修正GXLX2抓帧等待时机。两者仅通过宿主检查，完整ARM构建和新驱动硬件验证待执行；硬解HDMI画面仍未通过，eMMC仍保持禁用。
 
 首次通过的 [GitHub Actions 运行](https://github.com/QingLeiLi/CoreELEC/actions/runs/43807610508)，提交 `e92f2c5`：内核版本 4.9.269，28 个模块的 ELF 架构为 AArch64，vermagic 均匹配该内核；HDMI 诊断与固件选择日志字符串已在二进制中找到。此结论不能代替本板运行验证。
 

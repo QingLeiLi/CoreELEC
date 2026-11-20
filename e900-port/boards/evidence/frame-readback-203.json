@@ -1,0 +1,331 @@
+{
+  "captures": [
+    {
+      "file": "320x180-immediate.raw",
+      "size": [
+        320,
+        180
+      ],
+      "delay_ms": 0,
+      "raw_sha256": "c0a0fdf4ad3a54d41653ff4d2f8a5d4bb7a77216c5001677d1f13007fda66d02",
+      "per_bar": [
+        {
+          "bar": 0,
+          "MAE": 152.948,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 1,
+          "MAE": 140.3,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 2,
+          "MAE": 135.217,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 3,
+          "MAE": 114.705,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 4,
+          "MAE": 135.795,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 5,
+          "MAE": 116.974,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 6,
+          "MAE": 116.896,
+          "within32_percent": 0.0
+        },
+        {
+          "bar": 7,
+          "MAE": 96.102,
+          "within32_percent": 0.0
+        }
+      ],
+      "left75_MAE": 132.657,
+      "right25_MAE": 106.499
+    },
+    {
+      "file": "320x180-delayed.raw",
+      "size": [
+        320,
+        180
+      ],
+      "delay_ms": 500,
+      "raw_sha256": "dfa34c18942d53601c1d664444e51ba005f5693d08cc88a38f0565771d21e17d",
+      "per_bar": [
+        {
+          "bar": 0,
+          "MAE": 1.531,
+          "within32_percent": 96.88
+        },
+        {
+          "bar": 1,
+          "MAE": 6.323,
+          "within32_percent": 96.88
+        },
+        {
+          "bar": 2,
+          "MAE": 11.771,
+          "within32_percent": 96.88
+        },
+        {
+          "bar": 3,
+          "MAE": 16.729,
+          "within32_percent": 93.75
+        },
+        {
+          "bar": 4,
+          "MAE": 17.24,
+          "within32_percent": 93.75
+        },
+        {
+          "bar": 5,
+          "MAE": 10.219,
+          "within32_percent": 96.88
+        },
+        {
+          "bar": 6,
+          "MAE": 9.719,
+          "within32_percent": 93.75
+        },
+        {
+          "bar": 7,
+          "MAE": 1.76,
+          "within32_percent": 96.88
+        }
+      ],
+      "left75_MAE": 10.635,
+      "right25_MAE": 5.739
+    },
+    {
+      "file": "640x360-immediate.raw",
+      "size": [
+        640,
+        360
+      ],
+      "delay_ms": 0,
+      "raw_sha256": "1e4fcca8a2571f772c38f2be9ca102db25c1f62e06b6e4af018867f9595c0e97",
+      "per_bar": [
+        {
+          "bar": 0,
+          "MAE": 0.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 1,
+          "MAE": 4.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 2,
+          "MAE": 8.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 3,
+          "MAE": 9.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 4,
+          "MAE": 9.667,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 5,
+          "MAE": 39.576,
+          "within32_percent": 81.25
+        },
+        {
+          "bar": 6,
+          "MAE": 61.229,
+          "within32_percent": 52.08
+        },
+        {
+          "bar": 7,
+          "MAE": 69.337,
+          "within32_percent": 30.21
+        }
+      ],
+      "left75_MAE": 11.818,
+      "right25_MAE": 65.283
+    },
+    {
+      "file": "640x360-delayed.raw",
+      "size": [
+        640,
+        360
+      ],
+      "delay_ms": 500,
+      "raw_sha256": "edf95014a9096d2e02c16c1c999e220cfc5fb299c15e33a4cee5e40bdd5008ba",
+      "per_bar": [
+        {
+          "bar": 0,
+          "MAE": 0.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 1,
+          "MAE": 4.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 2,
+          "MAE": 8.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 3,
+          "MAE": 9.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 4,
+          "MAE": 9.667,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 5,
+          "MAE": 8.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 6,
+          "MAE": 4.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 7,
+          "MAE": 0.0,
+          "within32_percent": 100.0
+        }
+      ],
+      "left75_MAE": 6.611,
+      "right25_MAE": 2.167
+    },
+    {
+      "file": "1280x720-immediate.raw",
+      "size": [
+        1280,
+        720
+      ],
+      "delay_ms": 0,
+      "raw_sha256": "697d72b68dd24e21268ec58752a337aacbe0a7c61c22a8744ed90a966ded4951",
+      "per_bar": [
+        {
+          "bar": 0,
+          "MAE": 0.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 1,
+          "MAE": 4.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 2,
+          "MAE": 8.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 3,
+          "MAE": 9.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 4,
+          "MAE": 9.667,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 5,
+          "MAE": 8.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 6,
+          "MAE": 5.153,
+          "within32_percent": 99.48
+        },
+        {
+          "bar": 7,
+          "MAE": 6.861,
+          "within32_percent": 91.67
+        }
+      ],
+      "left75_MAE": 6.611,
+      "right25_MAE": 6.007
+    },
+    {
+      "file": "1280x720-delayed.raw",
+      "size": [
+        1280,
+        720
+      ],
+      "delay_ms": 500,
+      "raw_sha256": "2ad4144f0320c253990bfbc6106d9fa267d4a905273ff0f97f879cbfdd7fd93a",
+      "per_bar": [
+        {
+          "bar": 0,
+          "MAE": 0.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 1,
+          "MAE": 4.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 2,
+          "MAE": 8.0,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 3,
+          "MAE": 9.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 4,
+          "MAE": 9.667,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 5,
+          "MAE": 8.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 6,
+          "MAE": 4.333,
+          "within32_percent": 100.0
+        },
+        {
+          "bar": 7,
+          "MAE": 0.0,
+          "within32_percent": 100.0
+        }
+      ],
+      "left75_MAE": 6.611,
+      "right25_MAE": 2.167
+    }
+  ],
+  "sample_sha256": "086c5742022b5430f30fa3455da8dd1d1e274a76e426545b3ca02349835da2ea",
+  "pixel_interpretation": "BGR24 normalized to RGB",
+  "comparison": "Static color bars; moving white marker excluded. Frames and scaler/color matrices not identical; MAE is localization evidence, not a codec conformance result.",
+  "evidence_images": {
+    "h264-source-201.png": "575819aaf5abda79763bb67be864ee62820158929a75f4d4ff7b9370dd81ce29",
+    "h264-capture-203-delayed.png": "d73bac56b52496c97f96e39ba28e3e85efbaa220e8b3362e89f7f24b41dca7ff",
+    "h264-capture-203-immediate.png": "082b3d549fe3ba0cced714f4f04cd8eff92601dc0433f203d3bdb6772705da50"
+  },
+  "scope": "H264 Main 8bit 720p synthetic sample only; proves full frame can be read through Canvas/GE2D, not HDMI playback or general codec conformance"
+}

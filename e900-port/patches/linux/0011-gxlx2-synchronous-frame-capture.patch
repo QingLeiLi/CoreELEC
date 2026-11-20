@@ -1,0 +1,40 @@
+Subject: [EXPERIMENTAL] finish GXLX2 capture conversion before releasing Canvas
+
+Paired immediate/delayed reads at 320,640 and1280 widths show that the
+nonblocking capture can return incomplete pixels. Wait through the existing
+GE2D blocking API on GXLX2 only; preserve other SoCs and all conversion
+arguments. This fixes diagnostic capture reliability, not HDMI video.
+
+--- a/drivers/amlogic/media/video_sink/amvideocap.c
++++ b/drivers/amlogic/media/video_sink/amvideocap.c
+@@ -619,15 +619,21 @@
+ 		return -1;
+ 	}
+ 
+-	stretchblt_noalpha_noblk(ge2d_amvideocap_context,
+-					   0,
+-					   0,
+-					   ge2d_config.src_para.width,
+-					   ge2d_config.src_para.height,
+-					   0,
+-					   0,
+-					   ge2d_config.dst_para.width,
+-					   ge2d_config.dst_para.height);
++	/* Finish GXLX2 conversion before reporting capture success and freeing
++	 * the Canvas/source-frame references below.
++	 */
++	if (is_meson_gxlx2_cpu())
++		stretchblt_noalpha(ge2d_amvideocap_context, 0, 0,
++			ge2d_config.src_para.width,
++			ge2d_config.src_para.height, 0, 0,
++			ge2d_config.dst_para.width,
++			ge2d_config.dst_para.height);
++	else
++		stretchblt_noalpha_noblk(ge2d_amvideocap_context, 0, 0,
++			ge2d_config.src_para.width,
++			ge2d_config.src_para.height, 0, 0,
++			ge2d_config.dst_para.width,
++			ge2d_config.dst_para.height);
+ 	if (canvas_idx)
+ 		canvas_pool_map_free_canvas(canvas_idx);
+ 

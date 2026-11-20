@@ -1,0 +1,95 @@
+Subject: [EXPERIMENTAL] opt-in GXLX2 video init after late media buses
+
+Default off; enable with amvideo.gxlx2_late_video_init=1. Preserve every
+other SoC/default init path and propagate init failures. Readiness queries
+inspect callback pointers only, never MMIO. Do not move the media bus
+publication earlier: early publication previously prevented native boot.
+
+--- a/include/linux/amlogic/media/registers/register_ops.h
++++ b/include/linux/amlogic/media/registers/register_ops.h
+@@ -56,6 +56,8 @@
+ 	int w_cnt;
+ };
+ 
++/* Software readiness only; does not read any hardware register. */
++bool codec_reg_bus_ready(u32 bus_type);
+ int codec_reg_read(u32 bus_type, unsigned int reg);
+ void codec_reg_write(u32 bus_type, unsigned int reg, unsigned int val);
+ void codec_reg_write_bits(u32 bus_type, unsigned int reg, u32 val, int start,
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -52,6 +52,18 @@
+ #define CODEC_OPS_START(bus, reg, c)
+ #define CODEC_OPS_ERROR(bus, reg, c)
+ #endif
++
++/* Query the installed callbacks without touching an uninitialised bus. */
++bool codec_reg_bus_ready(u32 bus_type)
++{
++	struct chip_register_ops *ops;
++
++	if (bus_type >= BUS_MAX)
++		return false;
++	ops = amports_ops[bus_type];
++	return ops && ops->read && ops->write;
++}
++EXPORT_SYMBOL(codec_reg_bus_ready);
+ 
+ int codec_reg_read(u32 bus_type, unsigned int reg)
+ {
+--- a/drivers/amlogic/media/video_sink/video.c
++++ b/drivers/amlogic/media/video_sink/video.c
+@@ -66,6 +66,7 @@
+ #endif
+ 
+ #include <linux/amlogic/media/registers/register.h>
++#include <linux/amlogic/media/registers/register_ops.h>
+ #include <linux/uaccess.h>
+ #include <linux/amlogic/media/utils/amports_config.h>
+ #include <linux/amlogic/media/vpu/vpu.h>
+@@ -13947,7 +13948,44 @@
+ 
+ /*arch_initcall(video_early_init);*/
+ 
+-module_init(video_init);
++/* GXLX2 media callbacks are intentionally published at late_initcall_sync.
++ * Probe-time writes before that point silently disappear. Keep this opt-in
++ * until the full native build and physical playback have been verified.
++ */
++static bool gxlx2_late_video_init;
++module_param_named(gxlx2_late_video_init, gxlx2_late_video_init, bool, 0444);
++MODULE_PARM_DESC(gxlx2_late_video_init,
++	"Experimental GXLX2 video init after media register buses are ready");
++
++static int __init e900_video_init_early(void)
++{
++	if (is_meson_gxlx2_cpu() && gxlx2_late_video_init) {
++		pr_info("e900-video-init: defer video_init until late media buses\n");
++		return 0;
++	}
++	return video_init();
++}
++
++static int __init e900_video_init_late(void)
++{
++	int ret;
++
++	if (!is_meson_gxlx2_cpu() || !gxlx2_late_video_init)
++		return 0;
++	if (!codec_reg_bus_ready(IO_VC_BUS) ||
++	    !codec_reg_bus_ready(IO_HHI_BUS) ||
++	    !codec_reg_bus_ready(IO_DMC_BUS)) {
++		pr_err("e900-video-init: media buses not ready; refuse silent initialisation\n");
++		return -ENODEV;
++	}
++	pr_info("e900-video-init: media buses ready; initialise video now\n");
++	ret = video_init();
++	pr_info("e900-video-init: late video_init returned %d\n", ret);
++	return ret;
++}
++
++module_init(e900_video_init_early);
++late_initcall_sync(e900_video_init_late);
+ module_exit(video_exit);
+ 
+ MODULE_PARM_DESC(smooth_sync_enable, "\n smooth_sync_enable\n");

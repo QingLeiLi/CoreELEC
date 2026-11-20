@@ -4,12 +4,13 @@
 
 ## 当前可测试产物与后续构建
 
-完整 USB 镜像已在 [任务 43886158436](https://github.com/QingLeiLi/CoreELEC/actions/runs/43886158436) 构建成功，使用提交 `c46ccbe`。板级 DTB 检查、镜像准备和回读步骤均成功，`usb_image_prepared=true`。下载产物后已独立核对 35 项文件哈希，以及 FAT 中的 `dtb.img`、三个入口脚本、`kernel.img` 和 `SYSTEM`。具体来源和哈希见 `tests/full-image-build-43886158436.json`。这代表完整镜像打包验证通过，实机启动、显示、音频及硬解仍待验证。
+既有完整USB镜像已实现本板启动、HDMI菜单和软件解码；硬解视频仍黑屏。当前样片的完整硬解帧已能经Canvas/GE2D读出，最新证据见 [显示链路复盘](boards/DISPLAY-CHAIN-REVIEW.md)。新增0010后置视频初始化实验与0011可靠抓帧修复仍需新的完整ARM构建；宿主测试不等于实机播放通过。早期 [任务43886158436](https://github.com/QingLeiLi/CoreELEC/actions/runs/43886158436) 及 `tests/full-image-build-43886158436.json` 保留作为镜像打包过程记录。
 
 后续有代码变动需要重建时，在 fork 的 Actions 页面选择 **E900 CoreELEC experimental build**：
 
 - profile：`decoder`。
 - target：`image`。
+- source_trace：`false`。新的后置初始化实验通过部署时的内核参数启用，见 [验证说明](boards/VIDEO-INIT-AND-CAPTURE.md)。
 
 先手动推送本地分支，再选择同一分支运行工作流。兼容的新宿主策略状态可以恢复；旧 `-march=native` 二进制状态已隔离，首次切换通用宿主策略需重建。后续增加内核 DTS 时仅清理并重编译内核及媒体模块，兼容工具链保留。SYSTEM/Kodi 等此前未构建的依赖仍需首次编译，可能明显长于单独的媒体模块增量构建。
 
