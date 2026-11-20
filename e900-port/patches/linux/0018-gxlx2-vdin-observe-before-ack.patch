@@ -1,0 +1,34 @@
+Subject: [DIAGNOSTIC] observe GXLX2 VDIN completion before acknowledging it
+
+Matches vendor GXLX2 vdin_write_done_check read/ACK order. No completion
+bypass or ownership change. Other SoCs retain the exact upstream path.
+
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_ctl.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_ctl.c
+@@ -3449,6 +3449,26 @@
+ #else
+ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
+ {
++	/* On GXLX2 this is a latched completion flag, not a level query.
++	 * Match its vendor driver: observe completion BEFORE acknowledging it.
++	 * A missing flag still fails; no frame/ownership guard is bypassed.
++	 */
++	if (is_meson_gxlx2_cpu()) {
++		bool done = rd_bits(offset, VDIN_COM_STATUS0,
++				    DIRECT_DONE_STATUS_BIT,
++				    DIRECT_DONE_STATUS_WID);
++
++		if (done) {
++			wr_bits(offset, VDIN_WR_CTRL, 1,
++				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
++			wr_bits(offset, VDIN_WR_CTRL, 0,
++				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
++			return true;
++		}
++		devp->wr_done_abnormal_cnt++;
++		return false;
++	}
++
+ 	/*clear int status*/
+ 	wr_bits(offset, VDIN_WR_CTRL, 1,
+ 			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);

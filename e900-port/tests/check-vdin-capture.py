@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
  shutil.copy2(PORT/'scripts/inspect-vdin-snapshot.py',harness/'inspect-snapshot.py')
  shutil.copy2(PORT/'scripts/e900-capture-ready.sh',harness/'capture-ready.sh')
  env=dict(os.environ,E900_AUDIT_ROOT=str(AUDIT),E900_CAPTURE_TEST_ROOT=str(harness),E900_CAPTURE_LINUX_ROOT=str(linux),E900_CAPTURE_CONFIG_BASE=str(REFERENCE/installer.CAPTURE_CONFIG))
- for check in ['check-snapshot.py','check-pin-policy.py','check-linkage.py','check-ring-mode.py','check-client.py','check-matrix-policy.py']:
+ for check in ['check-snapshot.py','check-pin-policy.py','check-linkage.py','check-ring-mode.py','check-client.py','check-matrix-policy.py','check-completion-order.py']:
   subprocess.run([sys.executable,str(PORT/'tests/vdin'/check)],env=env,check=True)
  # Real installer transitions and compatible-cache retention.
  repo=root/'repo';repo.mkdir()

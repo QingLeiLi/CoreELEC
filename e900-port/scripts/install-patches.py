@@ -40,6 +40,7 @@ CAPTURE_PATCHES = [
     "linux/0014-gxlx2-vdin-ready-snapshot.patch",
     "linux/0015-e900-vdin-clock-bindings.patch",
     "linux/0016-gxlx2-vdin-builtin-linkage.patch",
+    "linux/0018-gxlx2-vdin-observe-before-ack.patch",
 ]
 CAPTURE_CONFIG = "projects/Amlogic-ce/devices/Amlogic-ng/linux/linux.aarch64.conf"
 CAPTURE_CONFIG_BASE_SHA256 = "9bf441cc9ed301de8b3be8ab05cdf2e3d0de9fc4fd50f8e02ec848f378088362"

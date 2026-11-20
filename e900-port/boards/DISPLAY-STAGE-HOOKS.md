@@ -48,3 +48,11 @@ GEN实际38000043、GEN2=1、GEN3=33，格式20310c11；缩放相位aaaac0/aaaa8
 用户确认FIFO241试验仍黑屏，单项FIFO修正未解决问题，不重复该试验。按用户要求转向像素证据。243通过标准amvideocap取得640×360完整彩带及白标；Kodi原生截图也有彩带和LIVE243-HARDWARE通知。两张均已实际查看；Kodi截图可能旁路重建视频，不能当作最终混合/HDMI图像。VDIN在截图前后均未取得完成帧，不能记录为黑帧。采集先停止VDIN再停播放器，未重启。
 
 244通过标准/dev/fb0 ioctl/read读取当前页。注意该盒子是64位内核、32位用户态，fb_fix_screeninfo采用compat布局。菜单原始帧及LIVE244-MENU通知正确，alpha全部255；硬解时原始帧含当前LIVE244-HARDWARE通知，视频区域RGB0/alpha0（全图2073600像素，其中1996036个alpha0），已查看RGB及alpha预览。这里只是OSD支路，硬解分层时透明窗口属预期行为，不得解释为VD1像素已黑。最终视频混合前/后的有效取点仍未建立，禁止据此声称完成定位。音量已按用户要求设0并确认，后续测试保持0。数据及PNG位于Mac trial-pixels243/与trial-pixels244/e900-pixels244/；盒子对应/storage/e900-capture/和/storage/e900-pixels244/。
+
+## 采集完成标志顺序245（2026-11-21）
+
+原厂3.14 vdin_write_done_check在ffffffc0017820e4读取COM_STATUS0 bit2，只有检测到1才进入ffffffc001782110的清除流程；当前4.9则先清除再读取。诊断245基于240，只把该helper换为原厂读/ACK顺序，没有沿用无效FIFO241变更，没有绕过完成标志或队列/DMA所有权。源补丁0018只对GXLX2使用此顺序，其余CPU保持原序列；真实C逻辑的锁存标志模型及全部CPU/状态对照通过，完整补丁可应用检查通过。源码尚未ARM重编译；实机使用独立离线诊断内核。
+
+245得到菜单对照及8张连续硬解回环图，IRQ2471、wr_done_abnormal_cnt0、frame_cnt1651、puted_frame_cnt829。实际查看M245/H245_0/H245_2/H245_7，图像均为菜单底图，硬解LIVE245通知没有出现；首帧有播放标记且后续少量变化，但不能确认为当前硬解输出。原生GUI245截图仍是正常彩带。不得把完成计数或这些菜单图当作已定位黑屏的证据。数据在Mac trial-capture245/pixels/。
+
+下一取点246按原厂VIDEO配置组合：VIUIN特殊VIDEO分支两个编译副本均覆盖，mux4/VIU_MISC_CTRL1 bit28、输入AFIFO e4、信号YUV444。保留base端口入口限制和严格完成/所有权检查，以独立内核测试；不改变显示修复参数。
