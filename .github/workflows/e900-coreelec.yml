@@ -122,6 +122,21 @@ jobs:
             e900-state-v1-${{ steps.cache-keys.outputs.compat }}-
             e900-state-v1-${{ steps.cache-keys.outputs.previous_compat }}-
 
+      - name: Restore independent installed toolchain fallback
+        id: toolchain-fallback
+        if: steps.build-state.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/toolchain-snapshot
+          key: e900-toolchain-v1-${{ steps.cache-keys.outputs.compat }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            e900-toolchain-v1-${{ steps.cache-keys.outputs.compat }}-
+            e900-toolchain-v1-${{ steps.cache-keys.outputs.previous_compat }}-
+
+      - name: Apply compatible toolchain fallback
+        if: steps.toolchain-fallback.outputs.cache-matched-key != ''
+        run: python3 "$PORT_ROOT/scripts/toolchain-cache.py" restore "$E900_WORK_ROOT/CoreELEC-$PROFILE"
+
       - name: Prepare pinned upstream source and patches
         id: prepare
         run: bash "$PORT_ROOT/scripts/build.sh" prepare "$PROFILE"
@@ -141,6 +156,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-video-pipeline.py"
           python3 "$PORT_ROOT/tests/check-video-init-order.py"
           python3 "$PORT_ROOT/tests/check-display-stage-hooks.py"
+          python3 "$PORT_ROOT/tests/check-toolchain-cache.py"
           python3 "$PORT_ROOT/tests/check-frame-capture.py"
           python3 "$PORT_ROOT/tests/check-vdin-capture.py"
           python3 "$PORT_ROOT/tests/check-media-install.py"
@@ -182,8 +198,13 @@ jobs:
           python3 "$PORT_ROOT/scripts/prepare-usb-image.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE"
           python3 "$PORT_ROOT/scripts/export-artifacts.py" "$E900_WORK_ROOT/CoreELEC-$PROFILE" "$PROFILE" image 0
 
-      - name: Save toolchain and incremental build state even after compile failure
+      - name: Prepare bounded cache snapshots
+        id: cache-snapshots
         if: always() && !cancelled() && steps.prepare.outcome == 'success'
+        run: python3 "$PORT_ROOT/scripts/toolchain-cache.py" prepare "$E900_WORK_ROOT/CoreELEC-$PROFILE"
+
+      - name: Save toolchain and incremental build state even after compile failure
+        if: always() && !cancelled() && steps.cache-snapshots.outputs.full_ready == 'true'
         timeout-minutes: 20
         continue-on-error: true
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
@@ -217,6 +238,15 @@ jobs:
         with:
           path: ${{ env.E900_WORK_ROOT }}/apt/*.deb
           key: ${{ steps.debs.outputs.cache-primary-key }}
+
+      - name: Save independent installed toolchain fallback
+        if: always() && !cancelled() && steps.cache-snapshots.outputs.toolchain_ready == 'true'
+        timeout-minutes: 10
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.E900_WORK_ROOT }}/toolchain-snapshot
+          key: e900-toolchain-v1-${{ steps.cache-keys.outputs.compat }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload experimental binaries and logs
         if: always()
