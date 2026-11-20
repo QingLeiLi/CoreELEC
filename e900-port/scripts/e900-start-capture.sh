@@ -54,7 +54,7 @@ if [ "${E900_CAPTURE_PREPARE_ONLY:-0}" = 1 ]; then
   exit 0
 fi
 phase before-service-start
-printf 'v4l2start viuin %s %s %s 0 0 0 0\n' "$width" "$height" "$fps" > "$attr"
+printf 'v4l2start viuin %s %s %s 0 0 0 1\n' "$width" "$height" "$fps" > "$attr"
 phase service-start-returned
 printf 'boot_id=%s\ninput_mode=%s\nrequested_output=640x360 RGB444\n' "$(cat /proc/sys/kernel/random/boot_id)" "$mode" > /storage/e900-capture/session.txt
 printf 'VDIN start returned success. Use e900-capture-ready.sh to verify a completed frame.\n'
