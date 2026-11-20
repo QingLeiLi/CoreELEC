@@ -120,4 +120,4 @@ GXLX2 的 CPU ID 0x2a 满足上游 `cpu_after_eq(G12A)`，使其选择 matrix1 �
 
 硬解223在GUI窗口12005、播放约3.7秒时启动对照，解码计数130→762、零错误，A正常，但B仍是菜单底图。硬解224原生截图含色条与OSD，B却含黑背景与OSD且UI时刻不一致。现只能证明回环基础设施和软解阳性对照；需要继续校准硬解时B的取点/实时性。旧的无新中断保护图像不得作为唯一定位证据。
 
-late225试验只把现有启动参数 `amvideo.gxlx2_late_video_init` 由0改1，内核与SYSTEM保持不变，原启动脚本已备份。重复观察窗口内未恢复SSH，等待屏幕状态反馈。Mac `trial-route216/rollback225.zip` 含三个回退启动文件，复制至USB启动分区根目录即可恢复late=0，无需重写系统镜像。尚未解决硬解黑屏，Goal保持active；没有推送、触发云构建或写入eMMC。
+late225试验只把现有启动参数 `amvideo.gxlx2_late_video_init` 由0改1，内核与SYSTEM保持不变，原启动脚本已备份。用户确认慢速循环重启。已由原TV的root ADB回写三个late=0启动脚本，重启后CoreELEC SSH/Kodi正常，参数为N；未取得可信崩溃栈，冷恢复后的pstore文本已损坏。不再无自动回退地重复该试验。Mac `trial-route216/rollback225.zip` 含三个回退启动文件，复制至USB启动分区根目录即可恢复late=0，无需重写系统镜像。尚未解决硬解黑屏，Goal保持active；没有推送、触发云构建或写入eMMC。
