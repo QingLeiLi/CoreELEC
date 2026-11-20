@@ -2,7 +2,7 @@
 
 目标是把已经验证的解码帧输入 A，与显示链路下游的内部回环帧 B 对照。B 使用旧式 VIU/VENC 回环候选路径；具体位于输出矩阵前后仍需硬件校验，不能将它等同于 HDMI 线上最终像素。
 
-目前只有 A 点的 H.264 色条像素证据。B 点未在盒子上抓取；主机测试中的图像均为合成数据。以下代码已接入可选构建，完整 ARM 编译、实际寄存器行为、完成中断和缓存一致性尚未验证。
+目前只有 A 点的 H.264 色条像素证据，B 点尚无有效实拍证据。构建 44682660724（12d76eb）已通过完整 ARM 编译、链接和实机启动。两路 VDIN 探测、格式设置及四帧 CMA 分配已经实机执行；启动服务后失联并重启，实时内核日志最后到达 `vdin_set_hdr fmt:0`。新增旧式矩阵/HDR 保护修复已完成主机测试，尚需重新 ARM 构建和硬件验证。
 
 ## 构建
 
@@ -40,11 +40,11 @@ GitHub Actions 手动运行现有 E900 workflow：
 
 ## 构建后调试工具
 
-这些命令供新内核加载前核对完成后使用；它们尚未在硬件运行。不要在当前旧固件上运行尚不存在的诊断入口。
+这些命令仅适用于包含诊断接口的新固件。准备阶段现已在硬件运行，完整服务尚未成功启动。
 
 仓库脚本：
 
-- `scripts/e900-start-capture.sh`：核对当前显示模式，显式打开运行时开关并经平台总线探测，要求两个 VDIN 实例成功注册，开始单次 640×360 诊断会话；不改变 HDMI 模式。
+- `scripts/e900-start-capture.sh`：核对当前显示模式，显式打开运行时开关并经平台总线探测，要求两个 VDIN 实例成功注册，开始单次 640×360 诊断会话；不改变 HDMI 模式。每个关键操作前将阶段同步落盘至 `/storage/e900-capture/start-phase.txt`；设置 `E900_CAPTURE_PREPARE_ONLY=1` 只探测、设置转换，跳过服务启动。
 - `scripts/e900-capture-ready.sh menu`：保存 `/storage/e900-capture/menu.e9cap`。先写 `.partial`，sysfs 成功才发布正式文件；失败清理本次临时文件，不覆盖已有结果。
 - `scripts/inspect-vdin-snapshot.py menu.e9cap --out decoded`：验证格式、完整长度和摘要，导出原始像素及 JSON。只有显式指定 `--rgb-order RGB` 或 `BGR` 才生成 PNG；实际通道顺序必须用色条校验。
 
@@ -71,6 +71,31 @@ GitHub Actions 手动运行现有 E900 workflow：
 
 VDIN/VIUIN 改为 `y`，Kconfig 为 VDIN 声明 V4L2/DMA 依赖并选择 VB2 DMA-contiguous（隐藏配置不能仅靠写入 `.config` 保持为 `y`）。其直接引用的 MEDIA_SUPPORT、VIDEO_DEV、VIDEO_V4L2、VIDEOBUF2_CORE、VIDEOBUF2_MEMOPS、VIDEOBUF2_DMA_CONTIG 一起设为 `y`，避免内置 VDIN 反向依赖动态模块。运行时探测门仍默认关闭。
 
-安装器识别上一轮失败缓存中精确的 `m` 配置并迁移，同时保留原始摘要和本地改动保护。新增检查覆盖全部 11 个提供者、真实 GNU89 TVAFE 公共函数的跨对象链接、失败缓存迁移以及运行时探测顺序。完整 ARM 链接仍需新一次云构建验证。
+安装器识别上一轮失败缓存中精确的 `m` 配置并迁移，同时保留原始摘要和本地改动保护。新增检查覆盖全部 11 个提供者、真实 GNU89 TVAFE 公共函数的跨对象链接、失败缓存迁移以及运行时探测顺序。完整 ARM 链接现已由构建 44682660724 验证通过，尚无有效 B 点实拍证据。
 
 本地还运行了固定 Linux 4.9 的真实 `olddefconfig`（ARCH=arm64，主机只构建 Kconfig 工具），确认 VDIN/VIUIN、直接 V4L2/VB2 依赖及 VPU/VECM/extcon 等 13 项全部保持 `y`。此验证不包含 ARM C/汇编编译或最终链接。
+
+## 构建 44682660724 实机记录（2026-11-20）
+
+35 个导出文件及 18 个补丁摘要一致，原生 FAT 回读确认内核、SYSTEM、DT 和 initrd 配套。新旧固件使用独立文件名，`SYSTEM_IMAGE=SYSTEM212` 已在实机启动命令行确认。完整旧启动分区备份在盒子 `/storage/e900-pre212-backup/flash.tar` 和 Mac `trial-build212/rollback/flash.tar`，SHA256 为 `ca03ac33b37384ae95005f0f54b5aed5527406f44948bd1d879634927c2d0b66`。未写入 eMMC。
+
+新固件 SSH/Kodi 正常，采集参数初始为 N。HDMI HPD=0，内部模式为 1080p60。第一次尝试期间曾失联并重启，但命令没有留下执行标记，原因未确定。用户明确授权重试后，带落盘标记的测试证实两个 probe 及 conversion 返回；记录停在 before-service-start，之后设备重启。再次将准备与服务分离后，准备过程正常结束。
+
+实时 `/dev/kmsg` 日志在 Mac 保存，证明服务经过前端打开、IRQ 准备和 CMA 分配，四帧缓冲池大小 `0x1c8000`，最后输出如下：
+
+```
+vdin1 cma alloc 4 buffers ok!
+vdin_game_mode_check: flag=0x0, game_mode=0x0 force mode:0x0
+vdin_change_matrix1 id:28
+vdin_set_hdr fmt:0
+```
+
+随后 SSH 失联并再次重启。源码在最后一条日志后会调用 `hdr_set(5, 0x9)`；它是嫌疑入口，日志本身还不能排除后续无日志的寄存器配置。没有完成帧，不能解释成回环黑帧，也没有证明 HDMI 黑屏已修复。
+
+尝试仅通过已有 `rgb_info_enable` 参数选择旧式矩阵对照，发现该参数在 DEBUG_SUPPORT 下，本镜像没有编入；未改变该参数，未继续启动服务。设备已恢复 SSH/Kodi，运行时采集参数为 N，记录的最后启动 ID 为 `335cfdc6-80f1-457c-9ace-8cbd87459051`。
+
+## 旧式矩阵/HDR 修复候选
+
+GXLX2 的 CPU ID 0x2a 满足上游 `cpu_after_eq(G12A)`，使其选择 matrix1 并调用 G12 VDIN HDR 接口。补丁 0012 现为 GXLX2 选择旧式 matrix0，并在调用点和 `vdin_set_hdr` 内保护，其他 CPU 保留原路径。另在 matrix、blackbar、histogram、write-control、input-route、measurement-route 前后增加仅该 CPU 的日志，供下次细分失败位置。
+
+新增测试执行真实上下游 C 函数，在 Dolby 支持开/关两种配置共 6912 个组合中比较非 GXLX2 的调用参数序列，验证一致；GXLX2 默认采集路径使用 matrix0 且没有 HDR 调用。主机测试不证明硬件修复。本轮补丁尚未 ARM 重编译或部署，现有构建缓存可保留兼容工具链，需重建 linux/media_modules 并重打包镜像。
