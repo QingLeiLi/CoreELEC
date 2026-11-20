@@ -1,0 +1,233 @@
+Subject: [DIAGNOSTIC] bounded GXLX2 display-stage observations
+
+No display writes, replay, frame ownership changes or new pixel tap.
+Runtime hardware readback is default-off and limited to active legacy VD1.
+
+--- a/include/linux/amlogic/media/registers/register_ops.h
++++ b/include/linux/amlogic/media/registers/register_ops.h
+@@ -58,6 +58,7 @@
+ 
+ /* Software readiness only; does not read any hardware register. */
+ bool codec_reg_bus_ready(u32 bus_type);
++unsigned int codec_reg_bus_dropped_writes(u32 bus_type);
+ int codec_reg_read(u32 bus_type, unsigned int reg);
+ void codec_reg_write(u32 bus_type, unsigned int reg, unsigned int val);
+ void codec_reg_write_bits(u32 bus_type, unsigned int reg, u32 val, int start,
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/atomic.h>
+ #include <linux/types.h>
+ #include <linux/fs.h>
+ #include <linux/init.h>
+@@ -32,6 +33,16 @@
+ #include <linux/amlogic/cpu_version.h>
+ 
+ static struct chip_register_ops *amports_ops[BUS_MAX];
++/* Software-only accounting of writes lost before bus callbacks exist. */
++static atomic_t e900_bus_write_drops[BUS_MAX];
++
++unsigned int codec_reg_bus_dropped_writes(u32 bus_type)
++{
++	if (bus_type >= BUS_MAX || !is_meson_gxlx2_cpu())
++		return 0;
++	return atomic_read(&e900_bus_write_drops[bus_type]);
++}
++EXPORT_SYMBOL(codec_reg_bus_dropped_writes);
+ 
+ /*#define DEBUG_REG_OPS*/
+ #define DEBUG_PRINT_CNT 10
+@@ -92,8 +103,11 @@
+ {
+ 	struct chip_register_ops *ops = amports_ops[bus_type];
+ 
+-	if (!ops)
++	if (!ops) {
++		if (is_meson_gxlx2_cpu())
++			atomic_inc(&e900_bus_write_drops[bus_type]);
+ 		return;
++	}
+ 	ops->w_cnt++;
+ 	CODEC_OPS_START(bus_type, reg, ops->w_cnt);
+ 
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -54,6 +54,7 @@
+ #include <linux/amlogic/media/utils/vdec_reg.h>
+ 
+ #include <linux/amlogic/media/registers/register.h>
++#include <linux/amlogic/media/registers/register_ops.h>
+ #include <linux/uaccess.h>
+ #include <linux/amlogic/media/utils/amports_config.h>
+ #include <linux/amlogic/media/vpu/vpu.h>
+@@ -94,6 +95,134 @@
+ module_param_named(gxlx2_g12_mif, gxlx2_g12_mif, bool, 0444);
+ MODULE_PARM_DESC(gxlx2_g12_mif,
+ 	"Experimental GXLX2 G12 MIF table; legacy video blend policy retained");
++
++/* E900 stage probes: observation only, no display writes or frame ownership. */
++static unsigned int gxlx2_stage_samples;
++static unsigned int e900_stage_input_left;
++static unsigned int e900_stage_epoch;
++
++static int e900_stage_samples_set(const char *value,
++				  const struct kernel_param *kp)
++{
++	unsigned int n;
++	int ret = kstrtouint(value, 0, &n);
++
++	if (ret)
++		return ret;
++	if (n > 8)
++		return -ERANGE;
++	/* Each hook has its own bounded budget; zero disables both. */
++	WRITE_ONCE(e900_stage_input_left, n);
++	WRITE_ONCE(e900_stage_epoch, READ_ONCE(e900_stage_epoch) + 1);
++	WRITE_ONCE(*(unsigned int *)kp->arg, n);
++	return 0;
++}
++
++static const struct kernel_param_ops e900_stage_sample_ops = {
++	.set = e900_stage_samples_set,
++	.get = param_get_uint,
++};
++module_param_cb(gxlx2_stage_samples, &e900_stage_sample_ops,
++		&gxlx2_stage_samples, 0644);
++MODULE_PARM_DESC(gxlx2_stage_samples,
++	"GXLX2 legacy H264 stage observations, 0=off, 1..8 bounded samples");
++
++static bool e900_stage_take(unsigned int *budget)
++{
++	unsigned int n;
++
++	if (!is_meson_gxlx2_cpu())
++		return false;
++	n = READ_ONCE(*budget);
++	return n && cmpxchg(budget, n, n - 1) == n;
++}
++
++static void e900_stage_init(const char *phase)
++{
++	if (!is_meson_gxlx2_cpu())
++		return;
++	/* These queries inspect software only, including before bus publication. */
++	pr_info("e900-stage init=%s ready_vc=%u ready_hhi=%u ready_dmc=%u drop_vc=%u drop_hhi=%u drop_dmc=%u\n",
++		phase, codec_reg_bus_ready(IO_VC_BUS),
++		codec_reg_bus_ready(IO_HHI_BUS),
++		codec_reg_bus_ready(IO_DMC_BUS),
++		codec_reg_bus_dropped_writes(IO_VC_BUS),
++		codec_reg_bus_dropped_writes(IO_HHI_BUS),
++		codec_reg_bus_dropped_writes(IO_DMC_BUS));
++}
++
++static void e900_stage_input(u8 layer_id, struct vframe_s *vf,
++			     struct video_layer_s *layer, bool update_mif)
++{
++	if (layer_id || !e900_stage_take(&e900_stage_input_left))
++		return;
++	/* Called while the normal display path owns vf; never retain its pointer. */
++	pr_info("e900-stage epoch=%u input idx=%u pts=%u size=%ux%u type=%x depth=%x src_canvas=%x dst_canvas=%x update_mif=%u swap_vd2=%u\n",
++		READ_ONCE(e900_stage_epoch), vf->index, vf->pts,
++		vf->width, vf->height, vf->type, vf->bitdepth,
++		vf->canvas0Addr, layer->disp_canvas[layer->cur_canvas_id][0],
++		update_mif, layer->vd1_vd2_mux);
++}
++
++static void e900_stage_output(u32 blend_requested)
++{
++	struct video_layer_s *layer = &vd_layer[0];
++	struct hw_vd_reg_s *mif = &layer->vd_mif_reg;
++	struct vframe_s *vf = layer->dispbuf;
++	unsigned int epoch, gen, canvas, fmt, off = cur_dev->vpp_off;
++
++	if (!e900_stage_take(&gxlx2_stage_samples))
++		return;
++	epoch = READ_ONCE(e900_stage_epoch);
++	if (layer->switch_vf && layer->vf_ext)
++		vf = layer->vf_ext;
++	/* Only the already selected legacy bank with active uncompressed video.
++	 * No arbitrary register selector, powered-down read or G12-bank probing.
++	 */
++	if (!legacy_vpp || gxlx2_g12_mif || layer->vd1_vd2_mux ||
++	    !vf || !layer->enabled || (vf->type & VIDTYPE_COMPRESS) ||
++	    !codec_reg_bus_ready(IO_VC_BUS) ||
++	    mif->vd_if0_gen_reg != 0x1a50 ||
++	    mif->vd_if0_canvas0 != 0x1a51 ||
++	    mif->viu_vd_fmt_ctrl != 0x1a68 || off) {
++		pr_info("e900-stage epoch=%u output_skipped active=%u frame=%u legacy=%u g12_mif=%u swap_vd2=%u bus=%u\n",
++			epoch, layer->enabled, !!vf, legacy_vpp,
++			gxlx2_g12_mif, layer->vd1_vd2_mux,
++			codec_reg_bus_ready(IO_VC_BUS));
++		return;
++	}
++	/* READ_VCBUS_REG is live hardware; VSYNC_RD is the RDMA-aware view.
++	 * Current vsync's submissions may not have latched: compare a sequence,
++	 * never classify a single shadow/live difference as a hardware failure.
++	 */
++	gen = READ_VCBUS_REG(mif->vd_if0_gen_reg);
++	canvas = READ_VCBUS_REG(mif->vd_if0_canvas0);
++	fmt = READ_VCBUS_REG(mif->viu_vd_fmt_ctrl);
++	pr_info("e900-stage epoch=%u mif idx=%u pts=%u live_gen=%x live_canvas=%x live_fmt=%x shadow_gen=%x shadow_canvas=%x shadow_fmt=%x\n",
++		epoch, vf->index, vf->pts, gen, canvas, fmt,
++		VSYNC_RD_MPEG_REG(mif->vd_if0_gen_reg),
++		VSYNC_RD_MPEG_REG(mif->vd_if0_canvas0),
++		VSYNC_RD_MPEG_REG(mif->viu_vd_fmt_ctrl));
++	pr_info("e900-stage epoch=%u layout gen2=%x gen3=%x fifo=%x shadow_gen2=%x shadow_gen3=%x\n",
++		epoch, READ_VCBUS_REG(mif->vd_if0_gen_reg2),
++		READ_VCBUS_REG(mif->vd_if0_gen_reg3),
++		READ_VCBUS_REG(mif->vd_if0_luma_fifo_size),
++		VSYNC_RD_MPEG_REG(mif->vd_if0_gen_reg2),
++		VSYNC_RD_MPEG_REG(mif->vd_if0_gen_reg3));
++	pr_info("e900-stage epoch=%u pipe luma_x=%x luma_y=%x sc=%x hphase=%x vphase=%x matrix=%x\n",
++		epoch, READ_VCBUS_REG(mif->vd_if0_luma_x0),
++		READ_VCBUS_REG(mif->vd_if0_luma_y0),
++		READ_VCBUS_REG(VPP_SC_MISC),
++		READ_VCBUS_REG(VPP_HSC_START_PHASE_STEP),
++		READ_VCBUS_REG(VPP_VSC_START_PHASE_STEP),
++		READ_VCBUS_REG(VPP_MATRIX_CTRL));
++	pr_info("e900-stage epoch=%u blend requested=%x live=%x shadow=%x post_h=%x post_v=%x drop_vc=%u\n",
++		epoch, blend_requested, READ_VCBUS_REG(VPP_MISC),
++		VSYNC_RD_MPEG_REG(VPP_MISC),
++		READ_VCBUS_REG(VPP_POSTBLEND_VD1_H_START_END),
++		READ_VCBUS_REG(VPP_POSTBLEND_VD1_V_START_END),
++		codec_reg_bus_dropped_writes(IO_VC_BUS));
++}
+ 
+ static bool bypass_cm;
+ bool hscaler_8tap_enable[MAX_VD_LAYER];
+@@ -5249,6 +5378,7 @@
+ 			VPP_MISC + vpp_off,
+ 			vpp_misc_set);
+ 	}
++	e900_stage_output(vpp_misc_set);
+ 	vpp_misc_set_save = vpp_misc_set;
+ 	post_blend_dummy_data_update();
+ 
+@@ -5473,6 +5603,7 @@
+ 		layer->next_canvas_id = layer->cur_canvas_id ? 0 : 1;
+ #endif
+ 	}
++	e900_stage_input(layer_id, vf, layer, update_mif);
+ 	return 0;
+ }
+ 
+@@ -6608,6 +6739,8 @@
+ 	u32 cur_hold_line, ofifo_size;
+ 	int i;
+ 
++	e900_stage_init("before");
++
+ 	if (!legacy_vpp) {
+ 		if (vpp_ofifo_size == 0xff)
+ 			ofifo_size = 0x1000;
+@@ -6721,6 +6854,7 @@
+ 	secure_register(VIDEO_MODULE, 0,
+ 		VSYNC_WR_MPEG_REG, vpp_secure_cb);
+ #endif
++	e900_stage_init("after");
+ 	return 0;
+ }
+ 

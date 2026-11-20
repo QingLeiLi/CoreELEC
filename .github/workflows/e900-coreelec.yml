@@ -140,6 +140,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-post2.py"
           python3 "$PORT_ROOT/tests/check-video-pipeline.py"
           python3 "$PORT_ROOT/tests/check-video-init-order.py"
+          python3 "$PORT_ROOT/tests/check-display-stage-hooks.py"
           python3 "$PORT_ROOT/tests/check-frame-capture.py"
           python3 "$PORT_ROOT/tests/check-vdin-capture.py"
           python3 "$PORT_ROOT/tests/check-media-install.py"

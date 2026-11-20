@@ -121,3 +121,13 @@ GXLX2 的 CPU ID 0x2a 满足上游 `cpu_after_eq(G12A)`，使其选择 matrix1 �
 硬解223在GUI窗口12005、播放约3.7秒时启动对照，解码计数130→762、零错误，A正常，但B仍是菜单底图。硬解224原生截图含色条与OSD，B却含黑背景与OSD且UI时刻不一致。现只能证明回环基础设施和软解阳性对照；需要继续校准硬解时B的取点/实时性。旧的无新中断保护图像不得作为唯一定位证据。
 
 late225试验只把现有启动参数 `amvideo.gxlx2_late_video_init` 由0改1，内核与SYSTEM保持不变，原启动脚本已备份。用户确认慢速循环重启。已由原TV的root ADB回写三个late=0启动脚本，重启后CoreELEC SSH/Kodi正常，参数为N；未取得可信崩溃栈，冷恢复后的pstore文本已损坏。不再无自动回退地重复该试验。Mac `trial-route216/rollback225.zip` 含三个回退启动文件，复制至USB启动分区根目录即可恢复late=0，无需重写系统镜像。尚未解决硬解黑屏，Goal保持active；没有推送、触发云构建或写入eMMC。
+
+## 唯一通知对照与视频专用路由232/233（2026-11-20）
+
+226对照使用不同的MENU/HW/SW通知识别时刻。硬解B仍显示旧MENU通知，而原生截图显示HW通知；软解B显示当前SW通知及色条。因此，硬解B即使中断持续、队列时间戳较新，也不能确认为当前最终合成输出。用户确认实际硬解画面黑屏、有声音；视频层状态为启用，标准disable_video 1→0重触发无效。
+
+独立内核232在216基础上只把viuin_open中VIDEO端口比较常量0xa001改为0xa000，使普通VIU1请求进入既有视频专用路由（VIU_MISC_CTRL1 bit28，mux4）。这只是路由别名：参数中的端口仍是普通VIU1，仍执行其WRITE_DONE检查；不能视作完整VIDEO端口支持。late_video_init保持0。1080p输入没有完成帧。233保持同一内核，只把输入尺寸改为测试片1280×720，仍超时：irq_cnt=136、wr done abnormal_cnt=135、write done irq=0、puted_frame_cnt=0、frame_cnt=0。同期H264硬解461帧、零丢帧及软硬错误。没有获得像素，不得解读为黑帧。证据见coreelec-audit/video233-result.log及trial-tap232/videoOnly233.json。
+
+源码核对：原生TVIN_PORT_VIU1_VIDEO使用YUV444信号属性，且原生ISR只对普通VIU1/CAMERA执行WRITE_DONE检查。本轮没有绕过完成或缓冲区所有权检查。切换正式端口前仍须验证路由、FIFO和完成语义，不能仅开放入口便声称定位到视频像素丢失。
+
+曾在采集仍运行时停止播放器后意外重启一次；232/233改为先v4l2stop再停止播放器，停止调用返回且启动ID保持不变。233结束后恢复了USB三个启动脚本到保留的216/late=0，并正常请求重启；随后CoreELEC SSH及TV ADB暂不可达，尚待确认启动结果。未写eMMC。
