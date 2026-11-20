@@ -33,6 +33,50 @@ HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")
 
 
+CAPTURE_PATCHES = [
+    "linux/0012-gxlx2-vdin-routing.patch",
+    "linux/0013-gxlx2-vdin-dma-lifecycle.patch",
+    "linux/0014-gxlx2-vdin-ready-snapshot.patch",
+    "linux/0015-e900-vdin-clock-bindings.patch",
+]
+CAPTURE_CONFIG = "projects/Amlogic-ce/devices/Amlogic-ng/linux/linux.aarch64.conf"
+CAPTURE_CONFIG_BASE_SHA256 = "9bf441cc9ed301de8b3be8ab05cdf2e3d0de9fc4fd50f8e02ec848f378088362"
+CAPTURE_CONFIG_EXTRA = "\n# E900 optional completed-frame VDIN diagnostics\nCONFIG_AMLOGIC_MEDIA_TVIN=y\nCONFIG_AMLOGIC_MEDIA_VDIN=m\nCONFIG_AMLOGIC_MEDIA_VIUIN=m\n"
+
+
+def selected_patches(profile):
+    selected = list(PROFILES[profile])
+    if os.environ.get("E900_SOURCE_TRACE", "0") == "1":
+        if profile != "decoder":
+            raise RuntimeError("Source tracing requires the decoder board profile")
+        selected.append("linux/0004-e900-source-boot-trace.patch")
+    capture = os.environ.get("E900_VDIN_CAPTURE", "0")
+    if capture not in {"0", "1"}:
+        raise ValueError("E900_VDIN_CAPTURE must be 0 or 1")
+    if capture == "1":
+        if profile != "decoder":
+            raise RuntimeError("VDIN diagnostics require the decoder board profile")
+        selected.extend(CAPTURE_PATCHES)
+    return selected
+
+
+def capture_config_fix(repo, enabled):
+    content = (repo / CAPTURE_CONFIG).read_text()
+    base = content
+    if content.endswith(CAPTURE_CONFIG_EXTRA):
+        base = content[:-len(CAPTURE_CONFIG_EXTRA)].replace(
+            "CONFIG_AMLOGIC_MEDIA_VIN=y", "# CONFIG_AMLOGIC_MEDIA_VIN is not set", 1)
+    if hashlib.sha256(base.encode()).hexdigest() != CAPTURE_CONFIG_BASE_SHA256:
+        raise RuntimeError("Unmanaged or locally edited capture kernel configuration")
+    updated = base
+    metadata = None
+    if enabled:
+        updated = base.replace("# CONFIG_AMLOGIC_MEDIA_VIN is not set", "CONFIG_AMLOGIC_MEDIA_VIN=y", 1) + CAPTURE_CONFIG_EXTRA
+        metadata = dict(destination=CAPTURE_CONFIG, base_sha256=CAPTURE_CONFIG_BASE_SHA256,
+                        sha256=hashlib.sha256(updated.encode()).hexdigest())
+    return CAPTURE_CONFIG, updated, metadata
+
+
 def invalidated_packages(previous, state):
     if previous["pins"] != state["pins"] or previous["profile"] != state["profile"]:
         raise RuntimeError("Incompatible cached pins or profile")
@@ -60,7 +104,8 @@ def invalidated_packages(previous, state):
     if changed_install - {"media_modules-aml"}:
         raise RuntimeError("Unexpected package installation policy change")
     packages.update(changed_install)
-    if previous.get("build_options") != state.get("build_options"):
+    if (previous.get("build_options") != state.get("build_options") or
+            previous.get("capture_config") != state.get("capture_config")):
         packages.update(["linux", "media_modules-aml"])
     return sorted(packages)
 
@@ -297,6 +342,11 @@ def install(repo, profile):
     head = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
+    selected = selected_patches(profile)
+    marker = repo / ".e900-profile.json"
+    previous = json.loads(marker.read_text()) if marker.exists() else None
+    capture_enabled = os.environ.get("E900_VDIN_CAPTURE", "0") == "1"
+    capture_fix = capture_config_fix(repo, capture_enabled) if capture_enabled or (previous or {}).get("capture_config") else None
     validate_packages(repo)
     host_path, host_content, host_metadata = host_codegen_fix(repo)
     media_path, media_content, media_metadata = media_module_install_fix(repo)
@@ -308,11 +358,6 @@ def install(repo, profile):
     option_destination = repo / ".coreelec/options"
     option_metadata = dict(destination=".coreelec/options", sha256=hashlib.sha256(option_content.encode()).hexdigest()) if option_content else None
     entries = []
-    selected = list(PROFILES[profile])
-    if os.environ.get("E900_SOURCE_TRACE", "0") == "1":
-        if profile != "decoder":
-            raise RuntimeError("Source tracing requires the decoder board profile")
-        selected.append("linux/0004-e900-source-boot-trace.patch")
     for relative in selected:
         source = PORT / "patches" / relative
         dest_dir = LINUX_DIR if relative.startswith("linux/") else MEDIA_DIR
@@ -320,13 +365,13 @@ def install(repo, profile):
         entries.append(dict(source=relative, destination=str(destination.relative_to(repo)),
                             sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
     state = dict(profile=profile, pins=PINS, patches=entries,
+                 capture_config=capture_fix[2] if capture_fix else None,
                  source_downloads=[entry[2] for entry in source_fixes],
                  package_install_fixes=[media_metadata],
                  host_codegen=host_metadata,
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
                  status="experimental-unvalidated")
-    marker = repo / ".e900-profile.json"
-    previous = json.loads(marker.read_text()) if marker.exists() else None
+
     old_host = (previous or {}).get("host_codegen")
     if old_host and hashlib.sha256((repo / host_path).read_bytes()).hexdigest() != old_host["file_sha256"]:
         raise RuntimeError("Locally edited host optimization config; refusing binary cache reuse")
@@ -363,6 +408,8 @@ def install(repo, profile):
         (repo / source_path).write_text(source_content)
     (repo / host_path).write_text(host_content)
     (repo / media_path).write_text(media_content)
+    if capture_fix:
+        (repo / capture_fix[0]).write_text(capture_fix[1])
     if option_content:
         option_destination.parent.mkdir(exist_ok=True)
         option_destination.write_text(option_content)

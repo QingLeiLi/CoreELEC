@@ -74,3 +74,5 @@ GitHub 默认缓存容量为每仓库 10GB；本工作流不调整容量或计�
 工作流记录当前 CPU 型号/特性供诊断，这些观察值不参与通用 ISA 缓存键。新增 `check-host-policy.py` 检查宿主编译宏不启用 AVX/AVX2/AVX-512、目标参数未变化，以及旧缓存隔离与配置编辑保护。
 
 编译失败后，若存在宿主 GI 构建目录，自动运行诊断：Python/ctypes smoke、解释器动态库列表，并在 GDB 下重跑 Ninja 生成的 GLib scanner 命令，记录 SIGILL 指令、线程调用栈和共享库。输出位于 artifact 的 `logs/host-scanner-diagnostic.log`。诊断不替代原失败状态，也不宣称完整云端编译或硬件验证已经通过。
+
+VDIN downstream capture is now an optional decoder/image build (`vdin_capture=true`, `source_trace=false`). Runtime capture stays off until explicitly enabled. It preserves compatible toolchains and invalidates Linux/media only when switched. See [VDIN-CAPTURE.md](boards/VDIN-CAPTURE.md) for the single-session lifecycle restriction and unverified hardware scope. No downstream image has yet been acquired.

@@ -122,3 +122,5 @@ python3 tests/check-usb-roundtrip.py <本板编译后DTB> <mtools所在目录> <
 首次完整 USB 镜像的来源、哈希和验证结果见 [构建记录](tests/full-image-build-43886158436.json)。首次上机只写外置 U 盘，按 USB 启动方式测试，使用有线网络；不进行 eMMC 安装、BL301 注入或系统更新。
 
 最新显示验收：软件解码正常；H.264 硬解黑屏、HEVC 绿屏，热插拔 RDMA 恢复未解决。不能将驱动帧计数视为播放通过，详见 [视频排查记录](boards/HARDWARE-VIDEO-MIF-PROBE.md)。
+
+Optional staged-pixel capture experiment: [VDIN capture build and validation limits](boards/VDIN-CAPTURE.md). The `vdin_capture` workflow input is off by default; a full ARM build and on-device downstream capture remain pending.

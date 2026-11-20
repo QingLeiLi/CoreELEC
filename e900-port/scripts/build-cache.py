@@ -41,7 +41,7 @@ def identities(port, profile, work_root, host):
                          build_script=file_hash(port / "scripts/build.sh"),
                          setup_script=file_hash(port / "scripts/ci-dependencies.sh"))
     state = dict(patches={name: file_hash(port / "patches" / name)
-                          for name in installer.PROFILES[profile]},
+                          for name in installer.selected_patches(profile)},
                  installer=file_hash(port / "scripts/install-patches.py"),
                  board_options=file_hash(port / "boards/usb-build.options") if profile == "decoder" else None,
                  cache_protocol=file_hash(port / "scripts/build-cache.py"))

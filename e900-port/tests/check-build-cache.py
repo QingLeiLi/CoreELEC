@@ -10,6 +10,9 @@ import sys
 import tempfile
 from unittest import mock
 
+os.environ["E900_VDIN_CAPTURE"] = "0"
+os.environ["E900_SOURCE_TRACE"] = "0"
+
 PORT = pathlib.Path(__file__).resolve().parents[1]
 REFERENCE = pathlib.Path(os.environ.get("E900_CE_REFERENCE", PORT / "reference/CoreELEC"))
 

@@ -1,0 +1,334 @@
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.c
+@@ -17,6 +17,8 @@
+ 
+ /* Standard Linux headers */
+ #include <linux/mm.h>
++#include <linux/dma-mapping.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/cma.h>
+@@ -436,6 +438,78 @@
+ static char vdin_name[6];
+ /* return val:1: fail;0: ok */
+ /* combined canvas and afbce memory */
++/* Diagnostic mapping only: caller must hold fe_lock and own any read frame. */
++static int e900_vdin_dma_map(struct vdin_dev_s *devp)
++{
++	dma_addr_t address;
++	struct device *dev = &devp->this_pdev->dev;
++
++	if (!is_meson_gxlx2_cpu() || devp->index != 1)
++		return 0;
++	if (devp->e900_dma_mapped || devp->cma_config_flag ||
++	    !devp->venc_pages || !devp->mem_size || devp->afbce_mode ||
++	    PageHighMem(devp->venc_pages))
++		return -EOPNOTSUPP;
++#ifdef CONFIG_AMLOGIC_TEE
++	if (devp->secure_en || devp->mem_protected)
++		return -EOPNOTSUPP;
++#endif
++	address = dma_map_page(dev, devp->venc_pages, 0,
++			       devp->mem_size, DMA_FROM_DEVICE);
++	if (dma_mapping_error(dev, address))
++		return -EIO;
++	/* Canvas still uses physical addresses; reject translation/bounce paths. */
++	if (address != devp->mem_start) {
++		dma_unmap_page(dev, address, devp->mem_size, DMA_FROM_DEVICE);
++		return -EOPNOTSUPP;
++	}
++	devp->e900_dma_address = address;
++	devp->e900_dma_size = devp->mem_size;
++	devp->e900_dma_mapped = true;
++	return 0;
++}
++
++static void e900_vdin_dma_unmap(struct vdin_dev_s *devp)
++{
++	if (!devp->e900_dma_mapped)
++		return;
++	dma_unmap_page(&devp->this_pdev->dev, devp->e900_dma_address,
++		       devp->e900_dma_size, DMA_FROM_DEVICE);
++	devp->e900_dma_mapped = false;
++	devp->e900_dma_address = 0;
++	devp->e900_dma_size = 0;
++}
++
++/* No arbitrary-address access: only a bounded frame slot in this mapped pool. */
++int e900_vdin_dma_sync_frame(struct vdin_dev_s *devp,
++			    unsigned int index, bool for_cpu)
++{
++	size_t offset;
++
++	if (!is_meson_gxlx2_cpu() || devp->index != 1 ||
++	    !devp->e900_dma_mapped || !devp->cma_mem_alloc ||
++	    !devp->frame_size || index >= VDIN_CANVAS_MAX_CNT ||
++	    index >= devp->vfmem_max_cnt)
++		return -EINVAL;
++	if (index > devp->e900_dma_size / devp->frame_size)
++		return -ERANGE;
++	offset = (size_t)index * devp->frame_size;
++	if (offset > devp->e900_dma_size ||
++	    devp->frame_size > devp->e900_dma_size - offset ||
++	    devp->vfmem_start[index] < devp->mem_start ||
++	    devp->vfmem_start[index] - devp->mem_start != offset)
++		return -ERANGE;
++	if (for_cpu)
++		dma_sync_single_range_for_cpu(&devp->this_pdev->dev,
++			devp->e900_dma_address, offset, devp->frame_size,
++			DMA_FROM_DEVICE);
++	else
++		dma_sync_single_range_for_device(&devp->this_pdev->dev,
++			devp->e900_dma_address, offset, devp->frame_size,
++			DMA_FROM_DEVICE);
++	return 0;
++}
++
+ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
+ {
+ 	unsigned int mem_size, h_size, v_size, frame_size;
+@@ -831,6 +905,12 @@
+ 		}
+ 	}
+ 
++	if (e900_vdin_dma_map(devp)) {
++		pr_err("vdin%d diagnostic DMA map failed\n", devp->index);
++		vdin_cma_release(devp);
++		return 1;
++	}
++
+ 	pr_info("vdin%d cma alloc %d buffers ok!\n", devp->index,
+ 		devp->vfmem_max_cnt);
+ 	return 0;
+@@ -857,6 +937,8 @@
+ 		strcpy(vdin_name, "vdin0");
+ 	else if (devp->index == 1)
+ 		strcpy(vdin_name, "vdin1");
++
++	e900_vdin_dma_unmap(devp);
+ 
+ 	if (devp->cma_config_flag & MEM_ALLOC_DISCRETE) {
+ 		if (devp->cma_config_flag & MEM_ALLOC_FROM_CODEC) {
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.h
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.h
+@@ -543,6 +543,10 @@
+ #ifdef CONFIG_CMA
+ 	struct platform_device	*this_pdev;
+ 	struct page *venc_pages;
++	/* Diagnostic streaming mapping; valid only until CMA release. */
++	dma_addr_t e900_dma_address;
++	size_t e900_dma_size;
++	bool e900_dma_mapped;
+ 	unsigned int cma_mem_size;/*BYTE*/
+ 	unsigned int cma_mem_alloc;
+ 	/*cma_mem_mode:0:according to input size and output fmt;
+@@ -739,7 +743,7 @@
+ int vdin_open_fe(enum tvin_port_e port, int index,
+ 		struct vdin_dev_s *devp);
+ void vdin_close_fe(struct vdin_dev_s *devp);
+-void vdin_start_dec(struct vdin_dev_s *devp);
++int vdin_start_dec(struct vdin_dev_s *devp);
+ void vdin_stop_dec(struct vdin_dev_s *devp);
+ irqreturn_t vdin_isr_simple(int irq, void *dev_id);
+ irqreturn_t vdin_isr(int irq, void *dev_id);
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.h
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.h
+@@ -40,6 +40,9 @@
+ extern void vdin_canvas_auto_config(struct vdin_dev_s *devp);
+ extern unsigned int vdin_cma_alloc(struct vdin_dev_s *devp);
+ extern void vdin_cma_release(struct vdin_dev_s *devp);
++/* Caller owns the frame and serializes with stop/release using fe_lock. */
++extern int e900_vdin_dma_sync_frame(struct vdin_dev_s *devp,
++				   unsigned int index, bool for_cpu);
+ extern void vdin_cma_malloc_mode(struct vdin_dev_s *devp);
+ #endif /* __VDIN_CANVAS_H */
+ 
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
+@@ -603,14 +603,14 @@
+  * 5. call the callback function of the frontend to start.
+  * 6. enable irq .
+  */
+-void vdin_start_dec(struct vdin_dev_s *devp)
++int vdin_start_dec(struct vdin_dev_s *devp)
+ {
+ 	struct tvin_state_machine_ops_s *sm_ops;
+ 
+ 	/* avoid null pointer oops */
+ 	if (!devp || !devp->fmt_info_p) {
+ 		pr_info("[vdin]%s null error.\n", __func__);
+-		return;
++		return -EINVAL;
+ 	}
+ 
+ 	/* refuse start dec during suspend period,
+@@ -619,7 +619,7 @@
+ 	if (devp->flags & VDIN_FLAG_SUSPEND) {
+ 		pr_info("err:[vdin.%d]%s when suspend.\n",
+ 			devp->index, __func__);
+-		return;
++		return -EBUSY;
+ 	}
+ 
+ 	if (devp->frontend && devp->frontend->sm_ops) {
+@@ -721,7 +721,7 @@
+ 	if (vdin_cma_alloc(devp)) {
+ 		pr_err("\nvdin%d %s fail for cma alloc fail!!!\n",
+ 			devp->index, __func__);
+-		return;
++		return -ENOMEM;
+ 	}
+ #endif
+ 
+@@ -856,6 +856,7 @@
+ 		pr_info("vdin.%d start time: %ums, run time:%ums.\n",
+ 				devp->index, jiffies_to_msecs(jiffies),
+ 				jiffies_to_msecs(jiffies)-devp->start_time);
++	return 0;
+ }
+ 
+ /*
+@@ -986,14 +987,22 @@
+ {
+ 	struct tvin_frontend_s *fe;
+ 	int ret = 0;
++	bool e900_msr_enabled = false, e900_frontend_opened = false;
++	bool e900_irq_new = false, e900_start_attempted = false;
+ 	struct vdin_dev_s *devp = vdin_devp[no];
+ 	struct vdin_dev_s *vdin0_devp = vdin_devp[0];
+ 	enum tvin_sig_fmt_e fmt;
+ 
+ 	/* VDIN0 must remain registered for stock service/ISR state. */
+ 	if (is_meson_gxlx2_cpu() &&
+-	    (no != 1 || !para || para->port != TVIN_PORT_VIU1))
++	    (no != 1 || !para || para->port != TVIN_PORT_VIU1 || !viu_hw_irq))
+ 		return -EOPNOTSUPP;
++
++	if (is_meson_gxlx2_cpu() &&
++	    (!para->frame_rate || para->frame_rate > 120 ||
++	     !para->h_active || para->h_active > 1920 ||
++	     !para->v_active || para->v_active > 1080))
++		return -EINVAL;
+ 
+ 	if (IS_ERR_OR_NULL(devp) || IS_ERR_OR_NULL(vdin0_devp)) {
+ 		pr_err("[vdin]%s vdin%d has't registered or vdin0 is NULL\n",
+@@ -1077,6 +1086,11 @@
+ 		}
+ 	}
+ 
++	/* Keep diagnostic Canvas changes synchronous; no pending RDMA target. */
++	if (is_meson_gxlx2_cpu()) {
++		devp->rdma_enable = 0;
++		devp->flags &= ~VDIN_FLAG_RDMA_ENABLE;
++	}
+ 	devp->parm.port = para->port;
+ 	devp->parm.info.fmt = para->fmt;
+ 	fmt = devp->parm.info.fmt;
+@@ -1137,21 +1151,50 @@
+ 		devp->frontend   = fe;
+ 
+ 		/* vdin msr clock gate enable */
+-		if (devp->msr_clk != NULL)
+-			clk_prepare_enable(devp->msr_clk);
+-
+-		if (fe->dec_ops->open)
+-			fe->dec_ops->open(fe, fe->port);
++		if (devp->msr_clk != NULL) {
++			ret = clk_prepare_enable(devp->msr_clk);
++			if (is_meson_gxlx2_cpu() && ret)
++				goto e900_start_failed;
++			e900_msr_enabled = !ret;
++		} else if (is_meson_gxlx2_cpu()) {
++			ret = -ENODEV;
++			goto e900_start_failed;
++		}
++
++		if (fe->dec_ops->open) {
++			ret = fe->dec_ops->open(fe, fe->port);
++			if (is_meson_gxlx2_cpu() && ret)
++				goto e900_start_failed;
++			e900_frontend_opened = !ret;
++		}
+ 	} else {
+ 		pr_err("%s(%d): not supported port 0x%x\n",
+ 				__func__, no, para->port);
++		if (is_meson_gxlx2_cpu()) {
++			ret = -ENODEV;
++			goto e900_start_failed;
++		}
+ 		mutex_unlock(&devp->fe_lock);
+ 		return -1;
+ 	}
+ 	/* #ifdef CONFIG_ARCH_MESON6 */
+ 	/* switch_mod_gate_by_name("vdin", 1); */
+ 	/* #endif */
+-	vdin_start_dec(devp);
++	/* Reserve the IRQ before GXLX2 capture hardware can start. */
++	if (is_meson_gxlx2_cpu() && !(devp->flags & VDIN_FLAG_ISR_REQ)) {
++		ret = request_irq(devp->irq, vdin_v4l2_isr, IRQF_SHARED,
++				  devp->irq_name, (void *)devp);
++		if (ret)
++			goto e900_start_failed;
++		devp->flags |= VDIN_FLAG_ISR_REQ;
++		disable_irq(devp->irq);
++		devp->flags &= ~VDIN_FLAG_ISR_EN;
++		e900_irq_new = true;
++	}
++	e900_start_attempted = true;
++	ret = vdin_start_dec(devp);
++	if (is_meson_gxlx2_cpu() && ret)
++		goto e900_start_failed;
+ 	devp->flags |= VDIN_FLAG_DEC_OPENED;
+ 	devp->flags |= VDIN_FLAG_DEC_STARTED;
+ 
+@@ -1192,6 +1235,31 @@
+ 	pr_info("vdin%d %s flags=0x%x\n", devp->index, __func__, devp->flags);
+ 	mutex_unlock(&devp->fe_lock);
+ 	return 0;
++
++/* Only GXLX2 diagnostic error paths enter this label. */
++e900_start_failed:
++	if (e900_start_attempted) {
++		vdin_hw_disable(devp);
++#ifdef CONFIG_CMA
++		if (devp->cma_mem_alloc)
++			vdin_cma_release(devp);
++#endif
++	}
++	if (e900_irq_new) {
++		free_irq(devp->irq, devp);
++		devp->flags &= ~(VDIN_FLAG_ISR_REQ | VDIN_FLAG_ISR_EN);
++	}
++	if (e900_frontend_opened && fe->dec_ops->close)
++		fe->dec_ops->close(fe);
++	if (e900_msr_enabled)
++		clk_disable_unprepare(devp->msr_clk);
++	if (devp->parm.info.fmt >= TVIN_SIG_FMT_MAX)
++		kfree(devp->fmt_info_p);
++	devp->fmt_info_p = NULL;
++	devp->frontend = NULL;
++	devp->flags &= ~(VDIN_FLAG_DEC_OPENED | VDIN_FLAG_DEC_STARTED);
++	mutex_unlock(&devp->fe_lock);
++	return ret;
+ }
+ EXPORT_SYMBOL(start_tvin_service);
+ 
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
+@@ -1972,7 +1972,14 @@
+ 		param.reserved |= PARAM_STATE_HISTGRAM;
+ 		/* param.scan_mode = TVIN_SCAN_MODE_PROGRESSIVE; */
+ 		/*start the vdin hardware*/
+-		start_tvin_service(devp->index, &param);
++		{
++			int e900_result = start_tvin_service(devp->index, &param);
++
++			if (is_meson_gxlx2_cpu() && e900_result) {
++				kfree(buf_orig);
++				return e900_result;
++			}
++		}
+ 	} else if (!strcmp(parm[0], "disablesm"))
+ 		del_timer_sync(&devp->timer);
+ 	else if (!strcmp(parm[0], "freeze")) {

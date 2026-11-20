@@ -19,6 +19,11 @@ on:
         type: boolean
         default: false
 
+      vdin_capture:
+        description: Build completed-frame VDIN diagnostics (decoder only, runtime opt-in)
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -37,6 +42,7 @@ jobs:
       E900_AUDIT_ROOT: ${{ github.workspace }}/.e900-work/downloads/.e900-fixtures
       E900_INCREMENTAL_REUSE: '1'
       E900_SOURCE_TRACE: ${{ inputs.source_trace && '1' || '0' }}
+      E900_VDIN_CAPTURE: ${{ inputs.vdin_capture && '1' || '0' }}
       PROFILE: ${{ inputs.profile }}
       BUILD_TARGET: ${{ inputs.target }}
       CONCURRENCY_MAKE_LEVEL: '4'
@@ -135,6 +141,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-video-pipeline.py"
           python3 "$PORT_ROOT/tests/check-video-init-order.py"
           python3 "$PORT_ROOT/tests/check-frame-capture.py"
+          python3 "$PORT_ROOT/tests/check-vdin-capture.py"
           python3 "$PORT_ROOT/tests/check-media-install.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"
           python3 "$PORT_ROOT/tests/check-usb-image.py"

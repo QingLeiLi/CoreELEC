@@ -1,0 +1,361 @@
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
+@@ -37,6 +37,11 @@
+ #include "vdin_drv.h"
+ #include "vdin_ctl.h"
+ #include "vdin_regs.h"
++#include "vdin_canvas.h"
++#include "vdin_vf.h"
++#include <linux/vmalloc.h>
++#include <linux/highmem.h>
++#include <linux/delay.h>
+ #include "vdin_afbce.h"
+ /*2018-07-18 add debugfs*/
+ #include <linux/seq_file.h>
+@@ -1661,6 +1666,229 @@
+ * 6.modify for vdin fmt & color fmt conversion
+ * echo conversion w h cfmt >/sys/class/vdin/vdin0/attr
+ */
++#ifdef CONFIG_CMA
++struct e900_vdin_snapshot_header {
++	char magic[8];
++	__le32 version, header_bytes, width, height, format_convert;
++	__le32 active_row_bytes, source_stride, frame_index, bitdepth, flags;
++	__le64 frame_timestamp, sample_jiffies, completion_count, payload_bytes;
++};
++
++/* Returns a private CPU copy; no borrowed vframe or device pointer escapes. */
++static int e900_vdin_snapshot_copy(struct vdin_dev_s *devp,
++				  void **result, size_t *result_size)
++{
++	struct e900_vdin_snapshot_header *header;
++	struct vf_entry *vfe = NULL;
++	void *packet = NULL, *base;
++	unsigned int rows, stride, active, index = 0, row;
++	unsigned long flags, deadline;
++	size_t payload, slot;
++	int ret, sync_ret;
++	bool cpu_owned = false;
++
++	BUILD_BUG_ON(sizeof(struct e900_vdin_snapshot_header) != 80);
++	*result = NULL;
++	*result_size = 0;
++	if (!is_meson_gxlx2_cpu() || devp->index != 1)
++		return -EOPNOTSUPP;
++	/* A trylock avoids deadlock against remove waiting for this sysfs call. */
++	if (!device_trylock(&devp->this_pdev->dev))
++		return -EBUSY;
++	ret = mutex_lock_interruptible(&devp->fe_lock);
++	if (ret)
++		goto out_device;
++	ret = -EIO;
++	if (devp->pause_dec)
++		goto out_unlock;
++	ret = -EOPNOTSUPP;
++	if (!(devp->flags & VDIN_FLAG_DEC_STARTED) ||
++	    !(devp->flags & VDIN_FLAG_V4L2_DEBUG) ||
++	    (devp->flags & (VDIN_FLAG_SUSPEND | VDIN_FLAG_RDMA_ENABLE)) ||
++	    devp->rdma_enable || devp->afbce_mode ||
++	    devp->work_mode != VDIN_WORK_MD_E900_CAPTURE ||
++	    devp->source_bitdepth != 8 || !devp->e900_dma_mapped ||
++	    !devp->cma_mem_alloc || !devp->venc_pages ||
++	    !devp->fmt_info_p ||
++	    devp->fmt_info_p->scan_mode != TVIN_SCAN_MODE_PROGRESSIVE ||
++	    devp->matrix_pattern_mode || devp->secure_en || devp->mem_protected) {
++		pr_err("e900-snapshot: unsupported state flags=%x rdma=%u depth=%u mapped=%u allocated=%u\n",
++		       (unsigned int)devp->flags, devp->rdma_enable,
++		       devp->source_bitdepth, devp->e900_dma_mapped,
++		       devp->cma_mem_alloc);
++		goto out_unlock;
++	}
++	switch (devp->format_convert) {
++	case VDIN_FORMAT_CONVERT_YUV_YUV444:
++	case VDIN_FORMAT_CONVERT_YUV_RGB:
++	case VDIN_FORMAT_CONVERT_RGB_YUV444:
++	case VDIN_FORMAT_CONVERT_RGB_RGB:
++		break;
++	default:
++		goto out_unlock;
++	}
++	rows = devp->canvas_h;
++	stride = devp->canvas_w;
++	active = devp->canvas_active_w;
++	ret = -ERANGE;
++	if (!rows || rows > 1080 || !stride || !active ||
++	    active > 1920 * 3 || active % 3 || active > stride ||
++	    rows > devp->frame_size / stride) {
++		pr_err("e900-snapshot: invalid layout rows=%u stride=%u active=%u slot=%u\n",
++		       rows, stride, active, devp->frame_size);
++		goto out_unlock;
++	}
++	payload = (size_t)rows * active;
++	packet = vmalloc(sizeof(*header) + payload);
++	if (!packet) {
++		ret = -ENOMEM;
++		goto out_unlock;
++	}
++	deadline = jiffies + msecs_to_jiffies(2000);
++	for (;;) {
++		spin_lock_irqsave(&devp->isr_lock, flags);
++		if (devp->vfp->pool_flag & VDIN_VF_POOL_FREEZE) {
++			ret = -EBUSY;
++		} else {
++			vfe = receiver_vf_get(devp->vfp);
++			ret = vfe ? 0 : -EAGAIN;
++			if (vfe) {
++				index = vfe->vf.index;
++				if (!(vfe->flag & VF_FLAG_NORMAL_FRAME) ||
++				    (vfe->flag & VF_FLAG_FREEZED_FRAME) ||
++				    index >= VDIN_CANVAS_MAX_CNT ||
++				    index >= devp->vfmem_max_cnt ||
++				    (devp->curr_wr_vfe &&
++				     devp->curr_wr_vfe->vf.index == index) ||
++				    (devp->last_wr_vfe &&
++				     devp->last_wr_vfe->vf.index == index)) {
++					/* Restore original queue ownership; never read it. */
++					if (vfe->flag & VF_FLAG_FREEZED_FRAME)
++						receiver_vf_put(&vfe->vf, devp->vfp);
++					else
++						provider_vf_put(vfe, devp->vfp);
++					vfe = NULL;
++					ret = -EIO;
++				}
++			}
++		}
++		spin_unlock_irqrestore(&devp->isr_lock, flags);
++		if (ret != -EAGAIN)
++			break;
++		if (time_after_eq(jiffies, deadline)) {
++			ret = -ETIMEDOUT;
++			pr_err("e900-snapshot: no ready frame within 2000 ms\n");
++			break;
++		}
++		if (msleep_interruptible(20)) {
++			ret = -ERESTARTSYS;
++			break;
++		}
++	}
++	if (ret)
++		goto out_free;
++	ret = e900_vdin_dma_sync_frame(devp, index, true);
++	if (ret)
++		goto out_frame;
++	cpu_owned = true;
++	base = page_address(devp->venc_pages);
++	if (!base) {
++		ret = -EFAULT;
++		goto out_frame;
++	}
++	slot = (size_t)index * devp->frame_size;
++	header = packet;
++	memset(header, 0, sizeof(*header));
++	memcpy(header->magic, "E9VDIN1", 8);
++	header->version = cpu_to_le32(1);
++	header->header_bytes = cpu_to_le32(sizeof(*header));
++	header->width = cpu_to_le32(active / 3);
++	header->height = cpu_to_le32(rows);
++	header->format_convert = cpu_to_le32(devp->format_convert);
++	header->active_row_bytes = cpu_to_le32(active);
++	header->source_stride = cpu_to_le32(stride);
++	header->frame_index = cpu_to_le32(index);
++	header->bitdepth = cpu_to_le32(8);
++	/* Software ready-queue / DMA-sync checks, not an HDMI-valid assertion. */
++	header->flags = cpu_to_le32(3);
++	header->frame_timestamp = cpu_to_le64(vfe->vf.timestamp);
++	header->sample_jiffies = cpu_to_le64(jiffies_64);
++	header->completion_count = cpu_to_le64(devp->frame_cnt);
++	header->payload_bytes = cpu_to_le64(payload);
++	for (row = 0; row < rows; row++)
++		memcpy((char *)packet + sizeof(*header) + row * active,
++		       (char *)base + slot + (size_t)row * stride, active);
++	ret = 0;
++out_frame:
++	if (cpu_owned) {
++		sync_ret = e900_vdin_dma_sync_frame(devp, index, false);
++		if (sync_ret) {
++			/* Invariant failure: don't hand CPU-owned bytes to DMA. */
++			pr_err("e900-snapshot: DMA handback failed %d; stop capture\n",
++			       sync_ret);
++			ret = sync_ret;
++			devp->pause_dec = 1;
++			vfe = NULL;
++		}
++	}
++	if (vfe)
++		receiver_vf_put(&vfe->vf, devp->vfp);
++	if (!ret) {
++		*result = packet;
++		*result_size = sizeof(*header) + payload;
++		packet = NULL;
++	}
++out_free:
++	vfree(packet);
++out_unlock:
++	mutex_unlock(&devp->fe_lock);
++out_device:
++	device_unlock(&devp->this_pdev->dev);
++	return ret;
++}
++
++static int e900_vdin_snapshot_save(struct vdin_dev_s *devp, const char *path)
++{
++	struct file *file;
++	void *packet;
++	size_t size, written = 0;
++	loff_t position = 0;
++	mm_segment_t previous_fs;
++	ssize_t count;
++	int ret, close_ret;
++
++	ret = e900_vdin_snapshot_copy(devp, &packet, &size);
++	if (ret)
++		return ret;
++	/* Device/pool ownership is already released before filesystem I/O. */
++	file = filp_open(path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0600);
++	if (IS_ERR(file)) {
++		ret = PTR_ERR(file);
++		goto out_free;
++	}
++	previous_fs = get_fs();
++	set_fs(KERNEL_DS);
++	while (written < size) {
++		count = vfs_write(file, (char *)packet + written,
++				  size - written, &position);
++		if (count <= 0) {
++			ret = count < 0 ? count : -EIO;
++			break;
++		}
++		written += count;
++	}
++	set_fs(previous_fs);
++	if (!ret)
++		ret = vfs_fsync(file, 0);
++	close_ret = filp_close(file, NULL);
++	if (!ret)
++		ret = close_ret;
++out_free:
++	vfree(packet);
++	return ret;
++}
++#endif
++
+ static ssize_t vdin_attr_store(struct device *dev,
+ 		struct device_attribute *attr,
+ 		const char *buf, size_t len)
+@@ -1687,6 +1915,22 @@
+ 					(devp->cycle>>3))/devp->cycle;
+ 		pr_info("%u f/s\n", fps);
+ 		pr_info("hdmirx: %u f/s\n", devp->parm.info.fps);
++	} else if (!strcmp(parm[0], "capture_ready")) {
++#ifdef CONFIG_CMA
++		int e900_result;
++
++		if (!parm[1] || parm[2])
++			e900_result = -EINVAL;
++		else
++			e900_result = e900_vdin_snapshot_save(devp, parm[1]);
++		kfree(buf_orig);
++		if (e900_result)
++			return e900_result;
++		return len;
++#else
++		kfree(buf_orig);
++		return -EOPNOTSUPP;
++#endif
+ 	} else if (!strcmp(parm[0], "capture")) {
+ 		if (parm[3] != NULL) {
+ 			unsigned int start = 0, offset = 0;
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.c
+@@ -466,6 +466,9 @@
+ 	devp->e900_dma_address = address;
+ 	devp->e900_dma_size = devp->mem_size;
+ 	devp->e900_dma_mapped = true;
++	/* No verified drain fence yet: retain this module/pool until reboot. */
++	__module_get(THIS_MODULE);
++	devp->e900_capture_pinned = true;
+ 	return 0;
+ }
+ 
+@@ -926,6 +929,11 @@
+ 	char vdin_name[6];
+ 	unsigned int i;
+ 
++	if (devp->e900_capture_pinned) {
++		pr_info("e900-snapshot: retain diagnostic pool until reboot\n");
++		return;
++	}
++
+ 	if ((devp->cma_config_en == 0) ||
+ 		(devp->cma_mem_alloc == 0)) {
+ 		pr_err("\nvdin%d %s fail for (%d,%d)!!!\n",
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.h
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.h
+@@ -70,6 +70,7 @@
+ enum vdin_work_mode_e {
+ 	VDIN_WORK_MD_NORMAL = 0,
+ 	VDIN_WORK_MD_V4L = 1,
++	VDIN_WORK_MD_E900_CAPTURE = 2,
+ };
+ 
+ /*the counter of vdin*/
+@@ -547,6 +548,7 @@
+ 	dma_addr_t e900_dma_address;
+ 	size_t e900_dma_size;
+ 	bool e900_dma_mapped;
++	bool e900_capture_pinned;
+ 	unsigned int cma_mem_size;/*BYTE*/
+ 	unsigned int cma_mem_alloc;
+ 	/*cma_mem_mode:0:according to input size and output fmt;
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
+@@ -1004,6 +1004,11 @@
+ 	     !para->v_active || para->v_active > 1080))
+ 		return -EINVAL;
+ 
++#ifdef CONFIG_CMA
++	/* One capture start per boot; snapshots may repeat while it is running. */
++	if (is_meson_gxlx2_cpu() && devp && devp->e900_capture_pinned)
++		return -EBUSY;
++#endif
+ 	if (IS_ERR_OR_NULL(devp) || IS_ERR_OR_NULL(vdin0_devp)) {
+ 		pr_err("[vdin]%s vdin%d has't registered or vdin0 is NULL\n",
+ 		       __func__, no);
+@@ -1089,6 +1094,7 @@
+ 	/* Keep diagnostic Canvas changes synchronous; no pending RDMA target. */
+ 	if (is_meson_gxlx2_cpu()) {
+ 		devp->rdma_enable = 0;
++		devp->work_mode = VDIN_WORK_MD_E900_CAPTURE;
+ 		devp->flags &= ~VDIN_FLAG_RDMA_ENABLE;
+ 	}
+ 	devp->parm.port = para->port;
+@@ -2521,7 +2527,8 @@
+ 
+ 		devp->last_wr_vfe = NULL;
+ 
+-		if (devp->set_canvas_manual != 1) {
++		if (devp->set_canvas_manual != 1 &&
++		    devp->work_mode != VDIN_WORK_MD_E900_CAPTURE) {
+ 			vf_notify_receiver(devp->name,
+ 				VFRAME_EVENT_PROVIDER_VFRAME_READY, NULL);
+ 		}
+@@ -2628,7 +2635,8 @@
+ 
+ 	devp->curr_wr_vfe = next_wr_vfe;
+ 
+-	if (devp->set_canvas_manual != 1)
++	if (devp->set_canvas_manual != 1 &&
++		    devp->work_mode != VDIN_WORK_MD_E900_CAPTURE)
+ 		vf_notify_receiver(devp->name,
+ 			VFRAME_EVENT_PROVIDER_VFRAME_READY, NULL);
+ 
+@@ -4720,6 +4728,9 @@
+ 		goto fail_pdrv_register;
+ 	}
+ #endif
++	/* These fixed DT devices cannot safely hot-unbind during diagnostics. */
++	if (is_meson_gxlx2_cpu())
++		vdin_driver.driver.suppress_bind_attrs = true;
+ 	ret = platform_driver_register(&vdin_driver);
+ 
+ 	if (ret != 0) {
