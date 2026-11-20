@@ -34,3 +34,11 @@ sh /storage/e900-collect-display-stages.sh
 GEN实际38000043、GEN2=1、GEN3=33，格式20310c11；缩放相位aaaac0/aaaa80与软件状态一致。32组混合requested/live/shadow均为100054b0，输出窗口77f/437，VC丢写计数在播放期间稳定41，没有继续增加。原始数据在Mac trial-stage240/e900-display-stages/及盒子/storage/e900-display-stages/，汇总trial-stage240/summary.json。
 
 本轮未请求用户观察HDMI，不得记录新的物理黑屏/恢复结论。已证实初始化阶段异常，以及帧交接和部分寄存器锁存；没有证明MIF实际像素读取、矩阵输出或最终合成像素正确，也未证明9次初始化丢写就是黑屏原因。采集结束已关闭预算、停止播放器，没有启动VDIN或写eMMC。下一步核对初始化缺项是否在播放时补齐。
+
+## FIFO单项诊断241（2026-11-21）
+
+原厂Android反汇编video_init的ffffffc001e57f54..f60明确把CPU0x2a导向与TXL/TXLX相同的FIFO分支，写VD1/VD2 FIFO为0x180。当前源码只列TXL/TXLX，GXLX2未执行，因此此遗漏独立于先前9次已执行但丢弃的初始化写入。240实际回读FIFO为ff00c0。
+
+独立内核241仅在vd_set_dcu普通VD1非压缩帧入口，通过既有VSYNC_WR_MPEG_REG提交VD1 FIFO0x180，保留VD2、空帧、压缩帧的原控制流；原核240及加载脚本保留回退。离线补丁位于一次分支和RET后40字节填充，参数已保存在callee-saved寄存器，LR已入栈，未引入现场物理内存映射或任意寄存器接口。细节和反汇编见Mac trial-fifo241/manifest.json、stub.asm。
+
+241正常启动，32/32次回读变为ff0180（低位大小字段0x180，上位回读状态仍为ff）；解码130→430、错误0，无重启；GEN/格式/缩放/混合主要配置与240一致。播放已停止，等待用户准备后观察HDMI。尚不能声称修复黑屏；没有把这一诊断二进制当作通用源码修复。
