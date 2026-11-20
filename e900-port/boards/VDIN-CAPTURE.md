@@ -99,3 +99,7 @@ vdin_set_hdr fmt:0
 GXLX2 的 CPU ID 0x2a 满足上游 `cpu_after_eq(G12A)`，使其选择 matrix1 并调用 G12 VDIN HDR 接口。补丁 0012 现为 GXLX2 选择旧式 matrix0，并在调用点和 `vdin_set_hdr` 内保护，其他 CPU 保留原路径。另在 matrix、blackbar、histogram、write-control、input-route、measurement-route 前后增加仅该 CPU 的日志，供下次细分失败位置。
 
 新增测试执行真实上下游 C 函数，在 Dolby 支持开/关两种配置共 6912 个组合中比较非 GXLX2 的调用参数序列，验证一致；GXLX2 默认采集路径使用 matrix0 且没有 HDR 调用。主机测试不证明硬件修复。本轮补丁尚未 ARM 重编译或部署，现有构建缓存可保留兼容工具链，需重建 linux/media_modules 并重打包镜像。
+
+## 构建 44689624531 验证
+
+12e02fb 已部署。旧式矩阵修复后服务正常返回，全部寄存器配置阶段完成，没有再因采集启动重启。脚本已实机修正：逐行扫描值为 1；VIU 的 YUV444 输入请求 RGB 时，上游选择器回落 YUV422，改请求相同 YUV444(2)后得到 640×360、步幅1920、8位的三字节输出。快照已越过状态/格式检查，但等待完成帧超时，VDIN1 中断计数为零；重新应用相同显示模式无效。当前 HDMI HPD=0，SSH/Kodi 正常。尚无完成帧，不能声称视频黑屏修复；下一步接 HDMI 对照，不需为脚本变更重新构建。212 配套文件及启动脚本保留供回滚。

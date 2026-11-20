@@ -45,9 +45,9 @@ for instance in vdin0 vdin1; do
 done
 attr=/sys/class/vdin/vdin1/attr
 [ -w /sys/class/vdin/vdin0/attr ] && [ -w "$attr" ] || { echo 'Both VDIN instances must probe successfully; inspect dmesg.' >&2; exit 1; }
-# TVIN_RGB444=0. Input timing stays at the current display mode; output is scaled.
+# TVIN_YUV444=2 matches VIU input; the legacy selector otherwise falls back to 422.
 phase before-conversion
-printf 'conversion 640 360 0\n' > "$attr"
+printf 'conversion 640 360 2\n' > "$attr"
 if [ "${E900_CAPTURE_PREPARE_ONLY:-0}" = 1 ]; then
   phase prepared-without-service
   printf 'VDIN instances prepared; capture service has not started.\n'
@@ -56,5 +56,5 @@ fi
 phase before-service-start
 printf 'v4l2start viuin %s %s %s 0 0 0 1\n' "$width" "$height" "$fps" > "$attr"
 phase service-start-returned
-printf 'boot_id=%s\ninput_mode=%s\nrequested_output=640x360 RGB444\n' "$(cat /proc/sys/kernel/random/boot_id)" "$mode" > /storage/e900-capture/session.txt
+printf 'boot_id=%s\ninput_mode=%s\nrequested_output=640x360 YUV444\n' "$(cat /proc/sys/kernel/random/boot_id)" "$mode" > /storage/e900-capture/session.txt
 printf 'VDIN start returned success. Use e900-capture-ready.sh to verify a completed frame.\n'
