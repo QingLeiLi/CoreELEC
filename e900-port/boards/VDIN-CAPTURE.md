@@ -13,11 +13,11 @@ GitHub Actions 手动运行现有 E900 workflow：
 - `source_trace`: 不勾选
 - `vdin_capture`: 勾选
 
-默认不勾选 `vdin_capture`，仍安装原来的 13 个候选补丁；勾选后安装 17 个，并启用 VIN/TVIN 与 VDIN/VIUIN 模块。Linux kernel config 的原始摘要固定核验；取消开关会恢复原文件，遇到本地改动则拒绝覆盖。
+默认不勾选 `vdin_capture`，仍安装原来的 13 个候选补丁；勾选后安装 18 个，并将 VIN/TVIN、VDIN/VIUIN 及其直接使用的 V4L2 核心/缓冲依赖内置到内核。Linux kernel config 的原始摘要固定核验；取消开关会恢复原文件，遇到本地改动则拒绝覆盖。
 
 切换选项仅使 `linux`、`media_modules-aml` 失效；兼容工具链、下载和编译对象缓存继续复用。完整镜像需要重新打包，单独选择 `media` 不能提供首次部署所需的新内核及全部模块。
 
-新固件运行时仍默认关闭 VDIN：`gxlx2_capture` 必须显式开启。启动、镜像准备与 eMMC 写入策略未因此改变。代码没有自动推送、触发 workflow 或部署到盒子。
+新固件运行时仍默认关闭 VDIN：系统启动完成后显式写入 `gxlx2_capture`，再通过标准平台总线 `drivers_probe` 探测两个固定 DT 设备。修改开关本身不操作硬件，避免内置驱动在早期探测时碰到尚未注册的媒体总线。启动、镜像准备与 eMMC 写入策略未因此改变。代码没有自动推送、触发 workflow 或部署到盒子。
 
 ## 实现范围
 
@@ -32,19 +32,19 @@ GitHub Actions 手动运行现有 E900 workflow：
 
 ## 首版生命周期限制
 
-停止后的硬件 DMA 排空尚无经验证的栅栏。首版保留成功分配的采集缓冲池和模块引用直到重启；禁止同一次开机重新启动采集，禁用该平台的手动 bind/unbind 属性。一个运行中的会话可重复抓图并切换本地测试视频。
+停止后的硬件 DMA 排空尚无经验证的栅栏。首版保留成功分配的采集缓冲池直到重启；VDIN 已内置，不能独立卸载。禁止同一次开机重新启动采集，禁用该平台的手动 bind/unbind 属性。一个运行中的会话可重复抓图并切换本地测试视频。
 
-这不是已验证硬件排空的声明，也不覆盖强制卸载或内核其他组件主动移除平台设备。失败分配不会固定模块/缓冲池，其他 CPU 的释放行为保留。采集会话应使用独立输出文件名。
+这不是已验证硬件排空的声明，也不覆盖内核其他组件主动移除平台设备。失败分配不会保留缓冲池，其他 CPU 的释放行为保留。采集会话应使用独立输出文件名。
 
 当前 DT 的私有 VDIN1 CMA 池为 20 MiB。首试请求把当前 1080p/720p 输入缩到 640×360 RGB444，降低四帧缓冲区的需求。实际输出格式、步幅、位深和申请结果仍需读取并核对。
 
 ## 构建后调试工具
 
-这些命令供新内核加载前核对完成后使用；它们尚未在硬件运行。不要在当前旧固件上尝试加载不存在的模块。
+这些命令供新内核加载前核对完成后使用；它们尚未在硬件运行。不要在当前旧固件上运行尚不存在的诊断入口。
 
 仓库脚本：
 
-- `scripts/e900-start-capture.sh`：核对当前显示模式，显式加载模块，要求两个 VDIN 实例探测成功，开始单次 640×360 诊断会话；不改变 HDMI 模式。
+- `scripts/e900-start-capture.sh`：核对当前显示模式，显式打开运行时开关并经平台总线探测，要求两个 VDIN 实例成功注册，开始单次 640×360 诊断会话；不改变 HDMI 模式。
 - `scripts/e900-capture-ready.sh menu`：保存 `/storage/e900-capture/menu.e9cap`。先写 `.partial`，sysfs 成功才发布正式文件；失败清理本次临时文件，不覆盖已有结果。
 - `scripts/inspect-vdin-snapshot.py menu.e9cap --out decoded`：验证格式、完整长度和摘要，导出原始像素及 JSON。只有显式指定 `--rgb-order RGB` 或 `BGR` 才生成 PNG；实际通道顺序必须用色条校验。
 
@@ -64,3 +64,13 @@ GitHub Actions 手动运行现有 E900 workflow：
 `tests/check-vdin-capture.py` 在固定源码上应用整个补丁包，执行完整快照 copy/save、帧发布、DMA 映射/保留及完整启动服务的主机 C 测试，使用模拟的内核依赖和 ASan/UBSan；另验证真实 C 产生的合成文件与 Python 解析器兼容、PNG 校验、临时文件发布与失败清理，以及构建选项切换/本地文件保护/缓存保留。
 
 这些检查不能替代完整 ARM 构建或硬件完成/缓存验证。新采集代码目前没有 B 点实拍证据，也没有证明修复播放黑屏。
+
+## 模块链接失败修正
+
+初版 `VDIN=m` 在 MODPOST 报告 11 个未定义符号。逐项对应到已有内核代码：IRQ/MM/FD/extcon 核心、VPU、VLOCK 和 TVIN 公共函数都存在定义，但没有导出为模块接口。这份旧驱动应与这些提供者一同内置，而非为所有内部接口新增导出或伪造实现。
+
+VDIN/VIUIN 改为 `y`，Kconfig 为 VDIN 声明 V4L2/DMA 依赖并选择 VB2 DMA-contiguous（隐藏配置不能仅靠写入 `.config` 保持为 `y`）。其直接引用的 MEDIA_SUPPORT、VIDEO_DEV、VIDEO_V4L2、VIDEOBUF2_CORE、VIDEOBUF2_MEMOPS、VIDEOBUF2_DMA_CONTIG 一起设为 `y`，避免内置 VDIN 反向依赖动态模块。运行时探测门仍默认关闭。
+
+安装器识别上一轮失败缓存中精确的 `m` 配置并迁移，同时保留原始摘要和本地改动保护。新增检查覆盖全部 11 个提供者、真实 GNU89 TVAFE 公共函数的跨对象链接、失败缓存迁移以及运行时探测顺序。完整 ARM 链接仍需新一次云构建验证。
+
+本地还运行了固定 Linux 4.9 的真实 `olddefconfig`（ARCH=arm64，主机只构建 Kconfig 工具），确认 VDIN/VIUIN、直接 V4L2/VB2 依赖及 VPU/VECM/extcon 等 13 项全部保持 `y`。此验证不包含 ARM C/汇编编译或最终链接。

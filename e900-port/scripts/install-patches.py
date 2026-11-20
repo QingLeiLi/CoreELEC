@@ -38,10 +38,14 @@ CAPTURE_PATCHES = [
     "linux/0013-gxlx2-vdin-dma-lifecycle.patch",
     "linux/0014-gxlx2-vdin-ready-snapshot.patch",
     "linux/0015-e900-vdin-clock-bindings.patch",
+    "linux/0016-gxlx2-vdin-builtin-linkage.patch",
 ]
 CAPTURE_CONFIG = "projects/Amlogic-ce/devices/Amlogic-ng/linux/linux.aarch64.conf"
 CAPTURE_CONFIG_BASE_SHA256 = "9bf441cc9ed301de8b3be8ab05cdf2e3d0de9fc4fd50f8e02ec848f378088362"
-CAPTURE_CONFIG_EXTRA = "\n# E900 optional completed-frame VDIN diagnostics\nCONFIG_AMLOGIC_MEDIA_TVIN=y\nCONFIG_AMLOGIC_MEDIA_VDIN=m\nCONFIG_AMLOGIC_MEDIA_VIUIN=m\n"
+CAPTURE_CONFIG_EXTRA = "\n# E900 optional completed-frame VDIN diagnostics\nCONFIG_AMLOGIC_MEDIA_TVIN=y\nCONFIG_AMLOGIC_MEDIA_VDIN=y\nCONFIG_AMLOGIC_MEDIA_VIUIN=y\n"
+CAPTURE_BUILTIN_DEPS = ("MEDIA_SUPPORT", "VIDEO_DEV", "VIDEO_V4L2",
+                        "VIDEOBUF2_CORE", "VIDEOBUF2_MEMOPS", "VIDEOBUF2_DMA_CONTIG")
+CAPTURE_CONFIG_LEGACY_EXTRA = CAPTURE_CONFIG_EXTRA.replace("CONFIG_AMLOGIC_MEDIA_VDIN=y", "CONFIG_AMLOGIC_MEDIA_VDIN=m").replace("CONFIG_AMLOGIC_MEDIA_VIUIN=y", "CONFIG_AMLOGIC_MEDIA_VIUIN=m")
 
 
 def selected_patches(profile):
@@ -63,15 +67,27 @@ def selected_patches(profile):
 def capture_config_fix(repo, enabled):
     content = (repo / CAPTURE_CONFIG).read_text()
     base = content
-    if content.endswith(CAPTURE_CONFIG_EXTRA):
-        base = content[:-len(CAPTURE_CONFIG_EXTRA)].replace(
-            "CONFIG_AMLOGIC_MEDIA_VIN=y", "# CONFIG_AMLOGIC_MEDIA_VIN is not set", 1)
+    for managed_block in (CAPTURE_CONFIG_EXTRA, CAPTURE_CONFIG_LEGACY_EXTRA):
+        if content.endswith(managed_block):
+            base = content[:-len(managed_block)].replace(
+                "CONFIG_AMLOGIC_MEDIA_VIN=y", "# CONFIG_AMLOGIC_MEDIA_VIN is not set", 1)
+            if (hashlib.sha256(base.encode()).hexdigest() != CAPTURE_CONFIG_BASE_SHA256 and
+                    managed_block == CAPTURE_CONFIG_EXTRA and
+                    all(f"CONFIG_{name}=y" in base.splitlines() for name in CAPTURE_BUILTIN_DEPS)):
+                for name in CAPTURE_BUILTIN_DEPS:
+                    base = base.replace(f"CONFIG_{name}=y", f"CONFIG_{name}=m", 1)
+            break
     if hashlib.sha256(base.encode()).hexdigest() != CAPTURE_CONFIG_BASE_SHA256:
         raise RuntimeError("Unmanaged or locally edited capture kernel configuration")
     updated = base
     metadata = None
     if enabled:
-        updated = base.replace("# CONFIG_AMLOGIC_MEDIA_VIN is not set", "CONFIG_AMLOGIC_MEDIA_VIN=y", 1) + CAPTURE_CONFIG_EXTRA
+        updated = base.replace("# CONFIG_AMLOGIC_MEDIA_VIN is not set", "CONFIG_AMLOGIC_MEDIA_VIN=y", 1)
+        for name in CAPTURE_BUILTIN_DEPS:
+            if updated.splitlines().count(f"CONFIG_{name}=m") != 1:
+                raise RuntimeError("Unexpected capture builtin dependency: " + name)
+            updated = updated.replace(f"CONFIG_{name}=m", f"CONFIG_{name}=y", 1)
+        updated += CAPTURE_CONFIG_EXTRA
         metadata = dict(destination=CAPTURE_CONFIG, base_sha256=CAPTURE_CONFIG_BASE_SHA256,
                         sha256=hashlib.sha256(updated.encode()).hexdigest())
     return CAPTURE_CONFIG, updated, metadata

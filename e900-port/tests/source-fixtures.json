@@ -470,5 +470,93 @@
     "git_blob_sha1": "66e8d79942926740f6a399f7f782915ee9c18b8b",
     "sha256": "ce6bdf108023dc5a89b21bad30afbdd091e13ee0fffb56d94207d03f31a39b89",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/vlock.c",
+    "git_blob_sha1": "f0c0ba597146dd9d9435de0002248d4dc0afa8c8",
+    "sha256": "ab02b54c6937bd2b085124889197cb133056aadeb5667f4a0a57ab2386539a25",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/Makefile",
+    "git_blob_sha1": "a7af41612de3c242c4b0e2fc6338431470095371",
+    "sha256": "375f43f4a9fddbe349ba9940494b319bcf601a929989b4faaefbf3a2246b3ddd",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "mm/vmalloc.c",
+    "git_blob_sha1": "696daf1fc8fd7cc694897b8f7bdc3871a0b7fa93",
+    "sha256": "c5da6a31458a3166091f491ad0830d429bd65e03dc30721fad609d8c4fc08f0f",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "kernel/irq/manage.c",
+    "git_blob_sha1": "33770ef64d21992e500e8779bc5f66416cc5cadf",
+    "sha256": "1cf5f0a991af71ff92cc3b67314a36b7a3b9e3a3632086dce3bbc38b37ef5130",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "fs/file.c",
+    "git_blob_sha1": "82d3f925bab391c43832baf6ccf8e164ae318964",
+    "sha256": "3393147ea62eebe178ccf07034b1fa97d6abdda98548b6264bc9fda69ef419cc",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/extcon/extcon.c",
+    "git_blob_sha1": "d17f6b60ad9acec0f431dc9b5943ec5abbe42f17",
+    "sha256": "770844ebddf19be4141bf23e18359286fb78b7a2142d0088b94f6d98546c1f1e",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "Makefile",
+    "git_blob_sha1": "d0b79e1ef1b922a2746ef847efcafe72975f6155",
+    "sha256": "259c600ba4c2dea4ddcbe4140b48141439bc2794d42588580d172219e3851946",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vin/tvin/tvin_global.c",
+    "git_blob_sha1": "88310f97fb295ae349de09857d0876e65c9d0d7e",
+    "sha256": "620add57051cfb5bebcb10e68d085cda01ea6bef6b976e72c16d8e546b8978e5",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vin/tvin/Makefile",
+    "git_blob_sha1": "4b40fa1a271354f0bc909394e89213c213cf656e",
+    "sha256": "66deee33f33329ff6cd32869502c430913f36de416e33c2d908591ee242b96f0",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/frame_provider/tvin/tvin.h",
+    "git_blob_sha1": "15f727ca490e606ccd59de1392b9aa48cdf51332",
+    "sha256": "0cc706d19ac90de924ebb477a6d65f470dcd06e789a5076c97a7b35f8f5ee94d",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/vin/tvin/vdin/Kconfig",
+    "git_blob_sha1": "bac9e6e40ac1f2403f9337ce972a69b10d04c4a5",
+    "sha256": "dc433ed16cbf0fdced7770d0e1b46031251cacc8fdee625ee20d9534bc6fb8f3",
+    "verified": true
   }
 ]

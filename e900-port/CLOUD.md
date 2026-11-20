@@ -76,3 +76,5 @@ GitHub 默认缓存容量为每仓库 10GB；本工作流不调整容量或计�
 编译失败后，若存在宿主 GI 构建目录，自动运行诊断：Python/ctypes smoke、解释器动态库列表，并在 GDB 下重跑 Ninja 生成的 GLib scanner 命令，记录 SIGILL 指令、线程调用栈和共享库。输出位于 artifact 的 `logs/host-scanner-diagnostic.log`。诊断不替代原失败状态，也不宣称完整云端编译或硬件验证已经通过。
 
 VDIN downstream capture is now an optional decoder/image build (`vdin_capture=true`, `source_trace=false`). Runtime capture stays off until explicitly enabled. It preserves compatible toolchains and invalidates Linux/media only when switched. See [VDIN-CAPTURE.md](boards/VDIN-CAPTURE.md) for the single-session lifecycle restriction and unverified hardware scope. No downstream image has yet been acquired.
+
+The VDIN experiment now builds VDIN/VIUIN and their direct V4L2 dependencies into the kernel: the vendor driver uses 11 non-exported builtin interfaces. Exact older module-mode cache configurations migrate without toolchain deletion. Hardware probe stays off until the runtime parameter is enabled and the fixed platform devices are reprobed after boot.

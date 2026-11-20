@@ -29,8 +29,8 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
  (harness/'snapshot.c').write_text(debug[a:b]+'\n')
  shutil.copy2(PORT/'scripts/inspect-vdin-snapshot.py',harness/'inspect-snapshot.py')
  shutil.copy2(PORT/'scripts/e900-capture-ready.sh',harness/'capture-ready.sh')
- env=dict(os.environ,E900_CAPTURE_TEST_ROOT=str(harness))
- for check in ['check-snapshot.py','check-pin-policy.py','check-ring-mode.py','check-client.py']:
+ env=dict(os.environ,E900_CAPTURE_TEST_ROOT=str(harness),E900_CAPTURE_LINUX_ROOT=str(linux),E900_CAPTURE_CONFIG_BASE=str(REFERENCE/installer.CAPTURE_CONFIG))
+ for check in ['check-snapshot.py','check-pin-policy.py','check-linkage.py','check-ring-mode.py','check-client.py']:
   subprocess.run([sys.executable,str(PORT/'tests/vdin'/check)],env=env,check=True)
  # Real installer transitions and compatible-cache retention.
  repo=root/'repo';repo.mkdir()
@@ -46,9 +46,22 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
   os.environ['E900_VDIN_CAPTURE']='1';identity_on=cache.identities(PORT,'decoder',root/'work',host)
   assert identity_off['compat']==identity_on['compat'] and identity_off['compiler']==identity_on['compiler'] and identity_off['state']!=identity_on['state']
   installer.install(repo,'decoder');state=json.loads((repo/'.e900-profile.json').read_text())
-  assert len(state['patches'])==len(installer.PROFILES['decoder'])+4 and state['capture_config']
-  assert all(line in config.read_text().splitlines() for line in ['CONFIG_AMLOGIC_MEDIA_VIN=y','CONFIG_AMLOGIC_MEDIA_TVIN=y','CONFIG_AMLOGIC_MEDIA_VDIN=m','CONFIG_AMLOGIC_MEDIA_VIUIN=m'])
+  assert len(state['patches'])==len(installer.PROFILES['decoder'])+len(installer.CAPTURE_PATCHES) and state['capture_config']
+  assert all(line in config.read_text().splitlines() for line in ['CONFIG_AMLOGIC_MEDIA_VIN=y','CONFIG_AMLOGIC_MEDIA_TVIN=y','CONFIG_AMLOGIC_MEDIA_VDIN=y','CONFIG_AMLOGIC_MEDIA_VIUIN=y'])
+  assert all('CONFIG_'+name+'=y' in config.read_text().splitlines() for name in installer.CAPTURE_BUILTIN_DEPS)
   assert json.loads((repo/'.e900-invalidate.json').read_text())==['linux','media_modules-aml'] and sentinel.read_text()=='compiler'
+  # A failed older run may have left the exact formerly managed module config.
+  new_config=config.read_text()
+  legacy_config=baseline.replace('# CONFIG_AMLOGIC_MEDIA_VIN is not set','CONFIG_AMLOGIC_MEDIA_VIN=y',1)+installer.CAPTURE_CONFIG_LEGACY_EXTRA
+  config.write_text(legacy_config)
+  old_state=json.loads((repo/'.e900-profile.json').read_text())
+  old_state['capture_config']['sha256']=hashlib.sha256(legacy_config.encode()).hexdigest()
+  old_state['patches']=[entry for entry in old_state['patches'] if not entry['source'].endswith('0016-gxlx2-vdin-builtin-linkage.patch')]
+  (repo/'.e900-profile.json').write_text(json.dumps(old_state))
+  installer.install(repo,'decoder')
+  assert config.read_text()==new_config and sentinel.read_text()=='compiler'
+  assert json.loads((repo/'.e900-invalidate.json').read_text())==['linux','media_modules-aml']
+  print('PASS: failed module-build cache migrates to built-in capture without discarding the toolchain',flush=True)
   before=config.read_text();config.write_text(before+'\n# local edit\n')
   for enabled in ['0','1']:
    os.environ['E900_VDIN_CAPTURE']=enabled

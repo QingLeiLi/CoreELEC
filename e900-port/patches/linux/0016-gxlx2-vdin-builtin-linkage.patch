@@ -1,0 +1,27 @@
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
+@@ -90,7 +90,11 @@
+ static struct class *vdin_clsp;
+ /* GXLX2 capture is experimental and must never probe by default. */
+ static bool gxlx2_capture;
+-module_param(gxlx2_capture, bool, 0444);
++/* Built-in probe runs before late media buses: opt in after boot, then
++ * reprobe the fixed DT devices through /sys/bus/platform/drivers_probe.
++ * Changing this bool alone does not access hardware.
++ */
++module_param(gxlx2_capture, bool, 0644);
+ MODULE_PARM_DESC(gxlx2_capture, "Opt in to GXLX2 VDIN1 loopback diagnostics");
+ 
+ static unsigned int vdin_addr_offset[VDIN_MAX_DEVS] = {0, 0x80};
+--- a/drivers/amlogic/media/vin/tvin/vdin/Kconfig
++++ b/drivers/amlogic/media/vin/tvin/vdin/Kconfig
+@@ -4,6 +4,8 @@
+ 
+ config AMLOGIC_MEDIA_VDIN
+         tristate "Amlogic Vdin device driver"
++	depends on VIDEO_V4L2 && HAS_DMA
++	select VIDEOBUF2_DMA_CONTIG
+         default n
+         help
+             Vdin device driver.
+\ No newline at end of file

@@ -14,12 +14,12 @@ def fn(src,name):
  return src[m.start():i]+'\n'
 canvas=(H/'patched/drivers/amlogic/media/vin/tvin/vdin/vdin_canvas.c').read_text();drv=(H/'patched/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c').read_text()
 pre=literal(P/'dma.py','pre').replace('bool e900_dma_mapped,','bool e900_capture_pinned,e900_dma_mapped,')
-extra=literal(P/'dma.py','extra')+'\nstatic unsigned int refs;\n#define THIS_MODULE ((void *)1)\nstatic void __module_get(void *m){assert(m);refs++;}\n'
+extra=literal(P/'dma.py','extra')+'\nstatic unsigned int refs;\n#define THIS_MODULE NULL\nstatic void __module_get(void *m){if(m)refs++;}\n'
 init=literal(P/'dma.py','main').split('int main(void) {')[0].replace('cpu=0x2a;events=0;', 'cpu=0x2a;refs=0;events=0;')
 main=r'''
 int main(void){unsigned int cases=0;
- init();assert(!e900_vdin_dma_map(&dev)&&dev.e900_capture_pinned&&refs==1&&map_live);
- for(unsigned int i=0;i<3;i++){vdin_cma_release(&dev);assert(!frees&&map_live&&dev.cma_mem_alloc&&dev.e900_dma_mapped&&refs==1);cases++;}
+ init();assert(!e900_vdin_dma_map(&dev)&&dev.e900_capture_pinned&&refs==0&&map_live);
+ for(unsigned int i=0;i<3;i++){vdin_cma_release(&dev);assert(!frees&&map_live&&dev.cma_mem_alloc&&dev.e900_dma_mapped&&refs==0);cases++;}
  assert(!e900_vdin_dma_sync_frame(&dev,0,true));assert(!e900_vdin_dma_sync_frame(&dev,0,false));cases++;
  init();fail_map=true;assert(e900_vdin_dma_map(&dev)<0&&!refs&&!dev.e900_capture_pinned);vdin_cma_release(&dev);assert(frees==1&&!map_live);cases++;
  init();mapped_address+=0x1000;assert(e900_vdin_dma_map(&dev)<0&&!refs&&!dev.e900_capture_pinned);vdin_cma_release(&dev);assert(frees==1&&!map_live);cases++;
