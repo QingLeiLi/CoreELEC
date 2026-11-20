@@ -12,6 +12,15 @@
  static unsigned int vdin_addr_offset[VDIN_MAX_DEVS] = {0, 0x80};
  static struct vdin_dev_s *vdin_devp[VDIN_MAX_DEVS];
  static unsigned long mem_start, mem_end;
+@@ -659,7 +664,7 @@
+ 	if (is_meson_gxl_cpu() || is_meson_gxm_cpu() || is_meson_gxbb_cpu() ||
+-		is_meson_txhd_cpu())
++		is_meson_txhd_cpu() || is_meson_gxlx2_cpu())
+ 		switch_vpu_clk_gate_vmod(VPU_VPU_CLKB, VPU_CLK_GATE_ON);
+ 
+ 	/*enable clk*/
+ 	vdin_clk_onoff(devp, true);
+ 	vdin_set_default_regmap(devp);
 @@ -985,6 +990,11 @@
  	struct vdin_dev_s *vdin0_devp = vdin_devp[0];
  	enum tvin_sig_fmt_e fmt;

@@ -12,6 +12,21 @@ final="$folder/$1.e9cap"
 partial="$final.partial"
 [ -w "$attr" ] || { echo 'VDIN diagnostic interface is unavailable.' >&2; exit 1; }
 [ ! -e "$final" ] && [ ! -e "$partial" ] || { echo 'Capture name already exists; choose a new name.' >&2; exit 1; }
+# Decoder/DI teardown can gate this shared clock after the session was started.
+# Do not publish an old queued frame as a current playback observation.
+if [ -w /sys/class/vpu/gate ]; then
+  irq_count() {
+    awk '$NF == "vdin1-irq" { n=0; for (i=2; i<=NF && $i ~ /^[0-9]+$/; i++) n+=$i; print n }' /proc/interrupts
+  }
+  before=$(irq_count)
+  printf 'w 72 1\n' > /sys/class/vpu/gate
+  sleep 0.2
+  after=$(irq_count)
+  [ -n "$before" ] && [ -n "$after" ] && [ "$after" -gt "$before" ] || {
+    echo 'No fresh VDIN interrupt; refusing a potentially stale snapshot.' >&2
+    exit 1
+  }
+fi
 mkdir -p "$folder"
 trap 'rm -f "$partial"' 0
 trap 'exit 1' HUP INT TERM

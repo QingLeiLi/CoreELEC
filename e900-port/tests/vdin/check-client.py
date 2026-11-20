@@ -44,5 +44,29 @@ sync() { :; }
   if final.exists():assert final.read_bytes()==b
   cases+=1
  r=subprocess.run(['sh',str(f),'../escape'],capture_output=True);assert r.returncode==2;cases+=1
-print('PASS:',cases,'client cases: C packet compatibility, invalid packet rejection, PNG integrity, collector publication and failed-attempt cleanup.')
+with tempfile.TemporaryDirectory(prefix='e900-capture-clock-') as t:
+ root=Path(t);attr=root/'attr';attr.touch();gate=root/'gate';gate.touch();irq=root/'interrupts';folder=root/'captures'
+ script=(H/'capture-ready.sh').read_text().replace('attr=/sys/class/vdin/vdin1/attr','attr='+shlex.quote(str(attr))).replace('folder=/storage/e900-capture','folder='+shlex.quote(str(folder))).replace('/sys/class/vpu/gate',str(gate)).replace('/proc/interrupts',str(irq))
+ for fresh in [False,True]:
+  irq.write_text('42: 0 0 0 0 GIC-0 117 Edge vdin1-irq\n')
+  update='command printf "%s\\n" "42: 1 0 0 0 GIC-0 117 Edge vdin1-irq" > '+shlex.quote(str(irq)) if fresh else ':'
+  shim=r'''printf() {
+ if [ "$1" = 'w 72 1\n' ]; then
+  UPDATE
+ elif [ "$1" = 'capture_ready %s\n' ]; then
+  cp SOURCE "$2"
+  return 0
+ fi
+ command printf "$@"
+}
+sync() { :; }
+sleep() { :; }
+'''.replace('UPDATE',update).replace('SOURCE',shlex.quote(str(H/'synthetic.e9cap')))
+  f=root/'capture.sh';f.write_text('#!/bin/sh\n'+shim+script);name='fresh' if fresh else 'stale'
+  result=subprocess.run(['sh',str(f),name],capture_output=True,text=True)
+  assert (result.returncode==0)==fresh,result.stderr
+  assert (folder/(name+'.e9cap')).exists()==fresh
+  if not fresh:assert 'No fresh VDIN interrupt' in result.stderr
+  cases+=1
+print('PASS:',cases,'client cases: packet/PNG validity, publication cleanup, shared-clock recovery and stale-IRQ rejection.')
 (H/'client-host-checks.json').write_text(json.dumps({'cases':cases,'scope':'Synthetic C-generated packet plus mocked collector kernel-store command. No real sysfs or device capture invoked.'},indent=2)+'\n')

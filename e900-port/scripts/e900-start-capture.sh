@@ -33,6 +33,10 @@ if [ ! -e "$parameter" ]; then
   modprobe tvin_vdin
 fi
 [ -w "$parameter" ] || { echo 'The updated built-in VDIN diagnostic kernel is required.' >&2; exit 1; }
+# Compatibility for the source-built capture kernel before the CLKB fix.
+# Module 72 is VPU_VPU_CLKB in this pinned 4.9 kernel; use its managed gate API.
+phase before-clkb-enable
+printf 'w 72 1\n' > /sys/class/vpu/gate
 phase before-runtime-opt-in
 printf '1\n' > "$parameter"
 for instance in vdin0 vdin1; do
