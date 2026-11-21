@@ -232,3 +232,17 @@ Image260，d3064a80-da49-42f7-99e2-ffc5c8096b6c，H264154→696帧、错误0。�
 260启动0c9010a8-ae68-4c84-94e8-bbc60b55ea52；菜单启动VDIN后，MENU/H/V/restore均取得帧。但实际查看MENU_H272_0和MENU_V272_0均为正常菜单和各自通知，没有横/纵灰阶。因此该bist_set在本机当前路径未证明有效，不能以它校准VIDEO中间取点。随后硬解VIDEO/H/V均返回ready、完成计数持续增加、abnormal0；实际查看VIDEO272_0仍带旧MENU_R272_0通知（混有过渡块），VIDEO_H272_0和VIDEO_V272_0同为旧MENU_R272_0菜单，均无当前VIDEO通知/彩条。再次证明软件完成计数不等于当前像素更新。最后POSToff当前通知可见。全部八组原始帧、PNG、JSON、dmesg和脚本保存Mac trial-pixels272/；矩阵/安全/ownership/DMA guards未改。
 
 阶段结论没有推进到MIF/PPS内的某一级：BIST校准失败，应停止采用这个接口；不把捕获超时/旧图当作中间级黑图。当前可用实际像素边界仍为显示Canvas正常与接入VD1的后混合回环停滞。未改显示寄存器配置、未构建新的内核或写eMMC，bist已关闭，VDIN和播放器已停止。
+
+
+## 资料驱动的同步与回采源只读核查273
+
+对照Linux v6.18 meson_viu.c/meson_overlay.c/meson_crtc.c与本机原厂3.14反汇编：普通非压缩路径均只控制VIU_MISC_CTRL0的16..18和20位，未在这些路径主动设置29位同步源；不能直接推断本机29位错误。主线VD1 GEN不置RESET_ON_GO_FIELD且hold9，原厂置RESET且hold17，CE置RESET且hold0；属于具体实现差异，不代表任一单项就是根因。主线资料已保存Mac coreelec-audit/research-20261121/linux-v6.18/，原厂保持离线反汇编参照。
+
+273仅将260既有有预算、活动legacy帧和总线就绪guard下三个读槽改为1a06/1a07/271a（标签分别luma_x/luma_y/matrix）；无新增写入或运行时地址选择。正常播放先读，再启动现有已校准ENC回采后读取，最后POSToff读取/截图对照。目标核实手册所述同步来源及回采源初始状态，不声称这些配置读回就是中间像素。已知260回退内核保留。
+
+
+273有效结果：391c05ba-5802-41c9-acef-bc8673cdee21，首次脚本在采集模块加载前访问不存在的counter节点而退出；已保留首轮日志并修正仅在节点存在时读取，同一次启动尚未开启VDIN，重试有效。BEFORE273_1时1a06=0、1a07=f0000、271a=a；开启原ENC回采后1a06/1a07不变，271a=22a；POSToff也保持这些路由。故VD1 bit29当前为0，未见误选DI post帧同步；回采源起始确为关闭，随后选ENCP2，不能将“未先清旧源”当成本轮失败原因。物理同步脉冲仍未直接测量。
+
+硬解160→756帧、错误0；ENC回采仍无完成帧，POSToff取得POSTOFF273_1当前通知，PNG实际查看。Mac trial-pixels273/保留原始数据，trial-sync273/保留映射及复现脚本。采集/播放已停止，诊断预算0；当前保留只读Image273（日志标签luma_x/luma_y/matrix对应1a06/1a07/271a，勿按原标签解释），260回退仍在。
+
+主线对照补充：meson_crtc.c将Canvas0复制到同层Canvas1并设PSEL0；CE普通vpp_2pic_mode0写disp_canvas[][1]到Canvas1，PSEL选progressive two-picture模式。原厂也有相应双画面选择，因此不能直接当作错误。未核对实际Canvas1/PSEL前不修改。普通帧输出已校准Canvas0不代表Canvas1；下一差异表将其与GEN复位策略分开，避免同时改变多项而失去归因。
