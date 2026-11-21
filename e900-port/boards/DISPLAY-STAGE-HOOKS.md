@@ -246,3 +246,27 @@ Image260，d3064a80-da49-42f7-99e2-ffc5c8096b6c，H264154→696帧、错误0。�
 硬解160→756帧、错误0；ENC回采仍无完成帧，POSToff取得POSTOFF273_1当前通知，PNG实际查看。Mac trial-pixels273/保留原始数据，trial-sync273/保留映射及复现脚本。采集/播放已停止，诊断预算0；当前保留只读Image273（日志标签luma_x/luma_y/matrix对应1a06/1a07/271a，勿按原标签解释），260回退仍在。
 
 主线对照补充：meson_crtc.c将Canvas0复制到同层Canvas1并设PSEL0；CE普通vpp_2pic_mode0写disp_canvas[][1]到Canvas1，PSEL选progressive two-picture模式。原厂也有相应双画面选择，因此不能直接当作错误。未核对实际Canvas1/PSEL前不修改。普通帧输出已校准Canvas0不代表Canvas1；下一差异表将其与GEN复位策略分开，避免同时改变多项而失去归因。
+
+
+## Canvas1/PSEL只读274及单项复位对照275
+
+274启动8b481da2-939d-4995-ba64-2a003305a1bf，固定读槽改为Canvas1(1a52)/亮度PSEL(1a60)/色度PSEL(1a61)。实际PSEL两者均0，Canvas1在5d5c5b/636261之间随配置切换；Canvas0仍在5a5958/605f5e切换。因此不能依据C源码中的progressive two-picture分支推断本样片启用双画面。主线PSEL0的差异在这轮样片上并不存在，不修改Canvas1/PSEL。硬解159→347无错误，POSToff当前通知截图保留Mac trial-pixels274/。
+
+275保留274全部读取点及现有混合隔离器，在vd_set_dcu普通非压缩GEN构造的固定OR位29指令98f411c处增加条件wrapper：global_output5时仅清bit29，默认1逐位保留原有OR行为。wrapper28字节放245完成检查RET之后已核对的NOP区9a22404，不改其正文/ready规则/DMA/ownership；x16仅作为调用者临时寄存器，w19结果返回原路径，紧接原VSYNC写入。手动位、hold、Canvas、PSEL、格式均不改；播放期间不暂停，mode5在既有blend隔离器不匹配2/3，仍保留PRE/POST。原样→关闭RESET_ON_GO_FIELD→恢复→POSToff四段，必须读回GEN38000043/18000043/38000043并核对当前像素，不能只按开关值判生效。它源于主线普通MIF不置此位的明确差异，并非正式修复。
+
+
+275结果：13ea4ae5-e051-4589-9055-d2df28acbe4c，GEN实际38000043→18000043→38000043，blend均100054b0、PSEL0，原样/关闭复位/恢复均无完成帧，POSToff当前通知可见（PNG已实际查看）。解码160→627无错误。不能把主线与vendor的该单项策略差异当作黑屏修复。Mac trial-pixels275/。
+
+276在同一固定GEN构造hook内将两个独立开关放成2×2：global_output1原样，5清RESET位29，9置MIF ENABLE_FREE_CLK位31，13两者组合，随后恢复1及POSToff3。此处MIF内部自由时钟与270的VPP门控不同，依据手册GEN31定义；不是认定该位已出错。两项之外的GEN输入均保持，wrapper32字节、仍在完成检查RET后原NOP区，模式默认1原始行为不变。每段保存解码状态、MIF实际读回和图像结果，避免播放结束或开关未生效造成假阴性。
+
+
+276结果：a0e0a4f4-c43d-4c2f-9efc-3592a5582d5f，原样/关复位/自由时钟/两者组合/恢复的实际GEN依次38000043、18000043、b8000043、98000043、38000043；blend始终100054b0，所有播放段均无完成帧，POSToff得当前通知（PNG实际查看）。各段解码仍在运行，起止167→856帧、无错误。该四组合没有解除停滞，不能将MIF自由时钟或RESET单项宣称为根因。数据Mac trial-pixels276/。
+
+277回到260基础，恢复两处原始VPP_MISC提交调用（移除257的2/3掩码），不保留275/276 GEN改动。三处原有有预算/活动legacy帧/总线就绪的读参数MOV改为固定表查找：用已知三个返回PC低位识别日志槽，(global_output>>4)&3选择四组固定寄存器。helper只改w1及x16/x17，保留w0/LR/SP；第二个取点随后用MOV w20,w0保存前次读取，因此明确检查不改w0。两片原有NOP区分别放36字节查找代码、12字节返回尾及24字节只读表；不新增MMIO接口或用户地址输入。
+
+四组选择值1/17/33/49：亮度X/Y与FMT_W；色度X/Y与RPT_LOOP；VIU_SW_RESET、VPP_DOLBY_CTRL与Canvas1；VIU_MISC0/1与VENC_MUX。原始GEN/Canvas0/FMT_CTRL/GEN2/GEN3/FIFO/SC/相位日志保留。主机核对实际机器码的寄存器写集合不含w0/LR/SP，所有256个选择值×三个已知返回PC索引均在固定12项表内。仅播放并读取，不启动VDIN，四组在同一次启动采集；模式2/3不再具有旧PRE/POST隔离含义。
+
+
+277结果及收尾：ab88504c-6685-459f-9dad-6c36e6402b6a，四组各8样本：LUMA 04ff0000/02cf0000、FMT_W05000280；CHROMA027f0000/01670000、RPT_LOOP0；VIU_SW_RESET0、DOLBY_CTRL0、Canvas1两组；VIU_MISC0=0、MISC1=f0000、MUX=a。本轮未开启VDIN，解码159→220、无错误。未发现取数/格式器尺寸不一致或复位位保持置位；这些配置不构成像素正常证据。原始数据及映射保留trial-map277/。
+
+用户要求阶段性收尾，已停止新试验；最后实机确认无活动播放器、No vdec、音量0、预算0、global_output1/debug0，/flash余73.4MiB、/storage余23.7GiB。当前保留只读批量Image277，旧mode2/3混合隔离及275/276控制语义不适用。详见HANDOFF-20261121.md。
