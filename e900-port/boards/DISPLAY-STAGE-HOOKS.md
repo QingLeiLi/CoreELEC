@@ -91,3 +91,52 @@ VD1重新开启时GEN38000043、FMT20310c11、FIFO ff00c0、blend100054b0，32�
 251正常启动，8bb34234-8d1e-46b0-b697-4f61965ad36d；重复250四阶段：H251_0仍无完成帧。D251_0/H251_1原始payload完全相同10d0ab4c04c1329fd27598a60b069c62b4e6aec0d6743d3b5238db2bfcd740d6，完成计数51→134；D251_1变为新通知ad8f48e118f5e979493d96ce36244720d70b2af5c91cd459d8e3b8b8b90eaba7。H251_1和D251_1 PNG实际查看。跳过VPP_INPUT_CTRL=440这单项没有解除冻结，应排除此单项作为修复，不合入正式源码。
 
 本轮稳定证据是同一次解码持续运行，VD1开时回环像素冻结、关时更新。这里只证明回环所见，仍需区分VD1取数/格式/缩放导致VPP输入等待，和回环支路自身受VD1影响；不得越过证据声称已找到唯一寄存器或整个HDMI输出冻结。后续不重复OSD alpha、硬解计数、FIFO241或路由251，而应围绕MIF→formatter→VPP的实际有效数据/握手取点。已恢复245 USB启动配置并请求正常重启；未修改eMMC，音量维持0，实验脚本已先停VDIN再停播放并复原参数。
+
+
+## 原厂MIF等待行数252/253（2026-11-21）
+
+原厂普通多平面NV21路径由ffffffc00171f764的0x18880041、separate位1及reset位29构成GEN0x38880043，等待行数为17；当前GEN0x38000043对应0。252仅修改模块参数并不能触发DCU重配置，实际GEN始终未变，所以不能计为有效17行阴性实验。253在每阶段通过global_offset写回相同0/0，使用已有API触发property_changed，硬件GEN按0x38000043/0x38880043/0x38000043/0x38880043交替，和RDMA视图一致；四阶段均没有完成帧，解码持续至687帧无错误，说明单独匹配原厂17行不足以解除回环停滞。实验结束先停VDIN再停播放，恢复hold0、disable原值，基线245未改。原始日志Mac trial-hold253/，包含252无效对照和253有效对照。
+
+
+## 已配置供电与原厂映射254（2026-11-21）
+
+通过驱动/sys/class/vpu/mem的r命令，仅读取已配置的HHI电源寄存器，在H264播放123帧且disable_video0时得到REG0(0x41)=0x000c00c0，REG1(0x42)=0，REG2(0x4d)=ffffffff。从原厂3.14 switch_vpu_mem_pd_vmod的实际跳转表提取模块2/4/5/6，证实VD1/CHROMA/OFIFO/SCALER仍是REG0的4/8/10/12起两位，与当前GXL表一致，均为0即供电开启。VD2/VDIN1此时关电（未采集）属于本次状态；REG2不据此判故障。原厂完整离线反汇编及映射脚本结果存audit/android-video190/。这排除上述已配置SRAM关电，不代表已测所有时钟或MIF发起/返回握手。停止播放，音量0。
+
+下一255通过现有video_global_output=1/0/1/0，只改变global_output混合条件，不调用safe_switch_videolayer/关闭内存流程，并始终确认disable_video0、记录电源状态。用于对比整体关层与仅撤去VPP混合输入，不先假设此接口一定能隔离全部MIF配置；需结合源码与后续硬件读回界定。
+
+
+## 仅撤去混合输出255（2026-11-21）
+
+245内核，同一次H264196→791帧，无错误；始终disable_video0，home窗口10000，global_output1/0/1/0。H255_0无完成帧；G255_0得到新菜单/通知；H255_1再次冻结，payload与G255_0完全相同5f6dcac2c320f2b4b2d224ff40f482a209606bf4883221be319fdba587f85701，而完成计数51→194；G255_1恢复为新通知，payload982c0d591eba025cbfc22bb9669bdd96f06d5326daad237f1264b570d675d972。三张实际查看。四阶段电源状态完全相同REG0c0/REG1=0/REG2ffffffff；源代码该分支只更改混合使能/逻辑enabled，没有调用safe_switch或内存关断。
+
+说明无需整体关闭VD1，撤去其VPP混合输出便可让回环像素更新，主线进一步集中VPP接入VD1输入后的等待。仍保留MIF实际持续取数未直接读回的边界，不能据此声称MIF像素已正确或HDMI物理端已定位。采集后先停VDIN再停播放，global_output恢复1、其他参数恢复、音量0。Mac trial-pixels255/。
+
+下一256以独立诊断内核在legacy VPP_MISC的既有VSYNC_WR调用前，按video_global_output2仅清VD1 PRE(bit14)、3仅清VD1 POST(bit10)，1不改、0保留原驱动撤去输出行为。使用已验证未被引用的40字节NOP区作tailcall helper，保留x0/LR/SP，用caller-scratch x16读取固定已知global_output字段，不加新寄存器访问或DMA修改。以四阶段原样/断前/断后/全断取图并回读实际blend/GEN；该复用selector仅用于此USB诊断内核，不是正式用户API。
+
+
+## 混合掩码256未落地，不计阴性
+
+256正常启动，de38af83-326d-4744-89eb-dea1672bc500。mode2/3读回仍为live/shadow100054b0，说明只挂接ffffff80098f7830那条提交路径不足，不能用本轮的无完成帧排除PRE或POST入口。mode0仍能获得当前菜单对照。完整记录Mac trial-pixels256/。
+
+257在256基础上仅补挂同一函数内另一条VPP_MISC提交路径ffffff80098f73ac，仍使用同一个40字节尾调用helper和两个固定掩码。必须看到mode2/3实际bit14/bit10变化再判断效果。清除USB上已否定的Image251释放空间，其原文件在storage/Mac均有副本；保留基线245及当前256用于回退。
+
+
+## 条件提交触发257/258
+
+257初轮同样未改变实际混合位，不能计阴性。进一步发现仅将global_output改2/3不会改变原驱动的vpp_misc_set，所以其条件`vpp_misc_save != vpp_misc_set`跳过了最后提交，固定掩码helper没有执行机会。已在257同一内核做无VDIN的短验证：先global_output0停留200ms，再设2/3，确保原始值变化；实际mode2 live/shadow100014b0、mode3 live/shadow100050b0，GEN均38000043，读回选择器分别2/3，Canvas继续切换。已验证固定PRE/POST位隔离可以落地，其他MIF配置保持。短验证先停播放后恢复global_output1。
+
+258保留Image257不再换内核，只补齐上述触发并记录snapshot后的global_output，重启重置一次性VDIN采集，再按原样/断PRE/断POST/全断取实际帧。不能用256/257初轮的计数或超时判定这两个入口，只有258有效。
+
+
+## 有效PRE/POST分界258（2026-11-21）
+
+Image257，2030682c-a6ac-4b0d-b39b-4740ddd5b192；同一次H264175→599帧、无错误，home窗口10000、disable_video0，global_output前后读回分别1/2/3/0。四阶段结果：
+
+* 原样：100054b0，无完成帧。
+* 仅断PRE(bit14)：实际live/shadow100014b0，GEN38000043/GEN2=1/GEN3=33/Canvas切换，得到PRE258_0，但实际查看仍显示先前H258_0通知，属于旧图，未证明当前像素更新。
+* 仅断POST(bit10)：实际live/shadow100050b0，MIF同上，POST258_0实际查看显示当前POST258_0通知，菜单更新。
+* 两者均断：NONE258_0实际查看显示当前NONE258_0通知。
+
+四阶段电源寄存器均REG0c0/REG1=0/REG2ffffffff，GEN在两个独立入口模式保持开启。故后混合接入VD1输出是触发回环停滞的必要条件之一；只断前混合未解除，断后混合可解除。不能据此断言后混合器坏，也可能是其等待MIF/格式/缩放链路提供有效数据，下一主线应放在VD1/PPS输出至POST入口的供数/握手。没有新增物理HDMI观察。Mac trial-pixels258/三张均实际查看，脚本保存trial-blend257/e900-pixels258.py。探针退出后先停VDIN再停播放，global_output恢复1，音量0；当前USB仍为257诊断内核，模式1对原路径不做掩码，245回退文件保留。
+
+另核对amvideocap源码：ext_get_cur_video_frame在video.c1436读取实际layer->vd_mif_reg.vd_if0_canvas0作为cur_index；amvideocap.c随后用其拆分Y/U/V索引，canvas_read并设置GE2D src_para.canvas_index=cur_index。此前正常彩带A点使用的是显示端Canvas索引，而非直接绕过这些描述符读取vf->canvas0_config。它加强了当前显示Canvas可解释性证据，但GE2D正常仍不等于VD1 MIF实际出数或PPS输出正常。
