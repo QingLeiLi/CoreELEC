@@ -1,5 +1,7 @@
 # E900V21C / GXLX2 CoreELEC 开发工作区
 
+**最新接手入口（2026-11-21）：[基线、借鉴来源与播放代码导航](BASELINE-AND-PLAYBACK.md)，[实机阶段收尾](boards/HANDOFF-20261121.md)。** 下文早期构建/待验证描述保留为历史，当前状态以上述两份文档为准；硬解黑屏尚未解决。
+
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。
 
 当前已通过外置 USB 启动 Linux 4.9.269，物理 HDMI 上的 Kodi 菜单、遥控导航、界面音效和同一 H.264 样片的软件解码已验证。等待GE2D完成并按BGR解读后，已从硬解帧读出完整原尺寸色条；电视硬解视频仍黑屏，尚未通过HDMI播放验证。最新证据、链路边界和初始化时序问题见 [显示链路复盘](boards/DISPLAY-CHAIN-REVIEW.md)；早期 [显示路径诊断](boards/DISPLAY-PIPELINE.md) 和 [POST2记录](boards/POST2-VALIDATION.md) 仅作为过程资料。
