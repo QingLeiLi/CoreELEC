@@ -218,3 +218,17 @@ Image260，d3064a80-da49-42f7-99e2-ffc5c8096b6c，H264154→696帧、错误0。�
 269启动5f798f66-e3c1-43bf-a315-1106c7f3756d，只读scaled/native/restore/POSToff四状态的1d72/1d73/1d74均为0。270同一启动首次开启VDIN，以现有vpu/gate的w 79 1启用VPP模块门控：读回确实变为fffffffc/fff/3fc0ffc；w 79 0后均回0。模块号79通过内核离线vpu_mod_table的RELA加数还原验证为vpp；表保存Mac trial-clock269/module-table.json，未使用全表gate r或运行时原始寄存器接口。
 
 正常、强制开启、恢复三段均无VDIN完成帧；最后仅断POST取得POSTOFF270_0当前通知，PNG已实际查看。H264160→493帧、错误0。说明单独通过该VPP模块门控API强制开启不足以解除停滞，不能据此断言所有时钟/握手波形正确。当前原厂GEN/GEN3/格式差异复核中，hold17与formatter bit29均已有有效阴性，不再重复。270完整脚本/JSON/dmesg/截图在Mac trial-pixels270/。退出恢复VPP门控0并先停VDIN再停播放，随后恢复Image260启动脚本并正常重启，避免留用269的日志别名。
+
+
+## 中间采集路径校准271/272
+
+用户要求先按实际截图确认阶段，暂不改显示参数。复核246/247：原厂VIDEO别名mux4/VIU_MISC_CTRL1bit28/FIFOe4/YUV444路径在1080p60及720p30均没有完成帧，不能将超时称为该节点黑图。源码G12独立WB0_VD1/VPP/POST取点在GXLX2未验证，不应把新增枚举当作硬件取点已可用。
+
+271使用260现成VDIN bist_set 1 0/1 1/0 0，对硬解播放期间横灰/纵灰/关闭图案取帧；各段均无完成帧，仅POST断开后取得当前通知。源码该生成器位于VDI6入口；不存在matrix_pattern标志，不绕过ready snapshot安全条件。此结果不能证明本机BIST实际生效，故272增加菜单状态下横/纵图案及关闭的正控，再在同一次采集中播放H264重测；以两种实际不同灰阶图证明生成器有效，否则放弃将其作为阶段证据。
+
+
+## 灰阶正控272未通过，不能作为中间取点
+
+260启动0c9010a8-ae68-4c84-94e8-bbc60b55ea52；菜单启动VDIN后，MENU/H/V/restore均取得帧。但实际查看MENU_H272_0和MENU_V272_0均为正常菜单和各自通知，没有横/纵灰阶。因此该bist_set在本机当前路径未证明有效，不能以它校准VIDEO中间取点。随后硬解VIDEO/H/V均返回ready、完成计数持续增加、abnormal0；实际查看VIDEO272_0仍带旧MENU_R272_0通知（混有过渡块），VIDEO_H272_0和VIDEO_V272_0同为旧MENU_R272_0菜单，均无当前VIDEO通知/彩条。再次证明软件完成计数不等于当前像素更新。最后POSToff当前通知可见。全部八组原始帧、PNG、JSON、dmesg和脚本保存Mac trial-pixels272/；矩阵/安全/ownership/DMA guards未改。
+
+阶段结论没有推进到MIF/PPS内的某一级：BIST校准失败，应停止采用这个接口；不把捕获超时/旧图当作中间级黑图。当前可用实际像素边界仍为显示Canvas正常与接入VD1的后混合回环停滞。未改显示寄存器配置、未构建新的内核或写eMMC，bist已关闭，VDIN和播放器已停止。
