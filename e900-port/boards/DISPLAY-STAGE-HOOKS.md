@@ -206,3 +206,15 @@ Image257，83595bea-28fd-4801-8ca2-bf8e5beb046f，同一次H264199→635帧、�
 Image260，d3064a80-da49-42f7-99e2-ffc5c8096b6c，H264154→696帧、错误0。现有/sys/module/rdma/parameters/enable从1,0切换0,0并等500ms、强制global_offset重配置；直接提交normal和manual两段均无完成帧；恢复1,0仍无帧。最后断POST获得当前POSTOFF268_0通知，PNG已实际查看。源码cur_enable在每轮vsync_rdma_config末更新，0选择现有VSYNC_WR直接写入路径，未新增原始地址写接口。该对照说明仅绕过显示配置队列不足以解除停滞，不能据此排除所有硬件帧同步问题。完整脚本/JSON/dmesg/PNG在Mac trial-pixels268/。
 
 结束读取确认rdma.enable=1,0，debug_flag=0，video_global_output=1，Kodi volume=0；已先停VDIN后停播放。当前USB为Image260，无新增正式修复，eMMC未改。下一步应比较原厂GXLX2的VD1读请求/帧同步配置与现有路径，不继续把配置读回或回环超时当作某一级真实黑像素。
+
+
+## 只读VPP时钟探针269
+
+269以260为基线，仅替换原活动legacy帧、预算限制、总线就绪保护内三个固定读取参数：日志luma_x→VPP_GCLK_CTRL0(1d72)，luma_y→VPP_GCLK_CTRL1(1d73)，matrix→VPP_SC_GCLK_CTRL(1d74)。其他采样及混合选择器不变，无新增写操作/运行时地址选择。前254只核对内存供电，不能替代这些时钟配置读回；未调用vpu/gate的全表读取（会访问未启用VDIN0）。本轮先读取，再判断是否需要使用既有VPP门控模块API做单项对照；不能将门控配置等同于实际时钟波形。
+
+
+## VPP强制时钟门控对照270阴性
+
+269启动5f798f66-e3c1-43bf-a315-1106c7f3756d，只读scaled/native/restore/POSToff四状态的1d72/1d73/1d74均为0。270同一启动首次开启VDIN，以现有vpu/gate的w 79 1启用VPP模块门控：读回确实变为fffffffc/fff/3fc0ffc；w 79 0后均回0。模块号79通过内核离线vpu_mod_table的RELA加数还原验证为vpp；表保存Mac trial-clock269/module-table.json，未使用全表gate r或运行时原始寄存器接口。
+
+正常、强制开启、恢复三段均无VDIN完成帧；最后仅断POST取得POSTOFF270_0当前通知，PNG已实际查看。H264160→493帧、错误0。说明单独通过该VPP模块门控API强制开启不足以解除停滞，不能据此断言所有时钟/握手波形正确。当前原厂GEN/GEN3/格式差异复核中，hold17与formatter bit29均已有有效阴性，不再重复。270完整脚本/JSON/dmesg/截图在Mac trial-pixels270/。退出恢复VPP门控0并先停VDIN再停播放，随后恢复Image260启动脚本并正常重启，避免留用269的日志别名。
