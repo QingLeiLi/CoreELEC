@@ -140,3 +140,69 @@ Image257，2030682c-a6ac-4b0d-b39b-4740ddd5b192；同一次H264175→599帧、�
 四阶段电源寄存器均REG0c0/REG1=0/REG2ffffffff，GEN在两个独立入口模式保持开启。故后混合接入VD1输出是触发回环停滞的必要条件之一；只断前混合未解除，断后混合可解除。不能据此断言后混合器坏，也可能是其等待MIF/格式/缩放链路提供有效数据，下一主线应放在VD1/PPS输出至POST入口的供数/握手。没有新增物理HDMI观察。Mac trial-pixels258/三张均实际查看，脚本保存trial-blend257/e900-pixels258.py。探针退出后先停VDIN再停播放，global_output恢复1，音量0；当前USB仍为257诊断内核，模式1对原路径不做掩码，245回退文件保留。
 
 另核对amvideocap源码：ext_get_cur_video_frame在video.c1436读取实际layer->vd_mif_reg.vd_if0_canvas0作为cur_index；amvideocap.c随后用其拆分Y/U/V索引，canvas_read并设置GE2D src_para.canvas_index=cur_index。此前正常彩带A点使用的是显示端Canvas索引，而非直接绕过这些描述符读取vf->canvas0_config。它加强了当前显示Canvas可解释性证据，但GE2D正常仍不等于VD1 MIF实际出数或PPS输出正常。
+
+
+## 原尺寸PPS旁路与后混合对照259（2026-11-21）
+
+Image257，83595bea-28fd-4801-8ca2-bf8e5beb046f，同一次H264199→635帧、无错误。全屏缩放H259_0无完成帧；原尺寸轴0/0/1279/719、bypass_pps=Y，实际SC从78404变68404（bit16 TOP_EN确实清除）、后混合窗口4ff/2cf，PPSOFF259_0仍无完成帧；然后切断POST，取得POSTOFF259_0当前菜单和本轮通知，PNG已查看。PPS关闭时硬件旧相位aaaac0/aaaa80未被重写，不能按这些旧读回声称unity相位，但TOP确已关闭。第三“RESTORE”阶段轴仍1279/719（saved_axis是在播放前取到的旧轴），故不能算恢复全屏的A/B/A对照；不据此作额外结论。四阶段供电不变。
+
+说明单独运行PPS缩放算法不是该回环停滞的必要条件；仍不能完全排除旁路供数或其输出握手。采集先停再停播放，参数复原。Mac trial-pixels259/。
+
+下一260在Image257现有预算/活动legacy帧/总线就绪guard下，只替换三个固定读回参数：日志luma_x改读VPP_IN_H_V_SIZE(1da6)，luma_y改读VPP_OUT_H_V_SIZE(1da5)，matrix改读VPP_OFIFO_SIZE(1d27)。标签只是为复用既有日志槽，不能仍按原标签解释。其他GEN/Canvas/格式/SC及混合日志保留，无新增寄存器写入/地址输入。该轮只读几何，不启动VDIN，取scaled/native/restored/postblend-off四种状态，以运行时寄存器核对源代码尺寸及原厂OFIFO默认值。原厂GXLX2video_init明确对1d27读-改-写低13位fff；先读后决定是否需要单项恢复，禁止直接开启导致重启的全局late-init。
+
+
+## 实际尺寸与OFIFO读回260（2026-11-21）
+
+260正常启动073077ba-f18c-4690-8c24-a262ae17db73，只读几何，不启动VDIN；scaled/native/scaled_restored/postblend_off四状态。替换后的日志槽实际读到IN_H_V_SIZE050002d0(1280×720)、OUT_H_V_SIZE07800438(1920×1080全局显示)、OFIFO_SIZEfff00fff，低13位fff与原厂初始化相同。缩放SC78404→68404→78404，原尺寸状态软件相位为unity、顶层位16关闭，硬件旧相位保留而不运行；第三轮本次正确恢复轴1919/1079及窗口77f/437。POST切断时live/shadow100050b0。
+
+说明VPP输入/全局输出尺寸与样片/HDMI配置一致，OFIFO默认值已在运行时存在，不要再用全量late-init重放或盲目修FIFO；9次早期丢写本身仍不构成黑屏因果。当前260保留前后混合选择器和所有原取点guard，仅日志luma_x/luma_y/matrix的含义分别为输入尺寸/输出尺寸/OFIFO。Mac trial-size260/含完整视频状态/日志/映射及复现脚本。
+
+下一261使用现有bypass_cm开关，对VPP_MISC bit28开启的色彩管理级做原样/旁路/恢复/断POST对照。仍在260本次未启动过VDIN的会话中，无需再重启；取数/尺寸/POST在前三阶段保持。不能将CM_ENABLE控制位成功切换当作图像恢复，必须实际查看当前通知/彩带。
+
+
+## 色彩管理旁路261阴性（2026-11-21）
+
+260本次启动中尚未启用VDIN，直接运行261。全屏12005，H264159→550帧、无错误。bypass_cm=N/Y/N，使实际blend100054b0→000054b0→100054b0，GEN/尺寸/供电/后混合使能保持。三段均无完成帧；最后断POST得POSTOFF261_0黑底+当前通知，PNG已查看。因此单独CM旁路未解除停滞，不是把控制位变化当图像恢复。Mac trial-pixels261/。参数恢复CM=N/global_output1/音量0。
+
+## 手动GO_FIELD产生完整像素262（2026-11-21）
+
+260内核7afab585-85f1-402d-a1f6-7c9c54b9b899；驱动已有debug_flag0x100000=DEBUG_FLAG_GOFIELD_MANUL，仅影响VD1/VD2 DCU配置GEN bit7。通过相同global_offset重配置触发。正常段无帧；一次手动触发后KICK262_0得到完整彩带/白标，但仍带NORMAL262_0旧通知，且图像存在横向错位，不能声称连续恢复。随后3秒低频交替flag0/0x100000并重配置，PUMP262_0实际图含当前PUMP262_0通知和不同位置白标，彩带完整，仍有起始错位。该时PRE/POST均开启、live/shadow blend100054b0保持，MIF shadow380000c3，实际GEN bit7自动清除，且出现38020043(bit17 BUSY)；表明手动启动确实让VD1取数并将彩带送到正常后混合/回环。不是仅完成计数或旁路重建截图。三张包含POST断开的对照图均实际查看。
+
+这把主要触发点定位到VD1自动帧启动/GO_FIELD链路；尚不能断言根因是某个同步mux、启动态或寄存器位，也不能把异步低频手动触发作为正式修复。Mac trial-pixels262/。先停VDIN再停播放，flag恢复0/位置原值/global_output1，音量0。
+
+下一263以245为基线（不带257混合掩码及260日志别名），在vpp_blend_update每次VSYNC的原VPP_MISC读回调用处加条件wrapper。global_output bit1且VD1.enabled时，在原帧配置之后，通过既有VSYNC_WR_MPEG_REG_BITS队列提交GEN bit7；保存原读回返回值及ABI。默认mode1不增加硬件写。目的为同步触发、排除用户态起始错位，不是正式源码修复；只用于本次已知非压缩H264/legacy MIF板。first guard/callback占memset既有40-byte NOP区，后续44-byte为245 done-helper RET后原NOP；普通VDIN函数正文不变。263对照normal/sync/sync+原厂hold17/automatic恢复。
+
+
+## VSYNC位修改提交263未出帧
+
+263正常启动ce91e10a-8cb7-41f0-a3ec-b4ce2a4e6d64，normal/sync/sync+hold17/restore四阶段H264159→817帧无错误，但都无VDIN完成帧。同步触发确实提交：shadow380000c3，live38020043(BUSY位17持续1)；hold17阶段shadow388800c3/live388a0043，恢复后回38000043。不能把这轮记为“探针未执行”，也不能否定低频手动触发262的真实彩带；说明触发时序/命令方式仍未解决。脚本退出已停VDIN再停播放，global_output1/debug0/hold0。
+
+源码rdma_write_reg_bits在当前item表匹配相同地址时会直接修改原条目并返回；rdma_write_reg则追加完整条目。因此264保留同一开关/软件活动guard/ABI，将尾部改为VSYNC_RD取得待提交GEN配置、清读回BUSY位17、置手动start位7，再VSYNC_WR追加完整命令，避免在队列前部合并及回写BUSY；其他功能不变。这是根据262低频完整GEN写的行为继续隔离提交方式，尚未证明某个机制是唯一根因。hold17前短暂关闭诊断触发再重新配置，避免旧GEN覆盖本次新hold配置。未开启全局late-init，未写eMMC。
+
+
+## 追加式同步触发264仍未出帧
+
+264正常启动2bc7feff-6577-450b-907f-7e258f115be9，H264104→590帧无错误。normal/sync/sync+hold17/restore四阶段均无VDIN完成帧。完整GEN尾追加方式尚不能恢复，不能宣称RDMA位合并就是唯一根因，亦未取得稳定同步触发修复。退出已恢复global_output1、hold0并停止VDIN/播放。
+
+下一265保留同一264内核，但一直mode1（同步helper不写硬件），用完全相同10Hz的global_offset重配置节奏，比对debug_flag0（重配置但不置手动位）→0x100000（重配置并置手动位）→0。此前262将手动位与重配置同时改变，必须用此消融对照区分“GO_FIELD必要”还是其他DCU/格式更新产生恢复；在结果明确前，262的GO_FIELD归因应作为定位线索而非最终根因。每段最多6秒，最多2张，包含当前通知用于判旧图；原始GEN和帧计数一并保存。
+
+
+## 同频重配置/常置手动位265未复现彩带
+
+264内核f885c08f-d6ad-42f8-8a8a-961e36d873d4，global_output始终1，同步helper不写硬件；H264160→803帧无错误。正常段、10Hz重配置debug0、同频重配置debug0x100000（持续常高）、再回debug0均无完成帧。不能据此抹去262已实际看到的彩带，但常置手动位并不足以稳定重现，尚不能把“手动GO_FIELD已修复”作为结论。263/264/265完整日志和JSON已下载Mac trial-ablation265/。
+
+262有效PUMP采用每50ms交替debug0/0x100000并重配置，与265常高并非相同脉冲协议。下一266在同一264内核按baseline/常高/交替0→1脉冲/常高恢复比较，频率和控制写入均有记录，用本轮通知及白标判定当前像素。仍是GO_FIELD/配置时序定位，不是正式修复；全部试验保持音量0，结束先停VDIN再停播放并恢复模式/参数。
+
+
+## 交替脉冲266与原内核复跑267均未复现
+
+266在264内核交替0/0x100000和global_offset重配置仍无完成帧。267回到262首次出图时相同Image260，并复用262脚本（仅改输出编号），启动c8939baa-d8cc-4141-8d36-9dccd3dd58c2；正常、单次手动、交替脉冲均无完成帧；仅断POST获得POSTOFF267_0当前通知（实际查看PNG），解码159→560帧、错误0。因此不能将262偶次成功归因为稳定GO_FIELD修复，也不能将263/264失败简单归因为新增二进制探针。262彩带证据真实但尚未复现；自动帧同步仅为假说。267完整JSON/dmesg/PNG保存Mac trial-pixels267/。
+
+268改用已有rdma.enable驱动开关，对显示配置排队/直接提交作normal→direct→direct+manual→restore→POSToff对照，不再添加同步触发二进制。原始模式和debug/位置在finally恢复，先停止VDIN再停播放；本轮目的只隔离配置提交时序，仍以当前像素而非计数判定。
+
+
+## 显示RDMA旁路268未解除停滞
+
+Image260，d3064a80-da49-42f7-99e2-ffc5c8096b6c，H264154→696帧、错误0。现有/sys/module/rdma/parameters/enable从1,0切换0,0并等500ms、强制global_offset重配置；直接提交normal和manual两段均无完成帧；恢复1,0仍无帧。最后断POST获得当前POSTOFF268_0通知，PNG已实际查看。源码cur_enable在每轮vsync_rdma_config末更新，0选择现有VSYNC_WR直接写入路径，未新增原始地址写接口。该对照说明仅绕过显示配置队列不足以解除停滞，不能据此排除所有硬件帧同步问题。完整脚本/JSON/dmesg/PNG在Mac trial-pixels268/。
+
+结束读取确认rdma.enable=1,0，debug_flag=0，video_global_output=1，Kodi volume=0；已先停VDIN后停播放。当前USB为Image260，无新增正式修复，eMMC未改。下一步应比较原厂GXLX2的VD1读请求/帧同步配置与现有路径，不继续把配置读回或回环超时当作某一级真实黑像素。
