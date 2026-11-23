@@ -1,9 +1,15 @@
-Subject: [EXPERIMENTAL] opt-in GXLX2 video init after late media buses
+Subject: GXLX2 video init after late media buses
 
-Default off; enable with amvideo.gxlx2_late_video_init=1. Preserve every
-other SoC/default init path and propagate init failures. Readiness queries
-inspect callback pointers only, never MMIO. Do not move the media bus
-publication earlier: early publication previously prevented native boot.
+Default on for GXLX2; disable with amvideo.gxlx2_late_video_init=0.
+Preserve every other SoC/default init path and propagate init failures.
+Readiness queries inspect callback pointers only, never MMIO. Do not move
+the media bus publication earlier: early publication previously prevented
+native boot.
+
+Stage-hook 240 confirmed VC bus writes are silently dropped during the
+original module_init(6) video_hw_init; 9 writes lost, hold_line stays 0.
+Making this default-on lets the full video_hw_init run after all 7 buses
+are registered at late_initcall_sync.
 
 --- a/include/linux/amlogic/media/registers/register_ops.h
 +++ b/include/linux/amlogic/media/registers/register_ops.h
@@ -53,13 +59,14 @@ publication earlier: early publication previously prevented native boot.
  
 -module_init(video_init);
 +/* GXLX2 media callbacks are intentionally published at late_initcall_sync.
-+ * Probe-time writes before that point silently disappear. Keep this opt-in
-+ * until the full native build and physical playback have been verified.
++ * Probe-time writes before that point silently disappear. Default on for
++ * GXLX2; disable with amvideo.gxlx2_late_video_init=0 to restore the
++ * original early init path for comparison.
 + */
-+static bool gxlx2_late_video_init;
++static bool gxlx2_late_video_init = true;
 +module_param_named(gxlx2_late_video_init, gxlx2_late_video_init, bool, 0444);
 +MODULE_PARM_DESC(gxlx2_late_video_init,
-+	"Experimental GXLX2 video init after media register buses are ready");
++	"GXLX2 video init after media register buses are ready (default on)");
 +
 +static int __init e900_video_init_early(void)
 +{
