@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory(prefix='e900-video-init-') as directory:
     buses = header[header.index('enum\n'):header.index('};') + 2]
     start = header.index('struct chip_register_ops {')
     struct = header[start:header.index('};', start) + 2]
-    wrappers = video[video.index('static bool gxlx2_late_video_init;'):
+    wrappers = video[video.index('static bool gxlx2_late_video_init'):
                      video.index('late_initcall_sync(e900_video_init_late);')
                      + len('late_initcall_sync(e900_video_init_late);')]
     harness = r'''
@@ -132,10 +132,10 @@ static int publish(void) {
     return register_reg_ops_per_cpu(cpu, table, 3);
 }
 int main(void) {
-    assert(!gxlx2_late_video_init); /* Default preserves known boot. */
-    reset(0x2a, false);
-    assert(early_init() == 0 && init_calls == 1 && writes == 0);
-    assert(publish() == 0 && late_init() == 0 && writes == 0);
+    assert(gxlx2_late_video_init); /* Default on for GXLX2. */
+    reset(0x2a, true);
+    assert(early_init() == 0 && init_calls == 0 && writes == 0);
+    assert(publish() == 0 && late_init() == 0 && init_calls == 1 && writes == 1);
     /* Reproduce the baseline lost write; no accidental replay with opt-in off. */
     for (int id = 0; id < 0x40; id++) {
         for (int option = 0; option < 2; option++) {
@@ -193,6 +193,6 @@ int main(void) {
                     str(c), '-o', str(root / 'test')], check=True)
     subprocess.run([str(root / 'test')], check=True)
 
-print('PASS: baseline early probe write is lost; opt-in GXLX2 init waits for real bus callbacks')
+print('PASS: baseline early probe write is lost; default-on GXLX2 init waits for real bus callbacks')
 print('PASS: all CPU IDs 0..0x3f/default paths, init/allocation errors and missing buses exercised')
 print('Host simulation only: full ARM build, linked late-init order and physical playback remain pending.')
