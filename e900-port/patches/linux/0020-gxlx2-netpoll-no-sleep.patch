@@ -1,0 +1,29 @@
+Subject: [EXPERIMENTAL] avoid sleeping IRQ synchronisation in GXLX2 netpoll
+
+The E900 netconsole trials exposed disable_irq -> synchronize_irq from
+atomic context. Use the non-waiting variant only on GXLX2; preserve IRQ
+disable/interrupt/enable balance. Hardware netconsole regression pending.
+
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -30,6 +30,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/kernel.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/interrupt.h>
+ #include <linux/ip.h>
+ #include <linux/tcp.h>
+@@ -2977,7 +2978,11 @@
+  */
+ static void stmmac_poll_controller(struct net_device *dev)
+ {
+-	disable_irq(dev->irq);
++	/* netpoll can run in atomic/IRQ context: never wait for IRQ completion. */
++	if (is_meson_gxlx2_cpu())
++		disable_irq_nosync(dev->irq);
++	else
++		disable_irq(dev->irq);
+ 	stmmac_interrupt(dev->irq, dev);
+ 	enable_irq(dev->irq);
+ }

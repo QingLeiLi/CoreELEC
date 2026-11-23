@@ -1,5 +1,7 @@
 # TVBian GXLX2 对比分析（2026-11-23）
 
+> 实机复核更新：同一build278开启晚初始化无法上线，关闭后能启动；尚未确认黑屏根因。下面“根因定位”“修复”等表述应视为当时假说。尤其CE的video_hw_init只读VPP_HOLD_LINES，主线显式写该寄存器，不能假设重跑读取就能恢复值。主线与树外驱动的区别、具体字段和下一步对照见[后续源码核对](MAINLINE-PLAYBACK-COMPARISON-20261123.md)。
+
 范围：对比 TVBian (sormy/tvbian) 在主线 Linux 6.18 上的 GXLX2 成功实现与 CE 4.9 BSP 栈的差异，定位硬解黑屏根因。
 
 ## 对比对象

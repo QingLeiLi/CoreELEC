@@ -558,5 +558,13 @@
     "git_blob_sha1": "bac9e6e40ac1f2403f9337ce972a69b10d04c4a5",
     "sha256": "dc433ed16cbf0fdced7770d0e1b46031251cacc8fdee625ee20d9534bc6fb8f3",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/net/ethernet/stmicro/stmmac/stmmac_main.c",
+    "git_blob_sha1": "b6c12e0b9420cf1b37e2c322ef262cb9b4f47907",
+    "sha256": "79acc6113e7ac857066e0ff81dd3aa8929592ae5932b14ef54c5d0a46b0ae667",
+    "verified": true
   }
 ]

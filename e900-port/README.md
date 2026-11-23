@@ -1,5 +1,9 @@
 # E900V21C / GXLX2 CoreELEC 开发工作区
 
+2026-11-23网络诊断：[netconsole与初始化等待模式](boards/NETCONSOLE-INIT-DIAGNOSTICS.md)。USB测试镜像先等网络日志校准，再显式执行新增配置；无需第二次编译。
+
+2026-11-23源码更新：[视频寄存器初始化拆分](boards/VIDEO-REGISTER-INIT-FIX-20261123.md)。移除整套晚初始化，新增0019固定寄存器完成路径；宿主检查通过，ARM构建和实机待验证。
+
 **最新接手入口（2026-11-21）：[基线、借鉴来源与播放代码导航](BASELINE-AND-PLAYBACK.md)，[实机阶段收尾](boards/HANDOFF-20261121.md)。** 下文早期构建/待验证描述保留为历史，当前状态以上述两份文档为准；硬解黑屏尚未解决。
 
 目标：基于 CoreELEC 21.3 NG 的厂商 4.9 栈，开发外置 USB 启动的播放器。

@@ -1,0 +1,399 @@
+Subject: [EXPERIMENTAL] complete only GXLX2 video register init after bus readiness
+
+Preserve early probe, IRQs, software and security setup. Queue the fixed
+register subset until video_init succeeds and all required callbacks exist.
+No arbitrary MMIO queue, no automatic hardware retries and no whole-init replay.
+Other SoCs retain the original function. Hardware validation pending.
+
+diff --git a/include/linux/amlogic/media/registers/register_ops.h b/include/linux/amlogic/media/registers/register_ops.h
+--- a/include/linux/amlogic/media/registers/register_ops.h
++++ b/include/linux/amlogic/media/registers/register_ops.h
+@@ -55,6 +55,10 @@
+ 	int r_cnt;
+ 	int w_cnt;
+ };
++
++struct notifier_block;
++int codec_reg_register_ready_notifier(struct notifier_block *nb);
++int codec_reg_unregister_ready_notifier(struct notifier_block *nb);
+ 
+ /* Software readiness only; does not read any hardware register. */
+ bool codec_reg_bus_ready(u32 bus_type);
+diff --git a/drivers/amlogic/media/common/arch/registers/register_ops.c b/drivers/amlogic/media/common/arch/registers/register_ops.c
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/notifier.h>
+ #include <linux/atomic.h>
+ #include <linux/types.h>
+ #include <linux/fs.h>
+@@ -76,6 +77,28 @@
+ }
+ EXPORT_SYMBOL(codec_reg_bus_ready);
+ 
++/* Listeners run only after a complete bus table has been published. */
++static BLOCKING_NOTIFIER_HEAD(codec_reg_ready_chain);
++
++int codec_reg_register_ready_notifier(struct notifier_block *nb)
++{
++	int ret = blocking_notifier_chain_register(&codec_reg_ready_chain, nb);
++
++	/* Also cover a consumer loaded after publication. The consumer checks
++	 * readiness and serialises duplicate delivery with its completion flag.
++	 */
++	if (!ret)
++		nb->notifier_call(nb, 0, NULL);
++	return ret;
++}
++EXPORT_SYMBOL(codec_reg_register_ready_notifier);
++
++int codec_reg_unregister_ready_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&codec_reg_ready_chain, nb);
++}
++EXPORT_SYMBOL(codec_reg_unregister_ready_notifier);
++
+ int codec_reg_read(u32 bus_type, unsigned int reg)
+ {
+ 	struct chip_register_ops *ops = amports_ops[bus_type];
+@@ -175,6 +198,8 @@
+ 	memcpy(ops, sops, size * ops_size);
+ 	for (i = 0; i < ops_size; i++)
+ 		register_reg_onebus_ops(&ops[i]);
++	if (is_meson_gxlx2_cpu())
++		blocking_notifier_call_chain(&codec_reg_ready_chain, 0, NULL);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(register_reg_ops_per_cpu);
+diff --git a/drivers/amlogic/media/video_sink/e900_video_hw_init.h b/drivers/amlogic/media/video_sink/e900_video_hw_init.h
+new file mode 100644
+--- /dev/null
++++ b/drivers/amlogic/media/video_sink/e900_video_hw_init.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_VIDEO_HW_INIT_H
++#define E900_VIDEO_HW_INIT_H
++void gxlx2_video_hw_probe_done(void);
++void gxlx2_video_hw_complete(void);
++void gxlx2_video_hw_cancel(void);
++#endif
+diff --git a/drivers/amlogic/media/video_sink/video_hw.c b/drivers/amlogic/media/video_sink/video_hw.c
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -46,6 +46,8 @@
+ #include <linux/sched.h>
+ #include <linux/amlogic/media/video_sink/video_keeper.h>
+ #include "video_priv.h"
++#include "e900_video_hw_init.h"
++#include <linux/notifier.h>
+ #include "video_reg.h"
+ 
+ #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+@@ -6734,10 +6736,262 @@
+ }
+ #endif
+ 
++/* Keep probe/software/security setup early; postpone only its fixed MMIO.
++ * This is not a generic register replay queue and accepts no user addresses.
++ */
++static bool gxlx2_hw_init = true;
++static bool gxlx2_hw_init_wait, gxlx2_hw_manual_release, gxlx2_hw_run;
++module_param_named(gxlx2_hw_init_wait, gxlx2_hw_init_wait, bool, 0444);
++MODULE_PARM_DESC(gxlx2_hw_init_wait,
++	"Diagnostic: wait for root's explicit release after network logging is verified");
++module_param_named(gxlx2_hw_init, gxlx2_hw_init, bool, 0444);
++MODULE_PARM_DESC(gxlx2_hw_init,
++	"Complete GXLX2 video register init after bus publication (default on)");
++static DEFINE_MUTEX(gxlx2_hw_init_lock);
++static bool gxlx2_hw_pending, gxlx2_hw_done, gxlx2_hw_probe_ready;
++static bool gxlx2_hw_subscribed, gxlx2_hw_attempted;
++static int gxlx2_hw_init_status;
++module_param_named(gxlx2_hw_init_status, gxlx2_hw_init_status, int, 0444);
++MODULE_PARM_DESC(gxlx2_hw_init_status,
++	"GXLX2 register completion: 0=idle, 1=pending, 2=complete, negative=error");
++
++/* Boot-only fixed-call-site trace, including the read half of RMW operations. */
++static unsigned int gxlx2_hw_init_step;
++module_param_named(gxlx2_hw_init_step, gxlx2_hw_init_step, uint, 0444);
++MODULE_PARM_DESC(gxlx2_hw_init_step, "Last fixed GXLX2 register-init step (1..13)");
++
++static unsigned int gxlx2_hw_read(unsigned int step, unsigned int reg)
++{
++	u32 value;
++
++	gxlx2_hw_init_step = step;
++	pr_info("e900-hw-init: step=%u read.begin reg=%x\n", step, reg);
++	value = READ_VCBUS_REG(reg);
++	pr_info("e900-hw-init: step=%u read.end reg=%x value=%x\n",
++		step, reg, value);
++	return value;
++}
++
++static void gxlx2_hw_write(unsigned int step, unsigned int reg, u32 value)
++{
++	gxlx2_hw_init_step = step;
++	pr_info("e900-hw-init: step=%u write.begin reg=%x value=%x\n",
++		step, reg, value);
++	WRITE_VCBUS_REG(reg, value);
++	pr_info("e900-hw-init: step=%u write.end reg=%x\n", step, reg);
++}
++
++static void gxlx2_hw_update_bits(unsigned int step, unsigned int reg,
++				u32 value, unsigned int start, unsigned int len)
++{
++	u32 old = gxlx2_hw_read(step, reg);
++	u32 mask = ((1U << len) - 1) << start;
++
++	gxlx2_hw_write(step, reg, (old & ~mask) | ((value << start) & mask));
++}
++
++static int gxlx2_video_hw_apply(void)
++{
++	u32 hold, ofifo, vd1_start, vd2_start;
++
++	if (!gxlx2_hw_pending || gxlx2_hw_done ||
++	    gxlx2_hw_attempted || !gxlx2_hw_probe_ready)
++		return 0;
++	if (!codec_reg_bus_ready(IO_VC_BUS) ||
++	    !codec_reg_bus_ready(IO_HHI_BUS) ||
++	    !codec_reg_bus_ready(IO_DMC_BUS))
++		return -EAGAIN;
++	if (gxlx2_hw_init_wait && !gxlx2_hw_manual_release) {
++		pr_info("e900-hw-init: waiting for verified network logging and explicit release\n");
++		return -EAGAIN;
++	}
++	gxlx2_hw_attempted = true;
++	if (!legacy_vpp) {
++		gxlx2_hw_init_status = -EINVAL;
++		pr_err("e900-hw-init: refusing non-legacy VPP configuration\n");
++		return -EINVAL;
++	}
++
++	if (glayer_info[0].fgrain_support || glayer_info[1].fgrain_support) {
++		gxlx2_hw_init_status = -EOPNOTSUPP;
++		pr_err("e900-hw-init: unexpected film-grain configuration\n");
++		return -EOPNOTSUPP;
++	}
++
++	/* Exactly the existing GXLX2 branch's nine writes, not a new G12 profile.
++	 * Do not repeat arb power, DI bookkeeping, security or IRQ registration.
++	 */
++	pr_info("e900-hw-init: begin fixed video register completion\n");
++	gxlx2_hw_update_bits(1, VPP_OFIFO_SIZE, 0xfff,
++		VPP_OFIFO_SIZE_BIT, VPP_OFIFO_SIZE_WID);
++	gxlx2_hw_write(2, VPP_PREBLEND_VD1_H_START_END, 4096);
++	gxlx2_hw_write(3, VPP_BLEND_VD2_H_START_END, 4096);
++	gxlx2_hw_write(4, VPP_DUMMY_DATA, 0x4080200);
++	pr_info("e900-hw-init: fifo/windows/dummy submitted\n");
++	gxlx2_hw_write(5, VPP_SRSHARP0_CTRL, 0);
++	gxlx2_hw_write(6, VPP_SRSHARP1_CTRL, 0);
++	gxlx2_hw_update_bits(7, sr_info.sr0_sharp_sync_ctrl, 1, 0, 1);
++	gxlx2_hw_update_bits(8, sr_info.sr0_sharp_sync_ctrl, 1, 8, 1);
++	if (!glayer_info[0].dv_support)
++		gxlx2_hw_update_bits(9, DOLBY_PATH_CTRL, 0xf, 0, 6);
++	pr_info("e900-hw-init: sharp/bypass submitted\n");
++
++	/* Do not consume the dispatcher's fake zero before publication.
++	 * This is a real read, not an invented mainline/default hold-line value.
++	 */
++	hold = gxlx2_hw_read(10, VPP_HOLD_LINES + cur_dev->vpp_off) & 0xff;
++	ofifo = gxlx2_hw_read(11, VPP_OFIFO_SIZE);
++	vd1_start = gxlx2_hw_read(12, VPP_PREBLEND_VD1_H_START_END);
++	vd2_start = gxlx2_hw_read(13, VPP_BLEND_VD2_H_START_END);
++	if (((ofifo >> VPP_OFIFO_SIZE_BIT) &
++	     ((1U << VPP_OFIFO_SIZE_WID) - 1)) != 0xfff ||
++	    vd1_start != 4096 || vd2_start != 4096) {
++		gxlx2_hw_init_status = -EIO;
++		pr_err("e900-hw-init: readback failed fifo=%x vd1=%x vd2=%x\n",
++			ofifo, vd1_start, vd2_start);
++		return -EIO;
++	}
++	vpp_hold_line = min_t(u32, hold, 0x1f);
++	gxlx2_hw_done = true;
++	gxlx2_hw_init_status = 2;
++	gxlx2_hw_pending = false;
++	pr_info("e900-hw-init: complete fifo=%x vd1=%x vd2=%x hold=%u\n",
++		ofifo, vd1_start, vd2_start, vpp_hold_line);
++	return 0;
++}
++
++static int gxlx2_video_hw_bus_ready(struct notifier_block *nb,
++				 unsigned long event, void *data)
++{
++	int ret;
++
++	pr_info("e900-hw-init: notify.enter\n");
++	mutex_lock(&gxlx2_hw_init_lock);
++	pr_info("e900-hw-init: notify.locked ready_vc=%u ready_hhi=%u ready_dmc=%u\n",
++		codec_reg_bus_ready(IO_VC_BUS), codec_reg_bus_ready(IO_HHI_BUS),
++		codec_reg_bus_ready(IO_DMC_BUS));
++	ret = gxlx2_video_hw_apply();
++	mutex_unlock(&gxlx2_hw_init_lock);
++	pr_info("e900-hw-init: notify.exit ret=%d\n", ret);
++	return ret && ret != -EAGAIN ? NOTIFY_BAD : NOTIFY_OK;
++}
++
++static struct notifier_block gxlx2_video_hw_notifier = {
++	.notifier_call = gxlx2_video_hw_bus_ready,
++};
++
++void gxlx2_video_hw_probe_done(void)
++{
++	if (is_meson_gxlx2_cpu() && gxlx2_hw_init) {
++		gxlx2_hw_probe_ready = true;
++		pr_info("e900-hw-init: probe.complete\n");
++	}
++}
++
++void gxlx2_video_hw_complete(void)
++{
++	int ret;
++
++	if (!is_meson_gxlx2_cpu() || !gxlx2_hw_init ||
++	    !gxlx2_hw_probe_ready || gxlx2_hw_subscribed)
++		return;
++	/* Called only after the unchanged video_init has finished successfully. */
++	pr_info("e900-hw-init: video_init.complete subscribe.begin\n");
++	ret = codec_reg_register_ready_notifier(&gxlx2_video_hw_notifier);
++	pr_info("e900-hw-init: subscribe.end ret=%d\n", ret);
++	if (ret) {
++		gxlx2_hw_init_status = ret;
++		pr_err("e900-hw-init: cannot subscribe to bus readiness: %d\n", ret);
++	} else {
++		gxlx2_hw_subscribed = true;
++	}
++}
++
++static int gxlx2_hw_run_set(const char *value, const struct kernel_param *kp)
++{
++	bool run;
++	int ret = kstrtobool(value, &run);
++
++	if (ret)
++		return ret;
++	if (!run)
++		return -EINVAL;
++	if (!is_meson_gxlx2_cpu() || !gxlx2_hw_init)
++		return -EOPNOTSUPP;
++	if (!gxlx2_hw_init_wait)
++		return -EPERM;
++	mutex_lock(&gxlx2_hw_init_lock);
++	if (!gxlx2_hw_subscribed || !gxlx2_hw_probe_ready)
++		ret = -EAGAIN;
++	else if (gxlx2_hw_attempted || !gxlx2_hw_pending)
++		ret = -EALREADY;
++	else if (vd_layer[0].dispbuf || vd_layer[1].dispbuf)
++		ret = -EBUSY;
++	else {
++		gxlx2_hw_manual_release = true;
++		ret = gxlx2_video_hw_apply();
++		if (ret == -EAGAIN)
++			gxlx2_hw_manual_release = false;
++		if (!ret)
++			*(bool *)kp->arg = true;
++	}
++	mutex_unlock(&gxlx2_hw_init_lock);
++	return ret;
++}
++
++static const struct kernel_param_ops gxlx2_hw_run_ops = {
++	.set = gxlx2_hw_run_set,
++	.get = param_get_bool,
++};
++module_param_cb(gxlx2_hw_init_run, &gxlx2_hw_run_ops, &gxlx2_hw_run, 0600);
++MODULE_PARM_DESC(gxlx2_hw_init_run,
++	"Diagnostic root-only one-shot release; requires wait mode and no video frame");
++
++void gxlx2_video_hw_cancel(void)
++{
++	if (gxlx2_hw_subscribed) {
++		codec_reg_unregister_ready_notifier(&gxlx2_video_hw_notifier);
++		gxlx2_hw_subscribed = false;
++	}
++	mutex_lock(&gxlx2_hw_init_lock);
++	gxlx2_hw_pending = false;
++	gxlx2_hw_done = false;
++	gxlx2_hw_probe_ready = false;
++	gxlx2_hw_attempted = false;
++	gxlx2_hw_init_status = 0;
++	gxlx2_hw_init_step = 0;
++	gxlx2_hw_manual_release = false;
++	gxlx2_hw_run = false;
++	mutex_unlock(&gxlx2_hw_init_lock);
++}
++
++static int gxlx2_video_hw_prepare(void)
++{
++	/* Preserve the original non-register side effects exactly once. */
++	vd1_vd2_mux = false;
++	vd_layer[0].vd1_vd2_mux = false;
++	di_used_vd1_afbc(false);
++	switch_vpu_mem_pd_vmod(VPU_VPU_ARB, VPU_MEM_POWER_ON);
++#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
++	secure_register(VIDEO_MODULE, 0, VSYNC_WR_MPEG_REG, vpp_secure_cb);
++#endif
++	mutex_lock(&gxlx2_hw_init_lock);
++	gxlx2_hw_pending = true;
++	gxlx2_hw_done = false;
++	gxlx2_hw_attempted = false;
++	gxlx2_hw_init_status = 1;
++	mutex_unlock(&gxlx2_hw_init_lock);
++	pr_info("e900-hw-init: queued fixed register init; early probe retained\n");
++	return 0;
++}
++
+ int video_hw_init(void)
+ {
+ 	u32 cur_hold_line, ofifo_size;
+ 	int i;
++
++	if (is_meson_gxlx2_cpu() && gxlx2_hw_init)
++		return gxlx2_video_hw_prepare();
+ 
+ 	e900_stage_init("before");
+ 
+diff --git a/drivers/amlogic/media/video_sink/video.c b/drivers/amlogic/media/video_sink/video.c
+--- a/drivers/amlogic/media/video_sink/video.c
++++ b/drivers/amlogic/media/video_sink/video.c
+@@ -50,6 +50,7 @@
+ #include <linux/sched.h>
+ #include <linux/amlogic/media/video_sink/video_keeper.h>
+ #include "video_priv.h"
++#include "e900_video_hw_init.h"
+ #include "video_reg.h"
+ #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_VIDEO
+ #include <trace/events/meson_atrace.h>
+@@ -13678,11 +13679,14 @@
+ 		for (j = 0; j < SCENES_VALUE; j++)
+ 			vpp_scenes[i].pq_values[j] = vpp_pq_data[i][j];
+ 	}
++	if (!ret)
++		gxlx2_video_hw_probe_done();
+ 	return ret;
+ }
+ 
+ static int amvideom_remove(struct platform_device *pdev)
+ {
++	gxlx2_video_hw_cancel();
+ #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+ 	unregister_early_suspend(&video_early_suspend_handler);
+ #endif
+@@ -13849,6 +13853,7 @@
+ 
+ 	REG_PATH_CONFIGS("media.video", video_configs);
+ 	video_debugfs_init();
++	gxlx2_video_hw_complete();
+ 	return 0;
+  err5:
+ 	device_destroy(&amvideo_class, MKDEV(AMVIDEO_MAJOR, 0));
+@@ -13876,6 +13881,7 @@
+ 
+ static void __exit video_exit(void)
+ {
++	gxlx2_video_hw_cancel();
+ 	video_debugfs_exit();
+ 	vf_unreg_receiver(&video_vf_recv);
+ 	vf_unreg_receiver(&videopip_vf_recv);

@@ -55,6 +55,7 @@ if old_metadata.exists():
 
 paths.extend(repo.glob("build.*/build/media_modules-aml-*/drivers/**/*.ko"))
 for build in repo.glob("build.*/build/linux-*"):
+    paths.extend(build.glob("drivers/net/netconsole.ko"))
     paths.extend(build.glob("arch/arm64/boot/Image*"))
     paths.extend(build.glob(".config"))
     paths.extend(build.glob("arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dtb"))
