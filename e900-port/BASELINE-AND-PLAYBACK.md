@@ -18,6 +18,35 @@
 
 目标硬件为 S905L3-B/GXLX2，CPU major 0x2a，P291，1GB内存。当前采用USB启动；eMMC、SD/SDIO及无线没有完成适配，不代表完整支持全部外设或全部硬解格式。
 
+### 相对固定基线，具体改了什么
+
+修改集中在板级启动、SoC识别、媒体寄存器访问和显示配置选择；没有重写解码算法。下表描述修改内容，不表示每项功能都已通过实机验收。
+
+| 部分 | 相对基线的改动 | 主要代码入口 |
+|---|---|---|
+| SoC识别 | 增加GXLX2真实CPU ID `0x2a`、判断函数及解码模块匹配，避免未知型号或仅按ID大小误选路径 | Linux 0001；media 0001 |
+| 板级DTB | 从同内核的`gxl_p212_1g`派生本机DTB，调整1GB内存、保留区、framebuffer、HDMI及USB配置；eMMC等未完成外设保持禁用 | Linux 0003；`boards/gxlx2_p291_1g_e900v21c.dts` |
+| USB启动 | 增加适合当前Android bootloader的`booti`脚本、镜像布局及打包部署流程；没有重写bootloader | `boards/e900-usb-booti.src`；`scripts/prepare-usb-image.py` |
+| HDMI访问 | 增加可选的GXLX2直接寄存器访问方式，保留GXL PHY配置，没有整体套用G12显示栈 | Linux 0002 |
+| 媒体基础设施 | 补媒体寄存器总线注册；处理缺失DI时钟；解码模块加入GXLX2时钟注册及实际微码选择日志 | Linux 0005/0006；media 0001/0002 |
+| 解码通道 | 将GXLX2的VLD DMC通道选择调整为legacy bit13；未修改H.264解码算法 | media 0003 |
+| 视频显示策略 | 在两处初始化判断中排除GXLX2，保留legacy VPP混合和MIF寄存器表；跳过不支持的POST2矩阵访问。尚未解决硬解黑屏 | Linux 0007/0008 |
+| 截图与诊断 | GE2D截图等待转换完成后再释放Canvas；加入VDIN路由、DMA生命周期、完成状态快照和显示阶段日志；另有启动/MIF/晚初始化实验开关 | Linux 0004、0009–0018；主要用于观测，不等于播放修复 |
+| 构建工程 | 增加Actions、增量缓存、失效下载源处理、产物导出、USB镜像准备及检查脚本 | `.github/workflows/e900-coreelec.yml`；`scripts/`；`tests/` |
+
+本项目没有对Kodi播放逻辑作实质修改，也没有修改专有`libamcodec`库；继续使用上述固定基线的VideoPlayer、Amlogic接口及预编译库。微码选择日志、通道/时钟配置修改也不等于修改了微码内部算法。
+
+优先审阅的三个功能差异：[0008 legacy VPP/MIF选择](patches/linux/0008-gxlx2-legacy-video-pipeline.patch)、[0006 媒体总线注册](patches/linux/0006-gxlx2-direct-media-register-buses.patch)、[media/0003 VLD DMC通道](patches/media/0003-gxlx2-vld-dmc-channel.patch)。它们是值得核对的差异，不是已确认的黑屏根因。
+
+在仓库根目录查看源码适配差异：
+
+```sh
+git diff fc61125e8900ab0c2593a29b615980ed0cd5b939 HEAD -- \
+  e900-port/patches e900-port/boards/gxlx2_p291_1g_e900v21c.dts
+```
+
+Linux和媒体模块源码在构建时下载，再应用补丁，因此主仓库diff主要显示新增补丁文件。上面命令查看已提交内容；尚未提交的修改另用`git diff`查看。
+
 ### 源码补丁和当前运行镜像的区别
 
 * 仓库中 Linux 0001–0003处理身份、HDMI访问及板级；0005–0008处理DI可选时钟、媒体总线、POST2及legacy视频策略；media 0001–0003处理身份/微码日志、解码时钟及VLD DMC选择。补丁均在 [patches](patches/)，不能据“存在补丁”认定全部功能已验收。
