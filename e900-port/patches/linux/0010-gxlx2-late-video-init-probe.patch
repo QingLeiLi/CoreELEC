@@ -53,7 +53,7 @@ are registered at late_initcall_sync.
  #include <linux/uaccess.h>
  #include <linux/amlogic/media/utils/amports_config.h>
  #include <linux/amlogic/media/vpu/vpu.h>
-@@ -13947,7 +13948,44 @@
+@@ -13947,7 +13948,45 @@
  
  /*arch_initcall(video_early_init);*/
  
