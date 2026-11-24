@@ -32,5 +32,7 @@ trap 'rm -f "$partial"' 0
 trap 'exit 1' HUP INT TERM
 printf 'capture_ready %s\n' "$partial" > "$attr"
 mv "$partial" "$final"
-sync
+# Continuous paired sampling validates/copies each packet immediately.
+# Avoid an unrelated system-wide USB writeback stall in that mode.
+if [ "${E900_CAPTURE_SKIP_SYNC:-0}" != 1 ]; then sync; fi
 printf '%s\n' "$final"

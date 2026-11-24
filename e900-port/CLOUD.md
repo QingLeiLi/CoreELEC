@@ -1,5 +1,7 @@
 # GitHub Actions 云编译
 
+下载后操作见[产物结构与手动部署U盘](boards/ARTIFACTS-AND-MANUAL-USB-DEPLOY.md)。当前初始化拆分/网络诊断构建的流程以该文档及[修复说明](boards/VIDEO-REGISTER-INIT-FIX-20261123.md)为准，下面早期0010整套延后实验的描述属于历史记录。
+
 此工作流用于 CoreELEC 官方仓库的 fork。基线固定为 21.3-Omega 的 `fc61125e8900ab0c2593a29b615980ed0cd5b939`，本目录应放在 fork 根目录的 `e900-port/`；工作流放在 `.github/workflows/e900-coreelec.yml`。
 
 ## 当前可测试产物与后续构建

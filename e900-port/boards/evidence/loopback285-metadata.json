@@ -1,0 +1,368 @@
+{
+  "boot_id": "febca84a-d622-439b-a92d-6070fb2be5c6",
+  "running_image": "Image280",
+  "screen_observed": false,
+  "decode": "Explicit reverse64 + BT.601 limited YUV444, format_convert2",
+  "packets": {
+    "first_0.e9cap": {
+      "version": 1,
+      "header_bytes": 80,
+      "width": 640,
+      "height": 360,
+      "format_convert": 2,
+      "active_row_bytes": 1920,
+      "source_stride": 1920,
+      "frame_index": 2,
+      "bitdepth": 8,
+      "flags": 3,
+      "frame_timestamp": 4294919083,
+      "sample_jiffies": 4294919098,
+      "completion_count": 12,
+      "payload_bytes": 691200,
+      "packet_sha256": "3633e2808b7991e84abd70d19f7ddc81ea1ac3692055044704a727e15a0b61a3",
+      "payload_sha256": "214eb1ff249a08d2507dfb5184ae0a2a659cad4da17d7a4ce3eabec573b0cba2",
+      "unique_triplets": 118,
+      "dominant_triplets": [
+        {
+          "bytes": [
+            128,
+            235,
+            128
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            235
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            235,
+            128,
+            128
+          ],
+          "pixels": 7354
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            128
+          ],
+          "pixels": 7238
+        },
+        {
+          "bytes": [
+            16,
+            219,
+            138
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            138,
+            16,
+            219
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            219,
+            138,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            154,
+            188,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            16,
+            154,
+            188
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            188,
+            16,
+            154
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            42,
+            173,
+            26
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            26,
+            42,
+            173
+          ],
+          "pixels": 7180
+        }
+      ],
+      "interpretation": "Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output."
+    },
+    "first_1.e9cap": {
+      "version": 1,
+      "header_bytes": 80,
+      "width": 640,
+      "height": 360,
+      "format_convert": 2,
+      "active_row_bytes": 1920,
+      "source_stride": 1920,
+      "frame_index": 0,
+      "bitdepth": 8,
+      "flags": 3,
+      "frame_timestamp": 4294919500,
+      "sample_jiffies": 4294919509,
+      "completion_count": 78,
+      "payload_bytes": 691200,
+      "packet_sha256": "a0612a1770b4c3ec1913cb2232c71e6e1fe7775a2f2e1df01ccb63e682a72418",
+      "payload_sha256": "e5bf4576683cbc1c6ecea1123a5c3ab990daf7c9c8cd28ae50bb26645191e228",
+      "unique_triplets": 117,
+      "dominant_triplets": [
+        {
+          "bytes": [
+            128,
+            128,
+            235
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            235,
+            128,
+            128
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            128,
+            235,
+            128
+          ],
+          "pixels": 7354
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            128
+          ],
+          "pixels": 7296
+        },
+        {
+          "bytes": [
+            16,
+            219,
+            138
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            138,
+            16,
+            219
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            219,
+            138,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            154,
+            188,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            16,
+            154,
+            188
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            188,
+            16,
+            154
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            42,
+            173,
+            26
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            26,
+            42,
+            173
+          ],
+          "pixels": 7180
+        }
+      ],
+      "interpretation": "Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output."
+    },
+    "repeat_0.e9cap": {
+      "version": 1,
+      "header_bytes": 80,
+      "width": 640,
+      "height": 360,
+      "format_convert": 2,
+      "active_row_bytes": 1920,
+      "source_stride": 1920,
+      "frame_index": 2,
+      "bitdepth": 8,
+      "flags": 3,
+      "frame_timestamp": 4294926408,
+      "sample_jiffies": 4294926418,
+      "completion_count": 1079,
+      "payload_bytes": 691200,
+      "packet_sha256": "a8067cb39ae1f65156dda4d665316b7609dcbdccd11a8159b5ccd7cd3cf31547",
+      "payload_sha256": "516c1d70d40e9848938c36a9ce5e9fca70baae419f1dad55d6cab8b09ce954f5",
+      "unique_triplets": 5,
+      "dominant_triplets": [
+        {
+          "bytes": [
+            128,
+            16,
+            128
+          ],
+          "pixels": 57600
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            16
+          ],
+          "pixels": 57600
+        },
+        {
+          "bytes": [
+            16,
+            128,
+            128
+          ],
+          "pixels": 57600
+        },
+        {
+          "bytes": [
+            128,
+            16,
+            16
+          ],
+          "pixels": 28800
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            128
+          ],
+          "pixels": 28800
+        }
+      ],
+      "interpretation": "Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output."
+    },
+    "repeat_1.e9cap": {
+      "version": 1,
+      "header_bytes": 80,
+      "width": 640,
+      "height": 360,
+      "format_convert": 2,
+      "active_row_bytes": 1920,
+      "source_stride": 1920,
+      "frame_index": 1,
+      "bitdepth": 8,
+      "flags": 3,
+      "frame_timestamp": 4294927925,
+      "sample_jiffies": 4294927939,
+      "completion_count": 1323,
+      "payload_bytes": 691200,
+      "packet_sha256": "4326a23669f5c0818a518eeb7074a23762beaeac70a7cc56e45e931f3842249b",
+      "payload_sha256": "516c1d70d40e9848938c36a9ce5e9fca70baae419f1dad55d6cab8b09ce954f5",
+      "unique_triplets": 5,
+      "dominant_triplets": [
+        {
+          "bytes": [
+            128,
+            16,
+            128
+          ],
+          "pixels": 57600
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            16
+          ],
+          "pixels": 57600
+        },
+        {
+          "bytes": [
+            16,
+            128,
+            128
+          ],
+          "pixels": 57600
+        },
+        {
+          "bytes": [
+            128,
+            16,
+            16
+          ],
+          "pixels": 28800
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            128
+          ],
+          "pixels": 28800
+        }
+      ],
+      "interpretation": "Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output."
+    }
+  }
+}

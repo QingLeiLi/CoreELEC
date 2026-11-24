@@ -107,7 +107,9 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-check-") as directory:
         subprocess.run([sys.executable, str(PORT / "scripts/export-artifacts.py"), str(repo),
                         "decoder", action, result], env=environment, check=True)
         metadata = json.loads((export / "build-metadata.json").read_text())
-        assert metadata["usb_image_prepared"] is False and not metadata["artifacts"]
+        assert metadata["usb_image_prepared"] is False
+        assert {a["path"] for a in metadata["artifacts"]} == {"debug-tools/"+name for name in ["e900-debug.py", "DEBUG-FOUNDATION.md", "DISPLAY-CHAIN-ANALYSIS.md", "LEGACY-LOOPBACK-CALIBRATION-20261124.md", "evidence/loopback285-first.png", "evidence/loopback285-repeat.png", "evidence/loopback285-repeat-canvas.png", "evidence/loopback285-metadata.json", "e900-calibrate-loopback.py", "e900-start-capture.sh", "e900-capture-ready.sh", "inspect-vdin-snapshot.py"]}
+        assert (export / "debug-tools/e900-debug.py").read_bytes() == (PORT / "scripts/e900-debug.py").read_bytes()
         assert not stale.exists()
     print("PASS: old-run images, failed builds and media-only runs never export a ready USB image")
 

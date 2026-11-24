@@ -1,0 +1,41 @@
+Subject: [EXPERIMENTAL] gate GXLX2 SR0 sync access on its capability bit
+
+Build279 netconsole and retained ramoops both stop at step7 read.begin
+reg=3eb0; subsequent SSH times out and a new boot ID appears. The common
+video profile clears GXLX2's SR support mask, yet the numeric >= G12B
+initializer still accesses SR0. Gate both deferred and opt-out paths on
+SUPER_CORE0_SUPPORT for this SoC. Other SoC predicates are unchanged.
+This avoids the observed access; video-black-screen causality is unproven.
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -6830,8 +6830,16 @@
+ 	pr_info("e900-hw-init: fifo/windows/dummy submitted\n");
+ 	gxlx2_hw_write(5, VPP_SRSHARP0_CTRL, 0);
+ 	gxlx2_hw_write(6, VPP_SRSHARP1_CTRL, 0);
+-	gxlx2_hw_update_bits(7, sr_info.sr0_sharp_sync_ctrl, 1, 0, 1);
+-	gxlx2_hw_update_bits(8, sr_info.sr0_sharp_sync_ctrl, 1, 8, 1);
++	/* Numeric ID 0x2a is not evidence that G12B SR0 exists. Use the
++	 * capability mask populated by vpp_sr_init, not core_support's enum.
++	 */
++	if (sr_info.sr_support & SUPER_CORE0_SUPPORT) {
++		gxlx2_hw_update_bits(7, sr_info.sr0_sharp_sync_ctrl, 1, 0, 1);
++		gxlx2_hw_update_bits(8, sr_info.sr0_sharp_sync_ctrl, 1, 8, 1);
++	} else {
++		pr_info("e900-hw-init: step=7/8 skip SR0 sync; sr_support=%x\n",
++			sr_info.sr_support);
++	}
+ 	if (!glayer_info[0].dv_support)
+ 		gxlx2_hw_update_bits(9, DOLBY_PATH_CTRL, 0xf, 0, 6);
+ 	pr_info("e900-hw-init: sharp/bypass submitted\n");
+@@ -7088,7 +7096,9 @@
+ 		WRITE_VCBUS_REG_BITS(
+ 			sr_info.sr1_sharp_sync_ctrl,
+ 			1, 8, 1);
+-	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12B)) {
++	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12B) &&
++		   (!is_meson_gxlx2_cpu() ||
++		    (sr_info.sr_support & SUPER_CORE0_SUPPORT))) {
+ 		WRITE_VCBUS_REG_BITS(
+ 			sr_info.sr0_sharp_sync_ctrl,
+ 			1, 0, 1);

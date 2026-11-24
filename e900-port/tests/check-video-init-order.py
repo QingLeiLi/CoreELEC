@@ -51,7 +51,13 @@ with tempfile.TemporaryDirectory(prefix='e900-video-init-') as directory:
     hw, ops, header, video = [(root / path).read_text() for path in (HW, OPS, HEADER, VIDEO)]
     branch = ('\tif (is_meson_gxlx2_cpu() && gxlx2_hw_init)\n'
               '\t\treturn gxlx2_video_hw_prepare();\n\n')
-    assert function(hw, 'video_hw_init').replace(branch, '') == function(before, 'video_hw_init')
+    baseline = function(before, 'video_hw_init')
+    baseline = baseline.replace('else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12B)) {',
+        'else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12B) &&\n'
+        '\t\t   (!is_meson_gxlx2_cpu() ||\n'
+        '\t\t    (sr_info.sr_support & SUPER_CORE0_SUPPORT))) {')
+    assert function(hw, 'video_hw_init').replace(branch, '') == baseline
+    assert 'sr_info.sr_support & SUPER_CORE0_SUPPORT' in function(hw, 'gxlx2_video_hw_apply')
     assert 'module_init(video_init);' in video and 'e900_video_init_late' not in video
     assert video.index('video_debugfs_init();') < video.index('gxlx2_video_hw_complete();')
     assert function(video, 'amvideom_probe').count('gxlx2_video_hw_probe_done();') == 1
@@ -123,6 +129,7 @@ static int blocking_notifier_call_chain(struct fake_chain *c,unsigned long event
     return c->nb ? c->nb->notifier_call(c->nb,event,data) : 0;
 }
 ''' + buses + '\n' + struct + r'''
+static void e900_debug_event(const char*s,unsigned a,unsigned b,unsigned c,unsigned d){(void)s;(void)a;(void)b;(void)c;(void)d;}
 static struct chip_register_ops *amports_ops[BUS_MAX];
 static unsigned e900_bus_write_drops[BUS_MAX];
 #define atomic_inc(p) (++*(p))
@@ -187,7 +194,9 @@ static int param_get_bool(char *p,const struct kernel_param *kp) {(void)p;return
 static bool legacy_vpp=true,vd1_vd2_mux;
 static struct {bool vd1_vd2_mux;void *dispbuf;} vd_layer[2];
 static struct {bool dv_support,fgrain_support;} glayer_info[2];
-static struct {unsigned sr0_sharp_sync_ctrl;} sr_info={6};
+#define SUPER_CORE0_SUPPORT 1U
+#define SUPER_CORE1_SUPPORT 2U
+static struct {unsigned sr0_sharp_sync_ctrl,sr_support;} sr_info={6,SUPER_CORE0_SUPPORT};
 static struct {unsigned vpp_off;} video_dev,*cur_dev=&video_dev;
 static u32 vpp_hold_line=8;
 static int power_calls,di_calls,security_calls;
@@ -206,6 +215,7 @@ static void reset(void) {
     power_calls=di_calls=security_calls=0;
     corrupt_readback=false; legacy_vpp=true; gxlx2_hw_init=true; vpp_hold_line=8;
     gxlx2_hw_init_wait=false;vd_layer[0].dispbuf=vd_layer[1].dispbuf=NULL;
+    sr_info.sr_support=SUPER_CORE0_SUPPORT;
     glayer_info[0].dv_support=false;
     glayer_info[0].fgrain_support=glayer_info[1].fgrain_support=false;
 }
@@ -247,6 +257,13 @@ int main(void) {
         int old_writes=writes;
         assert(publish(3)==0 && writes==old_writes); /* No replay on duplicate delivery. */
         assert(power_calls==1 && di_calls==1 && security_calls==1);
+    }
+    for(unsigned caps=0;caps<4;caps++) {
+        reset();sr_info.sr_support=caps;probe();assert(publish(3)==0);
+        unsigned supports_sr0=!!(caps & SUPER_CORE0_SUPPORT);
+        assert(writes==(supports_sr0?9:7) && gxlx2_hw_init_status==2);
+        assert(trace_reads_begin[7]==supports_sr0 && trace_reads_begin[8]==supports_sr0);
+        assert(trace_writes_begin[7]==supports_sr0 && trace_writes_begin[8]==supports_sr0);
     }
     reset(); assert(publish(3)==0); probe(); assert(writes==9); /* Late module load. */
     reset(); probe(); assert(publish(1)==0 && !writes && !reads);
@@ -296,7 +313,7 @@ int main(void) {
                     str(path), '-o', str(root / 'test')], check=True)
     subprocess.run([str(root / 'test')], check=True)
 
-print('PASS: original early video_init retained; non-GXLX2/opt-out hardware body unchanged')
+print('PASS: original early video_init retained; only GXLX2 SR0 capability guard changes opt-out body')
 print('PASS: fixed register writes wait for successful probe/init and complete bus publication')
 print('PASS: early/late consumers, missing buses, allocation/subscription/readback errors, cancellation and duplicate events')
 print('PASS: every fixed read/write has paired trace markers, including the read half of RMW')

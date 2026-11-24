@@ -1,5 +1,7 @@
 # E900V21C / GXLX2 CoreELEC 开发工作区
 
+手动部署入口：[构建产物结构、U盘整盘写入与保留分区更新](boards/ARTIFACTS-AND-MANUAL-USB-DEPLOY.md)。包含当前网络诊断等待模式、脚本上传和回退步骤。
+
 2026-11-23网络诊断：[netconsole与初始化等待模式](boards/NETCONSOLE-INIT-DIAGNOSTICS.md)。USB测试镜像先等网络日志校准，再显式执行新增配置；无需第二次编译。
 
 2026-11-23源码更新：[视频寄存器初始化拆分](boards/VIDEO-REGISTER-INIT-FIX-20261123.md)。移除整套晚初始化，新增0019固定寄存器完成路径；宿主检查通过，ARM构建和实机待验证。
@@ -131,3 +133,7 @@ python3 tests/check-usb-roundtrip.py <本板编译后DTB> <mtools所在目录> <
 最新显示验收：软件解码正常；H.264 硬解黑屏、HEVC 绿屏，热插拔 RDMA 恢复未解决。不能将驱动帧计数视为播放通过，详见 [视频排查记录](boards/HARDWARE-VIDEO-MIF-PROBE.md)。
 
 Optional staged-pixel capture experiment: [VDIN capture build and validation limits](boards/VDIN-CAPTURE.md). The `vdin_capture` workflow input is off by default; a full ARM build and on-device downstream capture remain pending.
+
+成对快照、生命周期 hook 和离线对比工具：[基础调试功能](boards/DEBUG-FOUNDATION.md)。
+
+阅读Canvas→VD1/VPP→输出回环的代码与证据：[显示链路分析导航](boards/DISPLAY-CHAIN-ANALYSIS.md)。

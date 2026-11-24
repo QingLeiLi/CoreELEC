@@ -566,5 +566,29 @@
     "git_blob_sha1": "b6c12e0b9420cf1b37e2c322ef262cb9b4f47907",
     "sha256": "79acc6113e7ac857066e0ff81dd3aa8929592ae5932b14ef54c5d0a46b0ae667",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/rdma/rdma.c",
+    "git_blob_sha1": "059c08ffe9b4d8f9eaeb633001e35613651d08f2",
+    "sha256": "016c76325a0e8f0a60b9a55610f2101d6bc2a57dc75b8288dd5e0c8ba653925d",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/common/rdma/rdma_mgr.c",
+    "git_blob_sha1": "8ab9f5f56f3add3f5d772fb225ce2aece5801849",
+    "sha256": "5c3cf7558b8cd6a4728db4dc1712411c8fb30db85b88acd8a918926d05c68b7a",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "include/linux/amlogic/media/video_sink/amvideocap.h",
+    "git_blob_sha1": "a94f411e89de5ceb190af484ae22666664735e98",
+    "sha256": "ee5df1b698732e3089efb6a437a433f87144a1b4365f7e9ad25cfe867d03433e",
+    "verified": true
   }
 ]

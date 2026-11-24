@@ -71,6 +71,26 @@ for source in paths:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     artifacts.append(dict(path=str(relative), sha256=digest.hexdigest(), size=source.stat().st_size))
+# Ship the same revision's standalone diagnostic tool and instructions with
+# both kernel-only and image builds; this does not install or enable them.
+port = pathlib.Path(__file__).resolve().parents[1]
+for relative, source in [
+    ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
+    ("debug-tools/DEBUG-FOUNDATION.md", port / "boards/DEBUG-FOUNDATION.md"),
+    ("debug-tools/DISPLAY-CHAIN-ANALYSIS.md", port / "boards/DISPLAY-CHAIN-ANALYSIS.md"),
+    ("debug-tools/LEGACY-LOOPBACK-CALIBRATION-20261124.md", port / "boards/LEGACY-LOOPBACK-CALIBRATION-20261124.md"),
+    *[("debug-tools/evidence/" + name, port / "boards/evidence" / name) for name in
+      ["loopback285-first.png", "loopback285-repeat.png", "loopback285-repeat-canvas.png", "loopback285-metadata.json"]],
+    ("debug-tools/e900-calibrate-loopback.py", port / "scripts/e900-calibrate-loopback.py"),
+    ("debug-tools/e900-start-capture.sh", port / "scripts/e900-start-capture.sh"),
+    ("debug-tools/e900-capture-ready.sh", port / "scripts/e900-capture-ready.sh"),
+    ("debug-tools/inspect-vdin-snapshot.py", port / "scripts/inspect-vdin-snapshot.py"),
+]:
+    target = dest / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+    artifacts.append(dict(path=relative, sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                          size=source.stat().st_size))
 state["artifacts"] = artifacts
 (dest / "build-metadata.json").write_text(json.dumps(state, indent=2) + "\n")
 (dest / "NOT-READY-TO-FLASH.txt").unlink(missing_ok=True)

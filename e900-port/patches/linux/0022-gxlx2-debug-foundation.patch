@@ -1,0 +1,535 @@
+Subject: [DIAGNOSTIC] reusable bounded E900 lifecycle and paired snapshot hooks
+
+Default-off, root-only software lifecycle channels and fixed active-VD1
+configuration readback. No display-policy changes or new pixel tap.
+
+--- a/include/linux/amlogic/media/registers/e900_debug.h
++++ b/include/linux/amlogic/media/registers/e900_debug.h
+@@ -0,0 +1,41 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_DEBUG_H
++#define E900_DEBUG_H
++#include <linux/kernel.h>
++#include <linux/moduleparam.h>
++#include <linux/atomic.h>
++#include <linux/amlogic/cpu_version.h>
++/* One independently bounded channel per subsystem. No register/address API.
++ * Off by default, root-only, consumes a token before formatting a message.
++ */
++#define E900_DEBUG_CHANNEL(channel) \
++static unsigned int gxlx2_debug_events; \
++static atomic_t e900_debug_seq = ATOMIC_INIT(0); \
++static int e900_debug_set(const char *s, const struct kernel_param *kp) \
++{ \
++ unsigned int n; int ret = kstrtouint(s, 0, &n); \
++ if (ret) return ret; \
++ if (n > 512) return -ERANGE; \
++ WRITE_ONCE(*(unsigned int *)kp->arg, n); return 0; \
++} \
++static const struct kernel_param_ops e900_debug_ops = { \
++ .set = e900_debug_set, .get = param_get_uint, \
++}; \
++module_param_cb(gxlx2_debug_events, &e900_debug_ops, &gxlx2_debug_events, 0600); \
++MODULE_PARM_DESC(gxlx2_debug_events, "E900 bounded lifecycle events: 0=off, 1..512"); \
++static noinline void e900_debug_event(const char *event, u32 a, u32 b, u32 c, u32 d) \
++{ \
++ unsigned int n; \
++ if (!is_meson_gxlx2_cpu()) return; \
++ n = READ_ONCE(gxlx2_debug_events); \
++ while (n) { \
++  unsigned int seen = cmpxchg(&gxlx2_debug_events, n, n - 1); \
++  if (seen == n) break; \
++  n = seen; \
++ } \
++ if (!n) return; \
++ pr_info("e900-debug channel=" channel " seq=%d event=%s a=%x b=%x c=%x d=%x caller=%pS\n", \
++  atomic_inc_return(&e900_debug_seq), event, a, b, c, d, __builtin_return_address(0)); \
++}
++void e900_video_event(const char *event, u32 a, u32 b, u32 c, u32 d);
++#endif
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -57,6 +57,7 @@
+ 
+ #include <linux/amlogic/media/registers/register.h>
+ #include <linux/amlogic/media/registers/register_ops.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/uaccess.h>
+ #include <linux/amlogic/media/utils/amports_config.h>
+ #include <linux/amlogic/media/vpu/vpu.h>
+@@ -97,6 +98,8 @@
+ module_param_named(gxlx2_g12_mif, gxlx2_g12_mif, bool, 0444);
+ MODULE_PARM_DESC(gxlx2_g12_mif,
+ 	"Experimental GXLX2 G12 MIF table; legacy video blend policy retained");
++
++static void e900_debug_output(u32 blend_requested);
+ 
+ /* E900 stage probes: observation only, no display writes or frame ownership. */
+ static unsigned int gxlx2_stage_samples;
+@@ -224,6 +227,58 @@
+ 		READ_VCBUS_REG(VPP_POSTBLEND_VD1_H_START_END),
+ 		READ_VCBUS_REG(VPP_POSTBLEND_VD1_V_START_END),
+ 		codec_reg_bus_dropped_writes(IO_VC_BUS));
++	e900_debug_output(blend_requested);
++}
++
++E900_DEBUG_CHANNEL("video")
++/* Software lifecycle data only; may be called during teardown. */
++void e900_video_event(const char *event, u32 a, u32 b, u32 c, u32 d)
++{
++ e900_debug_event(event, a, b, c, d);
++}
++
++/* Called ONLY after the existing stage hook's active legacy VD1/bus/bank
++ * guards. All fields below belong to that already-owned display frame.
++ * No hardware writes, canvas selector writes, powered-down-bank reads or
++ * physical addresses accepted from userspace. These are configurations,
++ * not pixel samples or proof that an internal block is producing pixels.
++ */
++static void e900_debug_output(u32 blend_requested)
++{
++ struct video_layer_s *l = &vd_layer[0];
++ struct hw_vd_reg_s *m = &l->vd_mif_reg;
++ unsigned int i, canvas = READ_VCBUS_REG(m->vd_if0_canvas0);
++ struct canvas_s c;
++ struct vframe_s *vf = l->dispbuf;
++
++ if (l->switch_vf && l->vf_ext)
++  vf = l->vf_ext;
++ pr_info("e900-snapshot kind=software enabled=%u saved=%u onoff=%u disable=%u global=%u black=%u property=%u new_frame=%u new_setting=%u bypass_pps=%u canvas_slot=%u epoch=%u\n",
++  l->enabled, l->enabled_status_saved, l->onoff_state,
++  l->disable_video, l->global_output, l->force_black,
++  l->property_changed, l->new_frame, l->new_vpp_setting,
++  l->bypass_pps, l->cur_canvas_id, READ_ONCE(e900_stage_epoch));
++ pr_info("e900-snapshot kind=frame index=%u pts=%u flag=%x planes=%u width=%u height=%u type=%x depth=%x\n",
++  vf->index, vf->pts, vf->flag,
++  vf->plane_num, vf->width, vf->height,
++  vf->type, vf->bitdepth);
++ pr_info("e900-snapshot kind=mif live_canvas0=%x shadow_canvas0=%x live_canvas1=%x shadow_canvas1=%x luma_x1=%x luma_y1=%x chroma_x0=%x chroma_y0=%x repeat=%x fmt_width=%x\n",
++  canvas, VSYNC_RD_MPEG_REG(m->vd_if0_canvas0),
++  READ_VCBUS_REG(m->vd_if0_canvas1), VSYNC_RD_MPEG_REG(m->vd_if0_canvas1),
++  READ_VCBUS_REG(m->vd_if0_luma_x1), READ_VCBUS_REG(m->vd_if0_luma_y1),
++  READ_VCBUS_REG(m->vd_if0_chroma_x0), READ_VCBUS_REG(m->vd_if0_chroma_y0),
++  READ_VCBUS_REG(m->vd_if0_rpt_loop), READ_VCBUS_REG(m->viu_vd_fmt_w));
++ pr_info("e900-snapshot kind=route viu_misc0=%x viu_misc1=%x hold=%x ofifo=%x blend_requested=%x\n",
++  READ_VCBUS_REG(VIU_MISC_CTRL0), READ_VCBUS_REG(VIU_MISC_CTRL1),
++  READ_VCBUS_REG(VPP_HOLD_LINES), READ_VCBUS_REG(VPP_OFIFO_SIZE), blend_requested);
++ /* canvas_read is a SOFTWARE cache query, not a LUT hardware readback. */
++ for (i = 0; i < 3; i++) {
++  memset(&c, 0, sizeof(c));
++  canvas_read((canvas >> (i * 8)) & 0xff, &c);
++  pr_info("e900-snapshot kind=canvas_cache plane=%u id=%x addr=%lx width=%u height=%u wrap=%u block=%u\n",
++   i, (canvas >> (i * 8)) & 0xff, (unsigned long)c.addr,
++   c.width, c.height, c.wrap, c.blkmode);
++ }
+ }
+ 
+ static bool bypass_cm;
+@@ -770,8 +825,13 @@
+ /*********************************************************
+  * vd HW APIs
+  *********************************************************/
++/* E900 lifecycle boundary: layer enable/disable can schedule memory/clock
++ * work and deferred blend changes. The event records the REQUEST and prior
++ * state; gate_applied and later snapshots are separate evidence of progress.
++ */
+ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
+ {
++	e900_debug_event("layer_switch", layer_id, on, async, vd_layer[0].onoff_state);
+ 	if (layer_id == 0xff)
+ 		pr_debug("VID: VD all %s with async %s\n",
+ 			 on ? "on" : "off",
+@@ -918,6 +978,11 @@
+ 	VSYNC_WR_MPEG_REG(VPP_INPUT_CTRL, 0x440);
+ }
+ 
++/* E900 control-plane entry: configure MIF/AFBC selection, sample layout,
++ * bit depth, burst and formatter controls for the selected frame. A setting
++ * change can call this without a new image, and steady frames need not call
++ * it again. GEN3 clear-high is a separate default-off experiment (0023).
++ */
+ static void vd1_set_dcu(
+ 	struct video_layer_s *layer,
+ 	struct vpp_frame_par_s *frame_par,
+@@ -943,6 +1008,7 @@
+ 		return;
+ 	}
+ 
++	e900_debug_event("dcu_config", layer->layer_id, vf->type, vf->bitdepth, vf->flag);
+ 	type = vf->type;
+ 	if ((type & VIDTYPE_MVC) || is_enable_3d_to_2d())
+ 		is_mvc = true;
+@@ -1906,6 +1972,10 @@
+ 	return 0;
+ }
+ 
++/* E900 geometry boundary: program source Y/C windows and formatter widths.
++ * Repetition/format policy is configured by DCU. Geometry is not pixels read
++ * successfully. Compare against frame dimensions and Canvas plane layout.
++ */
+ static s32 vd1_mif_setting(struct mif_pos_s *setting)
+ {
+ 	u32 ls = 0, le = 0;
+@@ -4478,6 +4548,10 @@
+ 	return 0;
+ }
+ 
++/* E900 scaler control: derive PPS setting fields from the chosen frame
++ * parameters. Returning success means software configuration is available;
++ * it does not expose the scaler's internal pixel stream or prove output.
++ */
+ s32 config_vd_pps(
+ 	struct video_layer_s *layer,
+ 	struct scaler_setting_s *setting,
+@@ -4967,6 +5041,11 @@
+ 				  bg_color & 0x00ffffff);
+ }
+ 
++/* E900 blend boundary: combine requested video/OSD policy and layer on/off
++ * state, then submit VPP configuration. The stage hook below observes live,
++ * queued and requested values; they may describe adjacent VSYNCs. Compare
++ * interval sequences, never treat a single match as pixel-path validation.
++ */
+ void vpp_blend_update(
+ 	const struct vinfo_s *vinfo)
+ {
+@@ -5471,6 +5550,11 @@
+ 	return ret;
+ }
+ 
++/* E900 analysis boundary: bind the owned vframe planes to display Canvas
++ * slots and SUBMIT the selected index. RDMA-aware submission is asynchronous;
++ * the DDR image, Canvas cache and live VD1 index are distinct observations.
++ * This function does not copy pixels through VD1, PPS or the video blender.
++ */
+ int set_layer_display_canvas(
+ 	u8 layer_id, struct vframe_s *vf,
+ 	struct vpp_frame_par_s *cur_frame_par,
+@@ -5937,6 +6021,10 @@
+ 	return ret;
+ }
+ 
++/* E900 Stop/replay boundary: delayed VD memory power-down and clock votes
++ * run separately from VSYNC submission. A correct enabled flag alone does
++ * not establish that these resources have completed their transition.
++ */
+ static void do_vpu_delay_work(struct work_struct *work)
+ {
+ 	unsigned long flags;
+--- a/drivers/amlogic/media/video_sink/video.c
++++ b/drivers/amlogic/media/video_sink/video.c
+@@ -18,6 +18,7 @@
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/fs.h>
+@@ -1434,6 +1435,11 @@
+ }
+ 
+ #ifdef CONFIG_AMLOGIC_MEDIA_VIDEOCAPTURE
++/* E900 pixel observation A: expose the current display descriptor/index
++ * through the existing capture API. GE2D reads a side branch of Canvas;
++ * this is not the output of VD1, PPS, blend or HDMI. This accessor does not
++ * add a new frame reference; callers must follow the capture lifecycle.
++ */
+ int ext_get_cur_video_frame(struct vframe_s **vf, int *canvas_index)
+ {
+ 	struct video_layer_s *layer = &vd_layer[0];
+@@ -4166,6 +4172,11 @@
+ 	ATRACE_COUNTER(__func__,  0);
+ }
+ 
++/* E900 control lane: use the current owned display frame and setting flags
++ * to schedule DCU/MIF/PPS/blend configuration at VSYNC. Hardware moves pixels
++ * independently. new_vpp_setting/force conditions gate rewrites: a missing
++ * dcu_config event is not by itself evidence that display processing stopped.
++ */
+ static s32 primary_render_frame(struct video_layer_s *layer)
+ {
+ 	struct vpp_frame_par_s *frame_par;
+@@ -6836,6 +6847,11 @@
+ 	recycle_cnt[inst] = 0;
+ }
+ 
++/* E900 teardown boundary: Stop may unregister frames, apply blackout,
++ * disable VD layers and release/keep buffers. Next provider registration
++ * must be compared as a new lifecycle epoch, not merely another PTS value.
++ * Hook fields are software state; they do not certify resource restoration.
++ */
+ static void video_vf_unreg_provider(void)
+ {
+ 	ulong flags;
+@@ -6847,6 +6863,7 @@
+ 	int i;
+ #endif
+ 
++	e900_video_event("provider_unreg", blackout, force_blackout, vd_layer[0].enabled, vd_layer[0].onoff_state);
+ 	new_frame_count = 0;
+ 	first_frame_toggled = 0;
+ 	videopeek = 0;
+@@ -6991,6 +7008,7 @@
+ 		try_free_keep_video(1);
+ 	}
+ 
++	e900_video_event("provider_unreg_end", layer1_used, layer2_used, vd_layer[0].enabled, vd_layer[0].onoff_state);
+ 	atomic_dec(&video_unreg_flag);
+ 	pr_info("VD1 AFBC 0x%x.\n", READ_VCBUS_REG(AFBC_ENABLE));
+ 	enable_video_discontinue_report = 1;
+@@ -7222,6 +7240,7 @@
+ 		video_vf_light_unreg_provider(0);
+ 		nn_scenes_value[0].maxprob = 0;
+ 	} else if (type == VFRAME_EVENT_PROVIDER_REG) {
++		e900_video_event("provider_reg", blackout, force_blackout, vd_layer[0].enabled, vd_layer[0].onoff_state);
+ 		max_dis_hwc = 0;
+ 		min_dis_hwc = 0;
+ 		video_drop_vf_cnt = 0;
+--- a/drivers/amlogic/media/common/vpu/vpu.c
++++ b/drivers/amlogic/media/common/vpu/vpu.c
+@@ -17,6 +17,8 @@
+ 
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
++E900_DEBUG_CHANNEL("vpu")
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
+@@ -566,6 +568,7 @@
+ 	}
+ 
+ 	spin_lock_irqsave(&vpu_mem_lock, flags);
++	e900_debug_event("memory_request", vmod, flag, 0, 0);
+ 	vpu_conf.data->mempd_switch(vmod, flag);
+ 	spin_unlock_irqrestore(&vpu_mem_lock, flags);
+ 
+@@ -767,6 +770,7 @@
+ 	}
+ 
+ 	spin_unlock_irqrestore(&vpu_clk_gate_lock, flags);
++	e900_debug_event("gate_applied", vmod, flag, done, 0);
+ 
+ 	if (done == 0)
+ 		VPUPR("switch_vpu_clk_gate: unsupport vpu mod: %d\n", vmod);
+--- a/drivers/amlogic/media/deinterlace/deinterlace.c
++++ b/drivers/amlogic/media/deinterlace/deinterlace.c
+@@ -17,6 +17,8 @@
+ 
+ #include <linux/version.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
++E900_DEBUG_CHANNEL("di")
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/kthread.h>
+@@ -7411,6 +7413,7 @@
+ 			!is_meson_gxbb_cpu() && !is_meson_txlx_cpu())
+ 			switch_vpu_clk_gate_vmod(VPU_VPU_CLKB,
+ 				VPU_CLK_GATE_OFF);
++		e900_debug_event("unregister_mirror_disabled", mirror_disable, di_pre_stru.bypass_flag, mcpre_en, 0);
+ 		pr_info("%s disable di mirror image.\n", __func__);
+ 	}
+ 	if (post_wr_en && post_wr_support)
+@@ -7650,6 +7653,7 @@
+ 					vframe->height,
+ 					vframe->type);
+ 			}
++			e900_debug_event("register_bypass", vframe->type, vframe->width, vframe->height, di_pre_stru.bypass_flag);
+ 			di_pre_stru.bypass_flag = true;
+ 			di_patch_post_update_mc_sw(DI_MC_SW_OTHER, false);
+ 			di_pre_stru.reg_irq_busy = false;
+@@ -7676,6 +7680,7 @@
+ 		de_devp->pps_enable = pps_en;
+ 		/*di pre h scaling down: sm1 tm2*/
+ 		de_devp->h_sc_down_en = pre_hsc_down_en;
++		e900_debug_event("register_clkb_on", vframe->type, vframe->width, vframe->height, di_pre_stru.bypass_flag);
+ 		switch_vpu_clk_gate_vmod(VPU_VPU_CLKB, VPU_CLK_GATE_ON);
+ 		if (post_wr_en && post_wr_support)
+ 			diwr_set_power_control(1);
+--- a/drivers/amlogic/media/common/rdma/rdma.c
++++ b/drivers/amlogic/media/common/rdma/rdma.c
+@@ -20,6 +20,8 @@
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
++E900_DEBUG_CHANNEL("rdma")
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/fs.h>
+@@ -60,6 +62,27 @@
+ static u32 force_rdma_config[RDMA_NUM];
+ static bool first_config[RDMA_NUM];
+ static bool rdma_done[RDMA_NUM];
++
++/* Software arrays only; the two channels are not an atomic hardware snapshot. */
++static int e900_rdma_state_get(char *buf, const struct kernel_param *kp)
++{
++ int n = 0, i;
++ (void)kp;
++ for (i = 0; i < RDMA_NUM; i++)
++  n += scnprintf(buf + n, PAGE_SIZE - n,
++   "channel=%d handle=%d requested=%d current=%d previous=%d first=%u done=%u force=%u irq=%d configured=%d\n",
++   i, READ_ONCE(vsync_rdma_handle[i]), READ_ONCE(enable[i]),
++   READ_ONCE(cur_enable[i]), READ_ONCE(pre_enable_[i]),
++   READ_ONCE(first_config[i]), READ_ONCE(rdma_done[i]),
++   READ_ONCE(force_rdma_config[i]), READ_ONCE(irq_count[i]),
++   READ_ONCE(vsync_cfg_count[i]));
++ return n;
++}
++static const struct kernel_param_ops e900_rdma_state_ops = {
++ .get = e900_rdma_state_get,
++};
++module_param_cb(gxlx2_debug_state, &e900_rdma_state_ops, NULL, 0400);
++MODULE_PARM_DESC(gxlx2_debug_state, "Read-only software RDMA channel state");
+ 
+ static void vsync_rdma_irq(void *arg);
+ static void line_n_int_rdma_irq(void *arg);
+@@ -120,6 +143,8 @@
+ 		return;
+ 	}
+ 
++	if (force_rdma_config[rdma_type] || pre_enable_[rdma_type] != enable_)
++		e900_debug_event("configure", rdma_type, enable_, pre_enable_[rdma_type], force_rdma_config[rdma_type]);
+ 	/* if rdma mode changed, reset rdma */
+ 	if (pre_enable_[rdma_type] != enable_) {
+ 		rdma_clear(vsync_rdma_handle[rdma_type]);
+@@ -231,6 +256,7 @@
+ 		force_rdma_config[VSYNC_RDMA] = 0;
+ 	rdma_done[VSYNC_RDMA] = true;
+ 	irq_count[VSYNC_RDMA]++;
++	e900_debug_event("completion", VSYNC_RDMA, enable_, iret, irq_count[VSYNC_RDMA]);
+ 	return;
+ }
+ 
+@@ -286,6 +312,10 @@
+ }
+ EXPORT_SYMBOL(VSYNC_WR_MPEG_REG);
+ 
++/* E900 asynchronous boundary: this API may update a software RDMA table
++ * rather than the live register. A returned write request is not a hardware
++ * latch/completion. Read live/shadow and completion counters separately.
++ */
+ int VSYNC_WR_MPEG_REG_BITS(u32 adr, u32 val, u32 start, u32 len)
+ {
+ 	int enable_ = cur_enable[VSYNC_RDMA] & 0xf;
+--- a/drivers/amlogic/media/common/rdma/rdma_mgr.c
++++ b/drivers/amlogic/media/common/rdma/rdma_mgr.c
+@@ -18,6 +18,9 @@
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
++#include <linux/amlogic/media/registers/register_ops.h>
++E900_DEBUG_CHANNEL("rdma_mgr")
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/fs.h>
+@@ -129,6 +132,29 @@
+ static DEFINE_SPINLOCK(rdma_lock);
+ 
+ static struct rdma_device_info rdma_info;
++
++/* Software queue metadata only: never dereference DMA/physical addresses. */
++static int e900_manager_state_get(char *buf, const struct kernel_param *kp)
++{
++ int n = 0, i;
++ (void)kp;
++ for (i = 0; i < RDMA_NUM; i++) {
++  struct rdma_instance_s *ins = &rdma_info.rdma_ins[i];
++  n += scnprintf(buf + n, PAGE_SIZE - n,
++   "channel=%d used=%u items=%d writes=%d bytes=%d keep=%u blocked=%d trigger=%d\n",
++   i, READ_ONCE(ins->used), READ_ONCE(ins->rdma_item_count),
++   READ_ONCE(ins->rdma_write_count), READ_ONCE(ins->rdma_table_size),
++   READ_ONCE(ins->keep_buf), READ_ONCE(ins->not_process),
++   READ_ONCE(ins->prev_trigger_type));
++ }
++ return n;
++}
++static const struct kernel_param_ops e900_manager_state_ops = {
++ .get = e900_manager_state_get,
++};
++module_param_cb(gxlx2_debug_state, &e900_manager_state_ops, NULL, 0400);
++MODULE_PARM_DESC(gxlx2_debug_state, "Read-only software RDMA queue metadata");
++
+ 
+ static struct rdma_regadr_s rdma_regadr[RDMA_NUM] = {
+ 	{RDMA_AHB_START_ADDR_MAN,
+@@ -345,6 +371,7 @@
+ EXPORT_SYMBOL(rdma_unregister);
+ static void rdma_reset(unsigned char external_reset)
+ {
++	e900_debug_event("reset_request", external_reset, codec_reg_bus_ready(IO_VC_BUS), codec_reg_bus_ready(IO_HHI_BUS), 0);
+ 	if (debug_flag & 4)
+ 		pr_info("%s(%d)\n",
+ 			__func__, external_reset);
+@@ -396,6 +423,7 @@
+ 			continue;
+ #endif
+ 		if (rdma_status & (1 << ins->rdma_regadr->irq_status_bitpos)) {
++			e900_debug_event("irq_dispatch", i, rdma_status, ins->rdma_item_count, ins->rdma_write_count);
+ 			if (debug_flag & 2)
+ 				pr_info("%s: process %d\r\n", __func__, i);
+ 
+@@ -733,6 +761,7 @@
+ 			__func__,
+ 			rdma_watchdog_count,
+ 			rdma_force_reset);
++		e900_debug_event("watchdog_reset", rdma_watchdog_count, rdma_watchdog, rdma_force_reset, 0);
+ 		rdma_watchdog_count = 0;
+ 		rdma_force_reset = 0;
+ 		rdma_reset(1);
+@@ -808,6 +837,11 @@
+ 	}
+ }
+ 
++/* E900 queue boundary: append a CPU submission to the manager table. The
++ * existing overflow path directly replays queued writes; therefore a stalled
++ * completion IRQ can coexist with occasional register/pixel changes. The
++ * bounded overflow_fallback event identifies this case without changing it.
++ */
+ int rdma_write_reg(int handle, u32 adr, u32 val)
+ {
+ 	struct rdma_device_info *info = &rdma_info;
+@@ -830,6 +864,7 @@
+ 		ins->rdma_item_count++;
+ 	} else {
+ 		int i;
++		e900_debug_event("overflow_fallback", handle, ins->rdma_item_count, ins->rdma_table_size, adr);
+ 		pr_info("%s(%d, %x, %x ,%d) buf overflow\n",
+ 		__func__, rdma_watchdog_count, handle, adr, val);
+ 		for (i = 0; i < ins->rdma_item_count; i++)
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -17,6 +17,8 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
++E900_DEBUG_CHANNEL("registers")
+ #include <linux/notifier.h>
+ #include <linux/atomic.h>
+ #include <linux/types.h>
+@@ -127,10 +129,19 @@
+ 	struct chip_register_ops *ops = amports_ops[bus_type];
+ 
+ 	if (!ops) {
+-		if (is_meson_gxlx2_cpu())
++		if (is_meson_gxlx2_cpu()) {
+ 			atomic_inc(&e900_bus_write_drops[bus_type]);
++			if (bus_type == IO_VC_BUS &&
++			    (reg == 0x1a50 || reg == 0x1aa7 || reg == 0x1a06 || reg == 0x1d26))
++				e900_debug_event("drop_vc", reg, val, 0, 0);
++		}
+ 		return;
+ 	}
++	/* Fixed suspect legacy registers only, at CPU dispatch; RDMA hardware
++	 * executions are not visible here. No reads or register replay. */
++	if (bus_type == IO_VC_BUS &&
++	    (reg == 0x1a50 || reg == 0x1aa7 || reg == 0x1a06 || reg == 0x1d26))
++		e900_debug_event("write_vc", reg, val, ops->w_cnt, 0);
+ 	ops->w_cnt++;
+ 	CODEC_OPS_START(bus_type, reg, ops->w_cnt);
+ 

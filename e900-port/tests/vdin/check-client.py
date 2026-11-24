@@ -44,6 +44,15 @@ sync() { :; }
   if final.exists():assert final.read_bytes()==b
   cases+=1
  r=subprocess.run(['sh',str(f),'../escape'],capture_output=True);assert r.returncode==2;cases+=1
+ # A slow/failing system-wide sync must be bypassable for continuous
+ # calibration, while default publication keeps its existing sync behavior.
+ shim=shim.replace('return 1', 'return 0').replace('sync() { :; }','sync() { return 99; }')
+ f.write_text('#!/bin/sh\n'+shim+script)
+ r=subprocess.run(['sh',str(f),'skip_sync'],env=dict(os.environ,E900_CAPTURE_SKIP_SYNC='1'),capture_output=True)
+ assert r.returncode==0 and (folder/'skip_sync.e9cap').read_bytes()==b;cases+=1
+ r=subprocess.run(['sh',str(f),'default_sync'],env=dict(os.environ,E900_CAPTURE_SKIP_SYNC='0'),capture_output=True)
+ assert r.returncode==99;cases+=1
+
 with tempfile.TemporaryDirectory(prefix='e900-capture-clock-') as t:
  root=Path(t);attr=root/'attr';attr.touch();gate=root/'gate';gate.touch();irq=root/'interrupts';folder=root/'captures'
  script=(H/'capture-ready.sh').read_text().replace('attr=/sys/class/vdin/vdin1/attr','attr='+shlex.quote(str(attr))).replace('folder=/storage/e900-capture','folder='+shlex.quote(str(folder))).replace('/sys/class/vpu/gate',str(gate)).replace('/proc/interrupts',str(irq))

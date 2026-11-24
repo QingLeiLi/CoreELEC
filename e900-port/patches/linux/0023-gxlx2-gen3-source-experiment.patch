@@ -1,0 +1,49 @@
+Subject: [DIAGNOSTIC] opt-in GEN3 high-bit experiment in actual legacy VD1 configuration
+
+Default off; scoped GXLX2/legacy/non-mux VD1; uses the regular RDMA API.
+Source logging distinguishes executed clear from later overwrite.
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -231,6 +231,33 @@
+ }
+ 
+ E900_DEBUG_CHANNEL("video")
++
++/* Diagnostic experiment, not a default policy fix. Restores only the two
++ * bits differing between matched first-good/repeat-black GEN3 snapshots.
++ * Original vendor code writes 0x33 | (mode << 8); bit semantics still need
++ * hardware validation. Run only on the known legacy VD1 bank.
++ */
++static bool gxlx2_gen3_clear_high;
++static unsigned int gxlx2_gen3_clear_high_submits;
++module_param_named(gxlx2_gen3_clear_high_submits, gxlx2_gen3_clear_high_submits, uint, 0400);
++module_param_named(gxlx2_gen3_clear_high, gxlx2_gen3_clear_high, bool, 0600);
++MODULE_PARM_DESC(gxlx2_gen3_clear_high,
++ "Experimental legacy VD1 GEN3 bit12..13 clear on normal DCU configuration; default off");
++static void e900_gen3_experiment(struct video_layer_s *layer,
++                                struct hw_vd_reg_s *mif, u32 mode)
++{
++ if (!is_meson_gxlx2_cpu() || !legacy_vpp ||
++     !READ_ONCE(gxlx2_gen3_clear_high) || layer->vd1_vd2_mux ||
++     mif->vd_if0_gen_reg3 != 0x1aa7)
++  return;
++ /* Same RDMA-aware API/bank used immediately above at the call site.
++  * No direct MMIO bypass, arbitrary address or extra hardware readback.
++  */
++ VSYNC_WR_MPEG_REG_BITS(mif->vd_if0_gen_reg3, 0, 12, 2);
++ WRITE_ONCE(gxlx2_gen3_clear_high_submits, READ_ONCE(gxlx2_gen3_clear_high_submits) + 1);
++ e900_debug_event("gen3_clear_high", mif->vd_if0_gen_reg3, mode, 12, 2);
++}
++
+ /* Software lifecycle data only; may be called during teardown. */
+ void e900_video_event(const char *event, u32 a, u32 b, u32 c, u32 d)
+ {
+@@ -1199,6 +1226,7 @@
+ 		VSYNC_WR_MPEG_REG_BITS(
+ 			vd_mif_reg->vd_if0_gen_reg3,
+ 			(bit_mode & 0x3), 8, 2);
++		e900_gen3_experiment(layer, vd_mif_reg, bit_mode);
+ 		if (vf->flag & VFRAME_FLAG_VIDEO_LINEAR)
+ 			VSYNC_WR_MPEG_REG_BITS(
+ 				vd_mif_reg->vd_if0_gen_reg3,
