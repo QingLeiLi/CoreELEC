@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Negative checks for image bounds, script integrity and stale image exports."""
 import gzip
+import hashlib
 import importlib.util
 import json
 import os
@@ -108,7 +109,36 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-check-") as directory:
                         "decoder", action, result], env=environment, check=True)
         metadata = json.loads((export / "build-metadata.json").read_text())
         assert metadata["usb_image_prepared"] is False
-        assert {a["path"] for a in metadata["artifacts"]} == {"debug-tools/"+name for name in ["e900-debug.py", "DEBUG-FOUNDATION.md", "DISPLAY-CHAIN-ANALYSIS.md", "LEGACY-LOOPBACK-CALIBRATION-20261124.md", "evidence/loopback285-first.png", "evidence/loopback285-repeat.png", "evidence/loopback285-repeat-canvas.png", "evidence/loopback285-metadata.json", "e900-calibrate-loopback.py", "e900-start-capture.sh", "e900-capture-ready.sh", "inspect-vdin-snapshot.py"]}
+        # New diagnostic docs/evidence may be added without making a failed
+        # build look flash-ready. Require the core bundle, allow only diagnostic
+        # paths, and check every exported file against source + metadata hash.
+        required = {"debug-tools/" + name for name in [
+            "e900-debug.py", "e900-pixel-probe.py", "INTERMEDIATE-PIXEL-PROBES.md",
+            "DEBUG-FOUNDATION.md", "DISPLAY-CHAIN-ANALYSIS.md",
+            "LEGACY-LOOPBACK-CALIBRATION-20261124.md", "GEN3-OSD-EXPERIMENT.md",
+            "GEN3-RESEARCH-20261124.md", "BUILD287-VALIDATION.md",
+            "evidence/loopback285-first.png", "evidence/loopback285-repeat.png",
+            "evidence/loopback285-repeat-canvas.png", "evidence/loopback285-metadata.json",
+            "e900-calibrate-loopback.py", "e900-start-capture.sh",
+            "e900-capture-ready.sh", "inspect-vdin-snapshot.py"]}
+        paths = [item["path"] for item in metadata["artifacts"]]
+        assert required <= set(paths), required - set(paths)
+        assert len(paths) == len(set(paths)), "Duplicate exported artifact"
+        for item in metadata["artifacts"]:
+            relative = pathlib.PurePosixPath(item["path"])
+            assert relative.parts[0] == "debug-tools" and ".." not in relative.parts
+            tail = pathlib.Path(*relative.parts[1:])
+            if tail.parts[0] == "evidence":
+                source = PORT / "boards" / tail
+            elif len(tail.parts) == 1 and tail.suffix == ".md":
+                source = PORT / "boards" / tail
+            else:
+                assert len(tail.parts) == 1 and tail.suffix in {".py", ".sh"}
+                source = PORT / "scripts" / tail
+            content = (export / item["path"]).read_bytes()
+            assert content == source.read_bytes(), item["path"]
+            assert item["sha256"] == hashlib.sha256(content).hexdigest(), item["path"]
+            assert item["size"] == len(content), item["path"]
         assert (export / "debug-tools/e900-debug.py").read_bytes() == (PORT / "scripts/e900-debug.py").read_bytes()
         assert not stale.exists()
     print("PASS: old-run images, failed builds and media-only runs never export a ready USB image")
