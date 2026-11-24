@@ -47,3 +47,13 @@ python3 /storage/debug-tools/e900-transition.py --out /storage/transition.json -
 4. 若软件-only/选择器争用/读取未稳定，先修采集条件；若原始颜色全零且没有独立valid证据，保留“数据或观测有效性丢失”，不能跳到具体模块根因。
 
 当前基线相关组件CONFIG_AMLOGIC_MEDIA_VIDEO、MEDIA_RDMA、MEDIA_VSYNC_RDMA均为y；可先选择linux目标验证新增内置诊断的ARM编译，再部署匹配产物。是否仅换Image需核对该构建的配置/模块产物，不能混用不同配置。
+
+## 0030/0031：先修明确缺口，再跟踪业务来源
+
+0030修复[运行时SR能力保护](RUNTIME-SR-FIX.md)。0031在同一条边界记录中加入：
+
+- pps_calls、sr_support、sr_refresh：运行时超分/PPS重刷次数及能力/刷新状态。
+- csc_status、csc_flags、csc_null、csc_on、csc_wait：颜色/HDR状态机的软件状态。
+- csc_branch：最后记录的1=post、2=legacy、3=fake决策；以及csc_post/csc_legacy/csc_fake累计计数。fake之后可继续进入post，因此须结合计数增量，不能只看最后branch。
+
+这些是代码实际走到的业务分支，既不证明HDR硬件支持，也不代替硬件读回。跟踪开启时才累计诊断计数；关闭时不改变原处理选择。每页8条完整记录的最大宽度已通过边界检查。新增fixture覆盖固定提交的vpp.c和amcsc.c，并校验Git blob及SHA256。

@@ -1,0 +1,192 @@
+Subject: [DIAGNOSTIC] correlate runtime PPS refresh and CSC off/on decisions
+
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -19,6 +19,7 @@
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
+ #include <linux/debugfs.h>
+@@ -7966,6 +7967,7 @@
+ EXPORT_SYMBOL(is_sink_cap_changed);
+ 
+ static bool video_on[VD_PATH_MAX];
++static u32 e900_csc_last_branch, e900_csc_post_count, e900_csc_legacy_count, e900_csc_fake_count;
+ int is_video_turn_on(bool *vd_on, enum vd_path_e vd_path)
+ {
+ 	int ret = 0;
+@@ -8142,14 +8144,21 @@
+ 		SIG_SRC_CHG | SIG_HDR_OOTF_CHG | SIG_FORCE_CHG | SIG_RANGE_CHG |
+ 		SIG_CUVA_HDR_MODE))) {
+ 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
+-		(get_cpu_type() != MESON_CPU_MAJOR_ID_TL1))
++		(get_cpu_type() != MESON_CPU_MAJOR_ID_TL1)) {
++			if (vd_path == VD1_PATH && e900_edge_tracking()) {
++				e900_csc_last_branch = 1; e900_csc_post_count++;
++			}
+ 			video_post_process(
+ 				vf, csc_type, vinfo,
+ 				vd_path, p, source_format);
+-		else
++		} else {
++			if (vd_path == VD1_PATH && e900_edge_tracking()) {
++				e900_csc_last_branch = 2; e900_csc_legacy_count++;
++			}
+ 			video_process(
+ 				vf, csc_type, signal_change_flag,
+ 				vinfo, p, vd_path, source_format);
++		}
+ 		cur_hdr_policy = get_hdr_policy();
+ 		cur_primary_policy = get_primary_policy();
+ 	}
+@@ -8255,6 +8264,21 @@
+ unsigned int null_vf_max = 2;
+ module_param(null_vf_max, uint, 0664);
+ MODULE_PARM_DESC(null_vf_max, "\n null_vf_max\n");
++
++/* Software state only; called by the opt-in edge recorder, no HDR writes. */
++void e900_csc_progress(u32 values[9])
++{
++ values[0] = READ_ONCE(video_process_status[0]);
++ values[1] = READ_ONCE(video_process_flags[0]);
++ values[2] = READ_ONCE(null_vf_cnt[0]);
++ values[3] = READ_ONCE(video_on[0]);
++ values[4] = READ_ONCE(video_layer_wait_on[0]);
++ values[5] = READ_ONCE(e900_csc_last_branch);
++ values[6] = READ_ONCE(e900_csc_post_count);
++ values[7] = READ_ONCE(e900_csc_legacy_count);
++ values[8] = READ_ONCE(e900_csc_fake_count);
++}
++EXPORT_SYMBOL(e900_csc_progress);
+ 
+ int amvecm_matrix_process(
+ 	struct vframe_s *vf, struct vframe_s *vf_rpt, int flags,
+@@ -8626,6 +8650,9 @@
+ 			}
+ 
+ 			if (send_fake_frame) {
++				if (vd_path == VD1_PATH && e900_edge_tracking()) {
++					e900_csc_last_branch = 3; e900_csc_fake_count++;
++				}
+ 				memset(&fake_vframe, 0x0,
+ 					sizeof(struct vframe_s));
+ 				fake_vframe.source_type =
+--- a/drivers/amlogic/media/video_sink/vpp.c
++++ b/drivers/amlogic/media/video_sink/vpp.c
+@@ -16,6 +16,7 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/amlogic/cpu_version.h>
+ #include <linux/err.h>
+ #include <linux/amlogic/media/vout/vinfo.h>
+@@ -2259,6 +2260,7 @@
+ 	 */
+ 	sr = &sr_info;
+ 	sr_support = sr->sr_support;
++	e900_note_pps(sr->sr_support, sr0_sr1_refresh);
+ 	if (super_scaler == 0) {
+ 		sr_support &= ~SUPER_CORE0_SUPPORT;
+ 		sr_support &= ~SUPER_CORE1_SUPPORT;
+--- a/include/linux/amlogic/media/registers/e900_debug.h
++++ b/include/linux/amlogic/media/registers/e900_debug.h
+@@ -47,4 +47,14 @@
+  values[0] = values[1] = values[2] = values[3] = 0;
+ }
+ #endif
++bool e900_edge_tracking(void);
++void e900_note_pps(u32 support, u32 refresh);
++#if IS_ENABLED(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
++void e900_csc_progress(u32 values[9]);
++#else
++static inline void e900_csc_progress(u32 values[9])
++{
++ unsigned int i; for (i = 0; i < 9; i++) values[i] = 0;
++}
+ #endif
++#endif
+--- a/drivers/amlogic/media/video_sink/e900_edge_probe.h
++++ b/drivers/amlogic/media/video_sink/e900_edge_probe.h
+@@ -15,6 +15,8 @@
+  u32 live, wanted, shadow, ctrl, pos;
+  u32 dummy, clip0, clip1, route0, route1, gate0, gate1, sc_gate, xvy_gate;
+  u32 raw0, raw1, irq, configured, force, done;
++ u32 pps_calls, sr_support, sr_refresh;
++ u32 csc_status, csc_flags, csc_null, csc_on, csc_wait, csc_branch, csc_post, csc_legacy, csc_fake;
+ };
+ static struct e900_edge_record e900_edge_records[E900_EDGE_COUNT];
+ static unsigned int e900_edge_status, e900_edge_generation, e900_edge_count;
+@@ -23,6 +25,19 @@
+ static unsigned int e900_edge_width, e900_edge_height, e900_edge_ow, e900_edge_oh;
+ static bool e900_edge_seen_off, e900_edge_cancel;
+ static int e900_edge_mem;
++static u32 e900_pps_calls, e900_sr_support, e900_sr_refresh;
++bool e900_edge_tracking(void)
++{
++ return READ_ONCE(e900_edge_reserved);
++}
++EXPORT_SYMBOL(e900_edge_tracking);
++void e900_note_pps(u32 support, u32 refresh)
++{
++ if (!e900_edge_tracking()) return;
++ e900_pps_calls++;
++ e900_sr_support = support; e900_sr_refresh = refresh;
++}
++EXPORT_SYMBOL(e900_note_pps);
+ /* Existing active-scan guards plus a narrow exception for GLOBAL blend-off.
+  * No exception for real disable, released/local/compressed frames, clocks
+  * unavailable, memory-off, a foreign register bank, or layer-off requests.
+@@ -78,6 +93,7 @@
+  struct video_layer_s *l = &vd_layer[0];
+  struct e900_edge_record *r;
+  u32 progress[4] = {0, 0, 0, 0};
++ u32 csc[9];
+  if (e900_edge_count >= E900_EDGE_COUNT) return;
+  r = &e900_edge_records[e900_edge_count++];
+  memset(r, 0, sizeof(*r));
+@@ -89,6 +105,12 @@
+  e900_rdma_progress(progress);
+  r->irq = progress[0]; r->configured = progress[1];
+  r->force = progress[2]; r->done = progress[3];
++ r->pps_calls = READ_ONCE(e900_pps_calls);
++ r->sr_support = READ_ONCE(e900_sr_support); r->sr_refresh = READ_ONCE(e900_sr_refresh);
++ e900_csc_progress(csc);
++ r->csc_status = csc[0]; r->csc_flags = csc[1]; r->csc_null = csc[2];
++ r->csc_on = csc[3]; r->csc_wait = csc[4]; r->csc_branch = csc[5];
++ r->csc_post = csc[6]; r->csc_legacy = csc[7]; r->csc_fake = csc[8];
+  if (!safe) return; /* Software-only row: zeros below are NOT hardware. */
+  r->frame = vf->index; r->pts = vf->pts;
+  r->gen = READ_VCBUS_REG(0x1a50); r->gen3 = READ_VCBUS_REG(0x1aa7);
+@@ -196,6 +218,7 @@
+   ret = -EBUSY;
+  else {
+   e900_edge_reserved = true; e900_edge_generation++; e900_pixel_restored = false;
++  e900_pps_calls = e900_sr_support = e900_sr_refresh = 0;
+   e900_edge_status = 1; e900_edge_count = e900_edge_tick = e900_edge_restore_ticks = 0;
+   e900_edge_reason = e900_edge_guard = e900_edge_x = e900_edge_y = 0;
+   e900_edge_cancel = e900_edge_seen_off = false;
+@@ -233,7 +256,7 @@
+  for (i = begin; i < e900_edge_count && i < begin + E900_EDGE_PAGE; i++) {
+   const struct e900_edge_record *r = &e900_edge_records[i];
+   n += scnprintf(buf + n, PAGE_SIZE - n,
+-   "%u %u %llx %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x\n",
++   "%u %u %llx %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x\n",
+    i, e900_edge_generation, (unsigned long long)r->stamp, r->tick, r->phase,
+    r->flags, r->guard, r->global, r->enabled, r->disable,
+    r->off, r->epoch, r->frame, r->pts, r->mem,
+@@ -241,7 +264,10 @@
+    r->live, r->wanted, r->shadow, r->ctrl, r->pos,
+    r->dummy, r->clip0, r->clip1, r->route0, r->route1,
+    r->gate0, r->gate1, r->sc_gate, r->xvy_gate, r->raw0,
+-   r->raw1, r->irq, r->configured, r->force, r->done);
++   r->raw1, r->irq, r->configured, r->force, r->done,
++   r->pps_calls, r->sr_support, r->sr_refresh, r->csc_status, r->csc_flags,
++   r->csc_null, r->csc_on, r->csc_wait, r->csc_branch, r->csc_post,
++   r->csc_legacy, r->csc_fake);
+  }
+  spin_unlock_irqrestore(&e900_pixel_lock, flags);
+  return n;

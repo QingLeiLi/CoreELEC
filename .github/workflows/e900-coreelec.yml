@@ -163,6 +163,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-blend-boundary.py"
           python3 "$PORT_ROOT/tests/check-blend-transition.py"
           python3 "$PORT_ROOT/tests/check-transition-client.py"
+          python3 "$PORT_ROOT/tests/check-runtime-sr.py"
           python3 "$PORT_ROOT/tests/check-pixel-preview.py"
           python3 "$PORT_ROOT/tests/check-toolchain-cache.py"
           python3 "$PORT_ROOT/tests/check-frame-capture.py"

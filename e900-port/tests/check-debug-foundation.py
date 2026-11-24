@@ -123,6 +123,7 @@ int main(void){struct kernel_param p={&gxlx2_debug_events};struct vframe_s vf={0
  assert(!e900_debug_ops.set("2",&p));cpu=0x21;e900_debug_event("other",0,0,0,0);assert(lines==0&&gxlx2_debug_events==2);
  cpu=0x2a;e900_debug_event("one",0,0,0,0);e900_debug_event("two",0,0,0,0);e900_debug_event("exhausted",0,0,0,0);assert(lines==2&&gxlx2_debug_events==0);
  assert(!e900_debug_ops.set("0",&p));assert(!e900_debug_ops.set("512",&p));
+ u32 csc_progress[9]={1,2,3,4,5,6,7,8,9};e900_csc_progress(csc_progress);for(unsigned i=0;i<9;i++)assert(!csc_progress[i]);
  u32 progress[4]={1,2,3,4};e900_rdma_progress(progress);assert(!progress[0]&&!progress[1]&&!progress[2]&&!progress[3]);
  char out[4096];irq_count[0]=123;rdma_info.rdma_ins[1].rdma_item_count=77;
  assert(e900_rdma_state_get(out,&p)>0);assert(strstr(out,"irq=123"));

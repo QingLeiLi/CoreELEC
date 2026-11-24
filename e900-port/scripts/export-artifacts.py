@@ -77,6 +77,8 @@ port = pathlib.Path(__file__).resolve().parents[1]
 for relative, source in [
     ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
     ("debug-tools/e900-transition.py", port / "scripts/e900-transition.py"),
+    ("debug-tools/BLEND-SOURCE-AUDIT-20261125.md", port / "boards/BLEND-SOURCE-AUDIT-20261125.md"),
+    ("debug-tools/RUNTIME-SR-FIX.md", port / "boards/RUNTIME-SR-FIX.md"),
     ("debug-tools/BLEND-TRANSITION-RECORDER.md", port / "boards/BLEND-TRANSITION-RECORDER.md"),
     ("debug-tools/e900-pixel-probe.py", port / "scripts/e900-pixel-probe.py"),
     ("debug-tools/INTERMEDIATE-PIXEL-PROBES.md", port / "boards/INTERMEDIATE-PIXEL-PROBES.md"),

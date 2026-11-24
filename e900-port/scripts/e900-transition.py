@@ -10,7 +10,7 @@ import json
 import time
 from pathlib import Path
 
-FIELDS = 'index generation stamp tick phase flags guard global enabled disable off epoch frame pts mem gen gen3 fmt fifo vpp_fifo live wanted shadow ctrl pos dummy clip0 clip1 route0 route1 gate0 gate1 sc_gate xvy_gate raw0 raw1 irq configured force done'.split()
+FIELDS = 'index generation stamp tick phase flags guard global enabled disable off epoch frame pts mem gen gen3 fmt fifo vpp_fifo live wanted shadow ctrl pos dummy clip0 clip1 route0 route1 gate0 gate1 sc_gate xvy_gate raw0 raw1 irq configured force done pps_calls sr_support sr_refresh csc_status csc_flags csc_null csc_on csc_wait csc_branch csc_post csc_legacy csc_fake'.split()
 
 
 def state(text):

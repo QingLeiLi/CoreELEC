@@ -14,10 +14,16 @@ with tempfile.TemporaryDirectory(prefix='e900-edge-') as td:
   if row['repo']=='CoreELEC/linux-amlogic':
    f=r/row['path'];f.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(A/'sources'/row['path'].replace('/','__'),f)
  for p in sorted((P/'patches/linux').glob('*.patch')):subprocess.run(['git','apply',str(p)],cwd=r,check=True)
- hw=(r/'drivers/amlogic/media/video_sink/video_hw.c').read_text();edge=(r/'drivers/amlogic/media/video_sink/e900_edge_probe.h').read_text();pixel=(r/'drivers/amlogic/media/video_sink/e900_pixel_probe.h').read_text();rdma=(r/'drivers/amlogic/media/common/rdma/rdma.c').read_text()
+ hw=(r/'drivers/amlogic/media/video_sink/video_hw.c').read_text();edge=(r/'drivers/amlogic/media/video_sink/e900_edge_probe.h').read_text();pixel=(r/'drivers/amlogic/media/video_sink/e900_pixel_probe.h').read_text();rdma=(r/'drivers/amlogic/media/common/rdma/rdma.c').read_text();csc=(r/'drivers/amlogic/media/enhancement/amvecm/amcsc.c').read_text()
  assert hw.index('e900_edge_hook(vinfo, 0,')<hw.index('vpp_misc_set = e900_blend_hold_apply')<hw.index('e900_edge_hook(vinfo, 1,')
  assert hw.index('e900_edge_before_disable(layer_id, on);')<hw.index('e900_pixel_before_disable(layer_id, on);')
  assert 'pr_info(' not in edge and 'WRITE_VCBUS_REG(VPP_MISC' not in edge
+ dispatch_start=csc.index('\t\tif (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&\n\t\t(get_cpu_type() != MESON_CPU_MAJOR_ID_TL1)) {')
+ dispatch_end=csc.index('\n\t\tcur_hdr_policy',dispatch_start)
+ dispatch=csc[dispatch_start:dispatch_end]
+ fake_start=csc.index('\t\t\t\tif (vd_path == VD1_PATH && e900_edge_tracking())',csc.index('if (send_fake_frame)'))
+ fake_end=csc.index('}',fake_start)+1
+ fake=csc[fake_start:fake_end]
  c=r'''
 #include <assert.h>
 #include <stdbool.h>
@@ -33,6 +39,7 @@ typedef uint32_t u32;typedef uint64_t u64;
 #define scnprintf snprintf
 #define module_param_cb(...)
 #define MODULE_PARM_DESC(...)
+#define EXPORT_SYMBOL(...)
 #define DEFINE_SPINLOCK(n) int n
 #define spin_lock_irqsave(l,f) do{(void)(l);(f)=0;assert(!locked);locked=true;}while(0)
 #define spin_unlock_irqrestore(l,f) do{(void)(l);(void)(f);assert(locked);locked=false;}while(0)
@@ -67,6 +74,9 @@ static struct{unsigned vpp_off;}dev,*cur_dev=&dev;
 static bool legacy_vpp,gxlx2_g12_mif,bus,locked,local,signal_good;
 static unsigned cpu,e900_stage_epoch,tick,reads,writes,colors,ctrl,pos,live,queued;
 static int mem;
+static unsigned video_process_status[1],video_process_flags[1],null_vf_cnt[1];
+static bool video_on[1],video_layer_wait_on[1];
+static unsigned e900_csc_last_branch,e900_csc_post_count,e900_csc_legacy_count,e900_csc_fake_count;
 static int irq_count[2],vsync_cfg_count[2];static unsigned force_rdma_config[2];static bool rdma_done[2];
 static bool is_meson_gxlx2_cpu(void){return cpu==0x2a;}
 static bool codec_reg_bus_ready(unsigned b){assert(b==4);return bus;}
@@ -88,8 +98,10 @@ static void write_reg(unsigned reg,unsigned val){assert(locked&&bus&&!mem);write
 #define READ_VCBUS_REG read_reg
 #define WRITE_VCBUS_REG write_reg
 static unsigned VSYNC_RD_MPEG_REG(unsigned r){assert(r==VPP_MISC);return queued;}
-'''+function(rdma,'e900_rdma_progress')+'\n'+pixel+'\n'+edge+r'''
+'''+function(rdma,'e900_rdma_progress')+'\n'+function(csc,'e900_csc_progress')+'\n'+pixel+'\n'+edge+'''\n#define MESON_CPU_MAJOR_ID_G12A 0x28\n#define MESON_CPU_MAJOR_ID_TL1 0x2e\n#define VD1_PATH 0\nstatic unsigned dispatch_post,dispatch_legacy;\nstatic unsigned get_cpu_type(void){return cpu;}\nstatic bool cpu_after_eq(unsigned n){return cpu>=n;}\nstatic void video_post_process(int vf,...){(void)vf;dispatch_post++;}\nstatic void video_process(int vf,...){(void)vf;dispatch_legacy++;}\nstatic void run_dispatch(unsigned chip,bool active,unsigned path){\n int vf=0,csc_type=0,vinfo=0,p=0,signal_change_flag=0,source_format[2]={0,0};unsigned vd_path=path;cpu=chip;e900_edge_reserved=active;\n'''+dispatch+'''\n}\nstatic void run_fake(bool active,unsigned path){unsigned vd_path=path;e900_edge_reserved=active;\n'''+fake+'''\n}\n'''+r'''
 static void reset(void){
+ video_process_status[0]=2;video_process_flags[0]=0x55;null_vf_cnt[0]=3;video_on[0]=true;video_layer_wait_on[0]=false;
+ e900_csc_last_branch=1;e900_csc_post_count=4;e900_csc_legacy_count=5;e900_csc_fake_count=6;
  cpu=0x2a;legacy_vpp=bus=signal_good=true;gxlx2_g12_mif=locked=local=false;mem=0;tick=reads=writes=colors=0;dev.vpp_off=0;e900_stage_epoch=1;
  frame=(struct vframe_s){1280,720,0,1,0};vi=(struct vinfo_s){1920,1080,1080};
  vd_layer[0]=(struct video_layer_s){.dispbuf=&frame,.enabled=true,.vd_mif_reg={0x1a50,0x1aa7},.global_output=true,.enabled_status_saved=true};
@@ -117,7 +129,7 @@ int main(void){
   e900_edge_hook(&vi,0,0,false);assert(e900_edge_status==5&&!reads&&!writes);assert(!e900_edge_records[0].flags);
  }
  reset();assert(!e900_edge_set("1",NULL));assert(e900_pixel_scan_set("1",NULL)==-EBUSY);assert(e900_edge_set("1",NULL)==-EBUSY);old_ctrl=ctrl;old_pos=pos;
- step();step();assert(!colors);step();assert(colors==4);assert(e900_edge_records[4].flags==7);
+ step();step();assert(!colors);e900_note_pps(0,1);step();assert(colors==4);assert(e900_edge_records[4].pps_calls==1&&e900_edge_records[4].sr_support==0&&e900_edge_records[4].sr_refresh==1);assert(e900_edge_records[4].csc_status==2&&e900_edge_records[4].csc_flags==0x55&&e900_edge_records[4].csc_post==4&&e900_edge_records[4].csc_legacy==5&&e900_edge_records[4].csc_fake==6);assert(e900_edge_records[4].flags==7);
  vd_layer[0].global_output=false;step();assert(!vd_layer[0].enabled&&e900_edge_status==2);
  assert(e900_edge_records[7].global==0&&e900_edge_records[7].enabled==0&&e900_edge_records[7].flags==7);
  assert(e900_edge_records[7].live==0x100054b0&&e900_edge_records[7].wanted==0x100010b0&&e900_edge_records[7].shadow==0x100010b0);
@@ -125,7 +137,7 @@ int main(void){
  vd_layer[0].global_output=true;step();assert(e900_edge_status==2);/* pre:enabled0/global1 is the exact restoration boundary */
  assert(e900_edge_records[10].enabled==0&&e900_edge_records[10].global==1&&e900_edge_records[10].flags==7);
  for(i=0;i<16;i++)step();assert(e900_edge_status==3&&!e900_edge_reserved&&!e900_pixel_owned&&e900_pixel_restored&&ctrl==old_ctrl&&pos==old_pos);
- before=reads;step();assert(reads==before);
+ before=reads;step();assert(reads==before);n=e900_pps_calls;e900_note_pps(3,0);assert(e900_pps_calls==n);
  for(i=0;i<e900_edge_count;i++)assert(e900_edge_records[i].irq&&e900_edge_records[i].configured);
  assert(e900_edge_get(buf,NULL)>0&&strstr(buf,"status=3"));assert(e900_edge_page_set("64",NULL)==-EINVAL);
  assert(!e900_edge_page_set("0",NULL));n=e900_edge_data_get(buf,&kp);assert(n>0&&n<PAGE_SIZE);
@@ -138,7 +150,15 @@ int main(void){
  reset();e900_edge_set("1",NULL);step();frame.width=640;step();assert(e900_edge_status==5&&e900_edge_reason==7&&e900_pixel_restored);
  reset();e900_pixel_scan_set("1",NULL);assert(e900_edge_set("1",NULL)==-EBUSY);
  reset();e900_edge_set("1",NULL);for(i=0;i<256;i++)step();assert(e900_edge_status==3&&e900_edge_reason==2&&e900_edge_count==512&&e900_pixel_restored);
+ memset(e900_edge_records,0xff,sizeof(e900_edge_records));e900_edge_generation=0xffffffff;
  for(i=0;i<64;i++){char page[8];sprintf(page,"%u",i);assert(!e900_edge_page_set(page,NULL));n=e900_edge_data_get(buf,NULL);assert(n>0&&n<PAGE_SIZE);}
+ for(i=0x20;i<=0x30;i++)for(j=0;j<4;j++){
+  bool active=!!(j&1);unsigned path=(j>>1)&1;bool post=i>=0x28&&i!=0x2e;
+  dispatch_post=dispatch_legacy=e900_csc_post_count=e900_csc_legacy_count=e900_csc_fake_count=0;
+  run_dispatch(i,active,path);assert(dispatch_post==(unsigned)post&&dispatch_legacy==(unsigned)!post);
+  assert(e900_csc_post_count==(unsigned)(active&&!path&&post));assert(e900_csc_legacy_count==(unsigned)(active&&!path&&!post));
+  run_fake(active,path);assert(e900_csc_fake_count==(unsigned)(active&&!path));
+ }
  return 0;
 }
 '''

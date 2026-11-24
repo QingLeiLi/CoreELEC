@@ -598,5 +598,21 @@
     "git_blob_sha1": "12d2dfc30b1c222f48c8f96643519828895a07f8",
     "sha256": "374b36d11d091df5da15bddf8af90eea1900bf138d7df58ae6149eda35b67125",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/video_sink/vpp.c",
+    "git_blob_sha1": "0b43464023cf9033ced9878c4fb02fe0476204bd",
+    "sha256": "6bf9fbe83b5b40c2942b48772c2134d7fb2f0089269712f65f42ffdbdbb32f9e",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/amcsc.c",
+    "git_blob_sha1": "bc9ac744126209045f12fff3af5cc34d9d37a555",
+    "sha256": "3c75e13d5a95db70ed01ceffecef12e16097d2d68e2cd2e80e029bbd5d339649",
+    "verified": true
   }
 ]
