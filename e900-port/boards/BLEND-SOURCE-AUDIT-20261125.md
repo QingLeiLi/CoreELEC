@@ -60,3 +60,22 @@ video.c:4244 primary_render_frame：即使没有new_vpp_setting，get_video_enab
 ## 后续落实
 
 0030已修运行时SR专属访问的能力保护，保留共享尺寸与其他CPU行为；0031已将上述PPS重刷和amvecm业务状态/分支计数接入边界记录。本文前述“未记录”描述审计时的af48dae4f4状态，新增实现见[RUNTIME-SR-FIX.md](RUNTIME-SR-FIX.md)。尚未ARM编译/实机验证改动效果。
+
+
+## 独立视频 RDMA 看门狗（0032，待实机）
+
+rdma_mgr 的看门狗由多个通道共享。健康 OSD 的完成处理可以不断清零共享计数，掩盖视频通道长期没有完成中断的问题。0032 在 GXLX2 的 VSYNC 视频通道单独累计未完成帧，默认 20 帧后请求现有 force_rdma_config 提交流程重试；不复位共享硬件、不改工作模式、不直接写寄存器。其他 CPU、LINE 通道与正常完成路径保留原行为。
+
+`rdma.gxlx2_stall_frames` 可设为 0 禁用；只读 `gxlx2_stall_rearms` 记录重试次数，两者纳入 e900-debug 快照。事件预算开启时输出 stall_resubmit。这里的恢复计数仅表示发起重提，不代表硬件已经恢复，仍需对照 irq_count/vsync_cfg_count。
+
+主机测试执行实际修改前后 _vsync_rdma_config 和管理器看门狗函数，模拟健康 OSD 持续清共享计数：原版视频停滞，修改版每到独立阈值重新提交；同时验证其他 CPU、模式及通道行为。尚未 ARM 编译和实机验证。
+
+这修复的是已独立观察到的 RDMA 饥饿问题。此前 IRQ 健康的冷启动仍能复现重播黑屏，因此不能宣称它解决重播问题。
+
+## HDR 旁路的源码含义
+
+set_hdr2_v0.c 的 hdr_func 并非在 HDR_BYPASS 时直接返回。它准备旁路矩阵和 LUT 后，仍依次调用 set_hdr_matrix(HDR_IN_MTX)、set_eotf_lut、set_hdr_matrix(HDR_GAMUT_MTX)、set_ootf_lut、set_oetf_lut、set_hdr_matrix(HDR_OUT_MTX)、set_c_gain、hdr_hist_config。OSD1_HDR 且 cpu_after_eq(G12A) 时还会写 VPP_WRAP_OSD1_MATRIX_EN_CTRL；GXLX2 的数值 ID 满足这个判断。因而“策略为 SDR/旁路”不能排除寄存器配置副作用。
+
+VD1_HDR2_CTRL 为 0x3800、OSD1_HDR2_CTRL 为 0x38a0（源码 arch/vpp_hdr_regs.h）。这些常量不证明 GXLX2 具有对应硬件。当前只记录此调用风险和分支证据，不盲目读取未知硬件地址，也不把整个 G12 HDR 路径强制换成 GXL。
+
+普通 PPS 系数通过 VPP_SCALE_COEF_IDX 后连续写 VPP_SCALE_COEF。rdma_write_reg 保留这些同地址的顺序写入；尚未发现软件队列将系数去重的证据。队列语义检查不能替代硬件系数验证。

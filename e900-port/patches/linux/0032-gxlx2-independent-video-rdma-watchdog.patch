@@ -1,0 +1,51 @@
+Subject: [FIX] prevent healthy OSD from masking a stalled GXLX2 video queue
+
+--- a/drivers/amlogic/media/common/rdma/rdma.c
++++ b/drivers/amlogic/media/common/rdma/rdma.c
+@@ -94,6 +94,36 @@
+  values[3] = READ_ONCE(rdma_done[0]);
+ }
+ EXPORT_SYMBOL(e900_rdma_progress);
++
++/* The manager watchdog is shared with OSD; OSD completions can keep
++ * clearing it while video handle1 never completes. Track video VSync stalls
++ * independently on GXLX2 and retry through the EXISTING submission API.
++ * No shared RDMA hardware reset, raw register write or mode change here.
++ */
++static unsigned int gxlx2_stall_frames = 20;
++static unsigned int gxlx2_stall_count;
++static unsigned int gxlx2_stall_rearms;
++module_param(gxlx2_stall_frames, uint, 0600);
++module_param(gxlx2_stall_rearms, uint, 0400);
++MODULE_PARM_DESC(gxlx2_stall_frames,
++ "Video VSyncs without completion before resubmit; GXLX2 only, 0 disables");
++static bool e900_rdma_stall_rearm(int type, int mode)
++{
++ unsigned int limit = READ_ONCE(gxlx2_stall_frames);
++ if (!is_meson_gxlx2_cpu() || type != VSYNC_RDMA)
++  return false;
++ if (!limit || mode != 1 || READ_ONCE(rdma_done[type]) ||
++     force_rdma_config[type]) {
++  gxlx2_stall_count = 0;
++  return false;
++ }
++ if (++gxlx2_stall_count < limit)
++  return false;
++ gxlx2_stall_count = 0;
++ gxlx2_stall_rearms++;
++ e900_debug_event("stall_resubmit", type, limit, irq_count[type], vsync_cfg_count[type]);
++ return true;
++}
+ 
+ static void vsync_rdma_irq(void *arg);
+ static void line_n_int_rdma_irq(void *arg);
+@@ -161,6 +191,9 @@
+ 		rdma_clear(vsync_rdma_handle[rdma_type]);
+ 		force_rdma_config[rdma_type] = 1;
+ 	}
++
++	if (e900_rdma_stall_rearm(rdma_type, enable_))
++		force_rdma_config[rdma_type] = 1;
+ 
+ 	if (force_rdma_config[rdma_type])
+ 		rdma_done[rdma_type] = true;
