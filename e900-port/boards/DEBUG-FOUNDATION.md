@@ -144,3 +144,8 @@ python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 现已实现8个源码命名的VPP候选selector、128点固定扫描及原始值导出，待实机逐点校准；详见[中间像素观测](INTERMEDIATE-PIXEL-PROBES.md)。上文“尚无独立取点”描述的是既有实测证据，不能把新源码等同于已验证观测。
 
 新增0029[混合过渡记录器](BLEND-TRANSITION-RECORDER.md)补足软件enabled=0但帧仍被持有、内存供电的关闭窗口。同一固定点的前/后提交时间线留存在有界内存，不逐帧打印。配套e900-transition.py区分提交与硬件读回，缺失/全零不自动标黑；新增根因观察仍需ARM构建和实机校准。
+
+
+### HDR 请求与提交事件
+
+0033 将 `am_vecm` 加入标准 `arm` / `disarm` / 快照模块列表。`channel=hdr` 的 `hdr_request`、`hdr_osd_wrap_off`、`hdr_submitted`、`hdr_flush_disabled` 用于将普通 HDR 配置与输出关闭/恢复边界对齐；`a` 为模块，`b` 为策略，submitted 的 `c/d` 为 LUT/矩阵开关。submitted 仅指配置函数返回，不等同硬件提交完成。默认关闭，受已有 0..512 预算限制，无新增 MMIO。详细覆盖及限制见 BLEND-SOURCE-AUDIT-20261125.md。

@@ -1,0 +1,51 @@
+Subject: [DIAGNOSTIC] record bounded HDR request and submission boundaries
+
+--- a/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
++++ b/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
+@@ -20,6 +20,7 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/amlogic/cpu_version.h>
+ #include <linux/amlogic/media/vfm/vframe.h>
+ #include <linux/amlogic/media/amvecm/amvecm.h>
+@@ -2259,6 +2260,9 @@
+ 
+ struct hdr_proc_lut_param_s hdr_lut_param;
+ 
++/* Default-off bounded software events; submitted is not hardware completion. */
++E900_DEBUG_CHANNEL("hdr")
++
+ enum hdr_process_sel hdr_func(
+ 	enum hdr_module_sel module_sel,
+ 	u32 hdr_process_select,
+@@ -2283,14 +2287,18 @@
+ 	       module_sel,
+ 	       hdr_process_select);
+ 
+-	if (disable_flush_flag)
++	if (disable_flush_flag) {
++		e900_debug_event("hdr_flush_disabled", module_sel, hdr_process_select, 0, 0);
+ 		return hdr_process_select;
++	}
++	e900_debug_event("hdr_request", module_sel, hdr_process_select, 0, 0);
+ 
+ 	memset(&hdr_mtx_param, 0, sizeof(struct hdr_proc_mtx_param_s));
+ 	memset(&hdr_lut_param, 0, sizeof(struct hdr_proc_lut_param_s));
+ 
+ 	if ((module_sel == OSD1_HDR) &&
+ 	    (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))) {
++		e900_debug_event("hdr_osd_wrap_off", module_sel, hdr_process_select, 0, 0);
+ 		/* turn off OSD mtx and use HDR for g12, sm1, tl1 */
+ 		VSYNC_WRITE_VPP_REG(
+ 			VPP_WRAP_OSD1_MATRIX_EN_CTRL, 0);
+@@ -3200,6 +3208,8 @@
+ 	set_c_gain(module_sel, &hdr_lut_param);
+ 
+ 	hdr_hist_config(module_sel, &hdr_lut_param);
++	e900_debug_event("hdr_submitted", module_sel, hdr_process_select,
++		 hdr_lut_param.lut_on, hdr_mtx_param.mtx_on);
+ 
+ 	return hdr_process_select;
+ }

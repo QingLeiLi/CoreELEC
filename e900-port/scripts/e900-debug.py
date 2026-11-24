@@ -22,8 +22,9 @@ import zlib
 # Pinned public enum AMVIDEOCAP_STATE_FINISHED_CAPTURE (decimal).
 CAPTURE_FINISHED = 300
 ROOT = Path('/')
-CHANNELS = ('amvideo', 'di', 'vpu', 'rdma', 'rdma_mgr', 'register_ops', 'fb')
+CHANNELS = ('amvideo', 'di', 'vpu', 'rdma', 'rdma_mgr', 'register_ops', 'fb', 'am_vecm')
 PARAMS = {
+    'am_vecm': ('gxlx2_debug_events',),
     'amvideo': ('gxlx2_debug_events', 'gxlx2_stage_samples', 'gxlx2_hw_init_status',
                 'gxlx2_hw_init_step', 'gxlx2_hw_init_wait', 'gxlx2_g12_mif',
                 'gxlx2_gen3_clear_high', 'gxlx2_gen3_clear_high_submits', 'gxlx2_pixel_scan'),

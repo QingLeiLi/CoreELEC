@@ -79,3 +79,12 @@ set_hdr2_v0.c 的 hdr_func 并非在 HDR_BYPASS 时直接返回。它准备旁�
 VD1_HDR2_CTRL 为 0x3800、OSD1_HDR2_CTRL 为 0x38a0（源码 arch/vpp_hdr_regs.h）。这些常量不证明 GXLX2 具有对应硬件。当前只记录此调用风险和分支证据，不盲目读取未知硬件地址，也不把整个 G12 HDR 路径强制换成 GXL。
 
 普通 PPS 系数通过 VPP_SCALE_COEF_IDX 后连续写 VPP_SCALE_COEF。rdma_write_reg 保留这些同地址的顺序写入；尚未发现软件队列将系数去重的证据。队列语义检查不能替代硬件系数验证。
+
+
+## HDR 提交边界观测（0033，待实机）
+
+0031 的 CSC 分支计数不能证明具体执行了哪个 HDR 模块或策略。0033 因此在实际 hdr_func 中增加四类事件：hdr_flush_disabled（软件禁止刷新，提前返回）、hdr_request（请求模块/策略）、hdr_osd_wrap_off（即将关闭 OSD wrap 矩阵）、hdr_submitted（矩阵/LUT/直方图配置函数均已返回，含有效策略及 LUT/矩阵开关）。最后一项仅证明软件提交路径走完，不证明 RDMA 完成或输出有效像素。
+
+使用既有 E900_DEBUG_CHANNEL 机制，默认关闭、GXLX2 限定、root 权限、每次最多 512 条预算，不读新增寄存器、不改 HDR 策略。参数位于 am_vecm.gxlx2_debug_events，e900-debug 的 arm/disarm/快照已纳入该模块。事件具有已有内核时间戳，可与边界记录对齐。预算耗尽后事件缺失不能解释为没有执行。范围是普通 hdr_func；HDR10+ 的 hdr10p_func 不在此钩子范围，当前 SDR 彩条复现不走该专用入口。
+
+主机检查：去掉显式诊断语句后源码与前版逐字一致；执行实际刷新保护、OSD 分支和提交尾部代码，覆盖五种 CPU、三个模块及刷新开启/关闭，并校验提交事件在八步配置调用之后。复用现有通道预算测试。ARM 编译及实机故障边界日志仍待完成。
