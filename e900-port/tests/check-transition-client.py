@@ -24,7 +24,7 @@ class Kernel:
    t=self.start+(i//2)/60;g=0 if self.off_time is not None and t>=self.off_time and (self.restore_time is None or t<self.restore_time) else 1;d.update(global_=g);d['global']=g;d['enabled']=g
    lines.append(' '.join(str(d[k]) if j<2 else format(d[k],'x') for j,k in enumerate(m.FIELDS)))
   if self.replace:self.generation+=1;self.replace=False
-  return '\n'.join(lines)+('\n' if lines else '') if not self.bad_page else 'bad\n'
+  return '\n'.join(lines)+('\n\n' if lines else '\n') if not self.bad_page else 'bad\n'
  def write(self,name,val):
   self.writes.append((name,val))
   if name=='scan':
@@ -54,7 +54,8 @@ c=Clock();k=Kernel(c);k.global_=0;r=run(k,c);assert r['status']=='failed' and no
 row={key:0 for key in m.FIELDS};row.update(generation=4,flags=7)
 def text(d):return ' '.join(str(d[k]) if i<2 else format(d[k],'x') for i,k in enumerate(m.FIELDS))+'\n'
 r=m.decode([text(row)],{'count':1,'generation':4})[0];assert r['raw0']==r['raw1']==0 and r['hardware_pixel_validity']=='unknown'
-for bad in ['bad\n',text(dict(row,index=1)),text(dict(row,generation=5)),text(dict(row,phase=2)),text(dict(row,flags=8)),text(row)+text(row)]:
+assert m.decode(['\n'+text(row)+'\n \n'],{'count':1,'generation':4})[0]['generation']==4
+for bad in ['\n \n','bad\n',text(dict(row,index=1)),text(dict(row,generation=5)),text(dict(row,phase=2)),text(dict(row,flags=8)),text(row)+text(row)]:
  try:m.decode([bad],{'count':1,'generation':4})
  except ValueError:pass
  else:raise AssertionError('Accepted invalid export')

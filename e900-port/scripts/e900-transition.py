@@ -23,6 +23,9 @@ def decode(pages, expected):
     for page in pages:
         for line in page.splitlines():
             values = line.split()
+            # sysfs module parameters append a newline after the getter.
+            if not values:
+                continue
             if len(values) != len(FIELDS):
                 raise ValueError('Unexpected transition record width')
             row = {k: int(v, 10 if i < 2 else 16)
