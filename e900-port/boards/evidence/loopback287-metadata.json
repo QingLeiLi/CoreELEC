@@ -1,0 +1,97 @@
+{
+  "boot_id": "01918710-1084-40db-87d9-3f2923a77e6b",
+  "screen_observed": false,
+  "point": "legacy_ENCP_output_loopback",
+  "sample": "/storage/videos/Test-H264-720p-60s.mp4",
+  "vdin_start_count": 1,
+  "gen3_original": "N",
+  "gen3_restored": "N",
+  "rdma_original": "1,0",
+  "rdma_restored": "1,0",
+  "build_run": 45341511160,
+  "commit": "4d769fcfc1c857a790d0efa17b24a93ca97c0b62",
+  "pixel_verdict": "first moving bars; default repeat, GEN3, GEN3+RDMA bypass black",
+  "raw_evidence_local": "/Users/lql/Downloads/IPTV/CoreELEC-E900V21C/trial-build287/result",
+  "captures": [
+    {
+      "phase": "first",
+      "file": "first_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795516924800821768_first_0.e9cap",
+      "sha256": "6fcb4b3829b7bc0f5c3abb21c044f37f8fdf8986ee6bfb3b25df0dc2a63bb15f",
+      "completion_count": 12,
+      "frame_timestamp": 4294964745,
+      "sample_jiffies": 4294964759,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1071\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "first",
+      "file": "first_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795516926296598561_first_1.e9cap",
+      "sha256": "61edd11faa963edf0ad39393c264d7f5be6f3988d4fc5d11e77415631a2cd0f5",
+      "completion_count": 72,
+      "frame_timestamp": 4294965125,
+      "sample_jiffies": 4294965133,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1201\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "repeat",
+      "file": "repeat_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795516955678050283_repeat_0.e9cap",
+      "sha256": "03c16ad0e60d33dd367b4bae0c911f05d88edf0f3d58a701f73c353aaa6ca3f4",
+      "completion_count": 1130,
+      "frame_timestamp": 4294972495,
+      "sample_jiffies": 4294972511,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 856\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "repeat",
+      "file": "repeat_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795516965768042871_repeat_1.e9cap",
+      "sha256": "da6d38ad8817f50d93e4d2339c493e138ed1ae14d9fb4d5a5de2aa4b1d3c8d6b",
+      "completion_count": 1412,
+      "frame_timestamp": 4294974983,
+      "sample_jiffies": 4294975001,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 992\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "gen3",
+      "file": "gen3_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795516993260717343_gen3_0.e9cap",
+      "sha256": "c702cd70a0dc2c90f2ddc391f14893190790a50a1c181a22bd6abe76420c7e7a",
+      "completion_count": 2393,
+      "frame_timestamp": 4294981858,
+      "sample_jiffies": 4294981875,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 704\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "gen3",
+      "file": "gen3_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795517002904707389_gen3_1.e9cap",
+      "sha256": "c39a3d868987dd33a99758c709356df1481c443146da90a494d32e23585c3b19",
+      "completion_count": 2667,
+      "frame_timestamp": 4294984308,
+      "sample_jiffies": 4294984324,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 861\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "gen3_direct",
+      "file": "gen3_direct_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795517037244332322_gen3_direct_0.e9cap",
+      "sha256": "c9d6f9f509db0a2603e66f963d779e879056dbeca00c95b342c01144a92f3d56",
+      "completion_count": 3743,
+      "frame_timestamp": 4294992854,
+      "sample_jiffies": 4294992874,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 926\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "gen3_direct",
+      "file": "gen3_direct_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795517048802421911_gen3_direct_1.e9cap",
+      "sha256": "b43741976cf1cae8c8c8511c6da91f1d74449a40f05c622a21fd49c0e4985385",
+      "completion_count": 4205,
+      "frame_timestamp": 4294995745,
+      "sample_jiffies": 4294995761,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1094\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    }
+  ]
+}

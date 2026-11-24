@@ -1,0 +1,601 @@
+{
+  "boot_id": "a1a0d0a4-94ca-46a8-aa79-dcd5930eb529",
+  "screen_observed": false,
+  "point": "legacy_ENCP_output_loopback",
+  "vdin_start_count": 1,
+  "captures": [
+    {
+      "phase": "first",
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 66.98833465576172,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 193,
+                "minutes": 0,
+                "seconds": 40
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 68.32333374023438,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 994,
+                "minutes": 0,
+                "seconds": 40
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "file": "first_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795518396725692415_first_0.e9cap",
+      "sha256": "c4c88c33365a65616f9806d1dbe09bab48fc588513891df4f2adc25446fea528",
+      "completion_count": 35,
+      "frame_timestamp": 4294922078,
+      "sample_jiffies": 4294922088,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1244\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "first",
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 70.99500274658203,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 597,
+                "minutes": 0,
+                "seconds": 42
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 79.00666809082031,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 404,
+                "minutes": 0,
+                "seconds": 47
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "file": "first_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795518399113379542_first_1.e9cap",
+      "sha256": "5aa735acd8fccb6f960981180bcfd9e066447ff47b9261ea15fb9ef3aedb2afd",
+      "completion_count": 131,
+      "frame_timestamp": 4294922669,
+      "sample_jiffies": 4294922685,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1436\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "repeat",
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 34.41999816894531,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 652,
+                "minutes": 0,
+                "seconds": 20
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 38.09166717529297,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 855,
+                "minutes": 0,
+                "seconds": 22
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "file": "repeat_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795518432567571099_repeat_0.e9cap",
+      "sha256": "eb4b714383dbea5d4fbf02641e1bc59d0021eaaa7eb48ffec12aab619e16ed6c",
+      "completion_count": 1229,
+      "frame_timestamp": 4294931040,
+      "sample_jiffies": 4294931050,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 704\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "repeat",
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 41.43166732788086,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 859,
+                "minutes": 0,
+                "seconds": 24
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 48.44166564941406,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 65,
+                "minutes": 0,
+                "seconds": 29
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "file": "repeat_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795518436611888143_repeat_1.e9cap",
+      "sha256": "09d16e4982eb29049e3e2b1a51c9cbe1deef771af02f62cdda03ad8c6a187572",
+      "completion_count": 1392,
+      "frame_timestamp": 4294932044,
+      "sample_jiffies": 4294932061,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 889\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "same_playback_osd_hidden",
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 58.5816650390625,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 149,
+                "minutes": 0,
+                "seconds": 35
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 69.26499938964844,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 559,
+                "minutes": 0,
+                "seconds": 41
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "file": "same_playback_osd_hidden_0.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795518446902551523_same_playback_osd_hidden_0.e9cap",
+      "sha256": "d6f73e939299a7f2ea68f5402ae08b0ce7d56558579588a78994e06630292920",
+      "completion_count": 1793,
+      "frame_timestamp": 4294934624,
+      "sample_jiffies": 4294934634,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 22\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1266\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    {
+      "phase": "same_playback_osd_hidden",
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 72.2699966430664,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 362,
+                "minutes": 0,
+                "seconds": 43
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 78.27833557128906,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 967,
+                "minutes": 0,
+                "seconds": 46
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "file": "same_playback_osd_hidden_1.e9cap",
+      "source": "/storage/e900-capture/PAIR_1795518455212424277_same_playback_osd_hidden_1.e9cap",
+      "sha256": "31609bf39a40459ce9d3335e809d6c642d7076d02df803c94e18438bb459dc61",
+      "completion_count": 2126,
+      "frame_timestamp": 4294936703,
+      "sample_jiffies": 4294936712,
+      "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1427\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    }
+  ],
+  "osd_blank_before": "",
+  "osd_restore_request": "0",
+  "osd_blank_requested": "",
+  "osd_blank_after_capture": "",
+  "osd_blank_restored": ""
+}

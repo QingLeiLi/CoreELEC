@@ -1,0 +1,51 @@
+Subject: [DIAGNOSTIC] reject queued pre-request frames in opted-in VDIN capture
+
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
+@@ -1683,6 +1683,8 @@
+ 	void *packet = NULL, *base;
+ 	unsigned int rows, stride, active, index = 0, row;
+ 	unsigned long flags, deadline;
++	u64 requested_at;
++	unsigned int stale_frames = 0;
+ 	size_t payload, slot;
+ 	int ret, sync_ret;
+ 	bool cpu_owned = false;
+@@ -1744,6 +1746,7 @@
+ 		ret = -ENOMEM;
+ 		goto out_unlock;
+ 	}
++	requested_at = jiffies_64;
+ 	deadline = jiffies + msecs_to_jiffies(2000);
+ 	for (;;) {
+ 		spin_lock_irqsave(&devp->isr_lock, flags);
+@@ -1771,6 +1774,17 @@
+ 					ret = -EIO;
+ 				}
+ 			}
++			/* Timestamp is assigned from jiffies_64 when the ISR selects
++			 * its write target. A frame older than this request is not a
++			 * response to the current scene, even if IRQs keep increasing.
++			 * Return it through the existing owner API and await a new one.
++			 */
++			if (vfe && vfe->vf.timestamp < requested_at) {
++				receiver_vf_put(&vfe->vf, devp->vfp);
++				vfe = NULL;
++				stale_frames++;
++				ret = -EAGAIN;
++			}
+ 		}
+ 		spin_unlock_irqrestore(&devp->isr_lock, flags);
+ 		if (ret != -EAGAIN)
+@@ -1785,6 +1799,11 @@
+ 			break;
+ 		}
+ 	}
++	pr_info("e900-capture request=%llu selected=%llu now=%llu frame=%u completed=%u stale=%u result=%d\n",
++		(unsigned long long)requested_at,
++		(unsigned long long)(vfe ? vfe->vf.timestamp : 0),
++		(unsigned long long)jiffies_64, index, devp->frame_cnt,
++		stale_frames, ret);
+ 	if (ret)
+ 		goto out_free;
+ 	ret = e900_vdin_dma_sync_frame(devp, index, true);

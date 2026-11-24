@@ -33,7 +33,9 @@ PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-r
                                          "linux/0020-gxlx2-netpoll-no-sleep.patch",
                                          "linux/0021-gxlx2-sr0-capability-guard.patch",
                                          "linux/0022-gxlx2-debug-foundation.patch",
-                                         "linux/0023-gxlx2-gen3-source-experiment.patch"]
+                                         "linux/0023-gxlx2-gen3-source-experiment.patch",
+                                         "linux/0024-gxlx2-rmw-and-osd-diagnostics.patch",
+                                         "linux/0025-gxlx2-display-transition-evidence.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
 HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")
@@ -46,6 +48,7 @@ CAPTURE_PATCHES = [
     "linux/0015-e900-vdin-clock-bindings.patch",
     "linux/0016-gxlx2-vdin-builtin-linkage.patch",
     "linux/0018-gxlx2-vdin-observe-before-ack.patch",
+    "linux/0026-gxlx2-vdin-fresh-request-evidence.patch",
 ]
 CAPTURE_CONFIG = "projects/Amlogic-ce/devices/Amlogic-ng/linux/linux.aarch64.conf"
 CAPTURE_CONFIG_BASE_SHA256 = "9bf441cc9ed301de8b3be8ab05cdf2e3d0de9fc4fd50f8e02ec848f378088362"

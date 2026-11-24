@@ -158,6 +158,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-netconsole.py"
           python3 "$PORT_ROOT/tests/check-display-stage-hooks.py"
           python3 "$PORT_ROOT/tests/check-debug-foundation.py"
+          python3 "$PORT_ROOT/tests/check-gen3-rmw-osd.py"
           python3 "$PORT_ROOT/tests/check-pixel-preview.py"
           python3 "$PORT_ROOT/tests/check-toolchain-cache.py"
           python3 "$PORT_ROOT/tests/check-frame-capture.py"

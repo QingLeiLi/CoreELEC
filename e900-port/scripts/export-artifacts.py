@@ -77,10 +77,13 @@ port = pathlib.Path(__file__).resolve().parents[1]
 for relative, source in [
     ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
     ("debug-tools/DEBUG-FOUNDATION.md", port / "boards/DEBUG-FOUNDATION.md"),
+    *[("debug-tools/" + name, port / "boards" / name) for name in
+      ("GEN3-OSD-EXPERIMENT.md", "GEN3-RESEARCH-20261124.md", "BUILD287-VALIDATION.md")],
     ("debug-tools/DISPLAY-CHAIN-ANALYSIS.md", port / "boards/DISPLAY-CHAIN-ANALYSIS.md"),
     ("debug-tools/LEGACY-LOOPBACK-CALIBRATION-20261124.md", port / "boards/LEGACY-LOOPBACK-CALIBRATION-20261124.md"),
     *[("debug-tools/evidence/" + name, port / "boards/evidence" / name) for name in
       ["loopback285-first.png", "loopback285-repeat.png", "loopback285-repeat-canvas.png", "loopback285-metadata.json"]],
+    *[("debug-tools/evidence/" + f.name, f) for f in sorted((port / "boards/evidence").glob("*287*"))],
     ("debug-tools/e900-calibrate-loopback.py", port / "scripts/e900-calibrate-loopback.py"),
     ("debug-tools/e900-start-capture.sh", port / "scripts/e900-start-capture.sh"),
     ("debug-tools/e900-capture-ready.sh", port / "scripts/e900-capture-ready.sh"),

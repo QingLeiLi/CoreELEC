@@ -1,0 +1,550 @@
+{
+  "schema": 1,
+  "note": "Same-boot epoch1 vs epoch4; snapshots cover selected registers, not all hardware. First sample in original four-group run predates RDMA overflow and is intentionally excluded. Playback snapshots are interval reads, not atomic.",
+  "runs": {
+    "recovery-result": {
+      "first": {
+        "mif.live_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.live_canvas": [
+          "605f5e"
+        ],
+        "mif.live_fmt": [
+          "20310c11"
+        ],
+        "mif.shadow_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.shadow_canvas": [
+          "605f5e"
+        ],
+        "mif.shadow_fmt": [
+          "20310c11"
+        ],
+        "layout.gen2": [
+          "1"
+        ],
+        "layout.gen3": [
+          "33"
+        ],
+        "layout.fifo": [
+          "ff00c0"
+        ],
+        "layout.shadow_gen2": [
+          "1"
+        ],
+        "layout.shadow_gen3": [
+          "33"
+        ],
+        "pipe.luma_x": [
+          "4ff0000"
+        ],
+        "pipe.luma_y": [
+          "2cf0000"
+        ],
+        "pipe.sc": [
+          "78404"
+        ],
+        "pipe.hphase": [
+          "aaaac0"
+        ],
+        "pipe.vphase": [
+          "aaaa80"
+        ],
+        "pipe.matrix": [
+          "7000"
+        ],
+        "blend.requested": [
+          "100054b0"
+        ],
+        "blend.live": [
+          "100054b0"
+        ],
+        "blend.shadow": [
+          "100054b0"
+        ],
+        "blend.post_h": [
+          "77f"
+        ],
+        "blend.post_v": [
+          "437"
+        ]
+      },
+      "repeat": {
+        "mif.live_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.live_canvas": [
+          "5a5958"
+        ],
+        "mif.live_fmt": [
+          "20310c11"
+        ],
+        "mif.shadow_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.shadow_canvas": [
+          "5a5958"
+        ],
+        "mif.shadow_fmt": [
+          "20310c11"
+        ],
+        "layout.gen2": [
+          "1"
+        ],
+        "layout.gen3": [
+          "3033"
+        ],
+        "layout.fifo": [
+          "ff00c0"
+        ],
+        "layout.shadow_gen2": [
+          "1"
+        ],
+        "layout.shadow_gen3": [
+          "3033"
+        ],
+        "pipe.luma_x": [
+          "4ff0000"
+        ],
+        "pipe.luma_y": [
+          "2cf0000"
+        ],
+        "pipe.sc": [
+          "78404"
+        ],
+        "pipe.hphase": [
+          "aaaac0"
+        ],
+        "pipe.vphase": [
+          "aaaa80"
+        ],
+        "pipe.matrix": [
+          "7000"
+        ],
+        "blend.requested": [
+          "100054b0"
+        ],
+        "blend.live": [
+          "100054b0"
+        ],
+        "blend.shadow": [
+          "100054b0"
+        ],
+        "blend.post_h": [
+          "77f"
+        ],
+        "blend.post_v": [
+          "437"
+        ]
+      },
+      "differences": {
+        "layout.gen3": {
+          "first": [
+            "33"
+          ],
+          "repeat": [
+            "3033"
+          ]
+        },
+        "layout.shadow_gen3": {
+          "first": [
+            "33"
+          ],
+          "repeat": [
+            "3033"
+          ]
+        },
+        "mif.shadow_canvas": {
+          "first": [
+            "605f5e"
+          ],
+          "repeat": [
+            "5a5958"
+          ]
+        },
+        "mif.live_canvas": {
+          "first": [
+            "605f5e"
+          ],
+          "repeat": [
+            "5a5958"
+          ]
+        }
+      }
+    },
+    "osd-result": {
+      "first": {
+        "mif.live_gen": [
+          "38420043"
+        ],
+        "mif.live_canvas": [
+          "605f5e"
+        ],
+        "mif.live_fmt": [
+          "20310c11"
+        ],
+        "mif.shadow_gen": [
+          "38420043"
+        ],
+        "mif.shadow_canvas": [
+          "5a5958"
+        ],
+        "mif.shadow_fmt": [
+          "20310c11"
+        ],
+        "layout.gen2": [
+          "1"
+        ],
+        "layout.gen3": [
+          "33"
+        ],
+        "layout.fifo": [
+          "ff00c0"
+        ],
+        "layout.shadow_gen2": [
+          "1"
+        ],
+        "layout.shadow_gen3": [
+          "33"
+        ],
+        "pipe.luma_x": [
+          "4ff0000"
+        ],
+        "pipe.luma_y": [
+          "2cf0000"
+        ],
+        "pipe.sc": [
+          "78404"
+        ],
+        "pipe.hphase": [
+          "aaaac0"
+        ],
+        "pipe.vphase": [
+          "aaaa80"
+        ],
+        "pipe.matrix": [
+          "7000"
+        ],
+        "blend.requested": [
+          "100054b0"
+        ],
+        "blend.live": [
+          "100054b0"
+        ],
+        "blend.shadow": [
+          "100054b0"
+        ],
+        "blend.post_h": [
+          "77f"
+        ],
+        "blend.post_v": [
+          "437"
+        ]
+      },
+      "repeat": {
+        "mif.live_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.live_canvas": [
+          "605f5e"
+        ],
+        "mif.live_fmt": [
+          "20310c11"
+        ],
+        "mif.shadow_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.shadow_canvas": [
+          "605f5e"
+        ],
+        "mif.shadow_fmt": [
+          "20310c11"
+        ],
+        "layout.gen2": [
+          "1"
+        ],
+        "layout.gen3": [
+          "3033"
+        ],
+        "layout.fifo": [
+          "ff00c0"
+        ],
+        "layout.shadow_gen2": [
+          "1"
+        ],
+        "layout.shadow_gen3": [
+          "3033"
+        ],
+        "pipe.luma_x": [
+          "4ff0000"
+        ],
+        "pipe.luma_y": [
+          "2cf0000"
+        ],
+        "pipe.sc": [
+          "78404"
+        ],
+        "pipe.hphase": [
+          "aaaac0"
+        ],
+        "pipe.vphase": [
+          "aaaa80"
+        ],
+        "pipe.matrix": [
+          "7000"
+        ],
+        "blend.requested": [
+          "100054b0"
+        ],
+        "blend.live": [
+          "100054b0"
+        ],
+        "blend.shadow": [
+          "100054b0"
+        ],
+        "blend.post_h": [
+          "77f"
+        ],
+        "blend.post_v": [
+          "437"
+        ]
+      },
+      "differences": {
+        "layout.gen3": {
+          "first": [
+            "33"
+          ],
+          "repeat": [
+            "3033"
+          ]
+        },
+        "layout.shadow_gen3": {
+          "first": [
+            "33"
+          ],
+          "repeat": [
+            "3033"
+          ]
+        },
+        "mif.shadow_canvas": {
+          "first": [
+            "5a5958"
+          ],
+          "repeat": [
+            "605f5e"
+          ]
+        },
+        "mif.shadow_gen": {
+          "first": [
+            "38420043"
+          ],
+          "repeat": [
+            "38400043",
+            "38420043"
+          ]
+        },
+        "mif.live_gen": {
+          "first": [
+            "38420043"
+          ],
+          "repeat": [
+            "38400043",
+            "38420043"
+          ]
+        }
+      }
+    },
+    "post-replay-result": {
+      "first": {
+        "mif.live_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.live_canvas": [
+          "5a5958"
+        ],
+        "mif.live_fmt": [
+          "20310c11"
+        ],
+        "mif.shadow_gen": [
+          "38400043",
+          "38420043"
+        ],
+        "mif.shadow_canvas": [
+          "5a5958"
+        ],
+        "mif.shadow_fmt": [
+          "20310c11"
+        ],
+        "layout.gen2": [
+          "1"
+        ],
+        "layout.gen3": [
+          "33"
+        ],
+        "layout.fifo": [
+          "ff00c0"
+        ],
+        "layout.shadow_gen2": [
+          "1"
+        ],
+        "layout.shadow_gen3": [
+          "33"
+        ],
+        "pipe.luma_x": [
+          "4ff0000"
+        ],
+        "pipe.luma_y": [
+          "2cf0000"
+        ],
+        "pipe.sc": [
+          "78404"
+        ],
+        "pipe.hphase": [
+          "aaaac0"
+        ],
+        "pipe.vphase": [
+          "aaaa80"
+        ],
+        "pipe.matrix": [
+          "7000"
+        ],
+        "blend.requested": [
+          "100054b0"
+        ],
+        "blend.live": [
+          "100054b0"
+        ],
+        "blend.shadow": [
+          "100054b0"
+        ],
+        "blend.post_h": [
+          "77f"
+        ],
+        "blend.post_v": [
+          "437"
+        ]
+      },
+      "repeat": {
+        "mif.live_gen": [
+          "38420043"
+        ],
+        "mif.live_canvas": [
+          "605f5e"
+        ],
+        "mif.live_fmt": [
+          "20310c11"
+        ],
+        "mif.shadow_gen": [
+          "38420043"
+        ],
+        "mif.shadow_canvas": [
+          "5a5958"
+        ],
+        "mif.shadow_fmt": [
+          "20310c11"
+        ],
+        "layout.gen2": [
+          "1"
+        ],
+        "layout.gen3": [
+          "3033"
+        ],
+        "layout.fifo": [
+          "ff00c0"
+        ],
+        "layout.shadow_gen2": [
+          "1"
+        ],
+        "layout.shadow_gen3": [
+          "3033"
+        ],
+        "pipe.luma_x": [
+          "4ff0000"
+        ],
+        "pipe.luma_y": [
+          "2cf0000"
+        ],
+        "pipe.sc": [
+          "78404"
+        ],
+        "pipe.hphase": [
+          "aaaac0"
+        ],
+        "pipe.vphase": [
+          "aaaa80"
+        ],
+        "pipe.matrix": [
+          "7000"
+        ],
+        "blend.requested": [
+          "100054b0"
+        ],
+        "blend.live": [
+          "100054b0"
+        ],
+        "blend.shadow": [
+          "100054b0"
+        ],
+        "blend.post_h": [
+          "77f"
+        ],
+        "blend.post_v": [
+          "437"
+        ]
+      },
+      "differences": {
+        "layout.gen3": {
+          "first": [
+            "33"
+          ],
+          "repeat": [
+            "3033"
+          ]
+        },
+        "layout.shadow_gen3": {
+          "first": [
+            "33"
+          ],
+          "repeat": [
+            "3033"
+          ]
+        },
+        "mif.shadow_gen": {
+          "first": [
+            "38400043",
+            "38420043"
+          ],
+          "repeat": [
+            "38420043"
+          ]
+        },
+        "mif.live_gen": {
+          "first": [
+            "38400043",
+            "38420043"
+          ],
+          "repeat": [
+            "38420043"
+          ]
+        },
+        "mif.live_canvas": {
+          "first": [
+            "5a5958"
+          ],
+          "repeat": [
+            "605f5e"
+          ]
+        }
+      }
+    }
+  }
+}

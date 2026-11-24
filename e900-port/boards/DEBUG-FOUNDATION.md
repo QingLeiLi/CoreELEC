@@ -1,8 +1,9 @@
 # E900 显示链路基础调试
 
+> 287实测发现跨Stop回采的场景响应疑点；旧黑图暂不能作为当前输出的充分证明，见[最新验证记录](BUILD287-VALIDATION.md)。
 这套功能提供可复用的源码日志、活动视频配置快照、Canvas 像素取证和成对差异报告。补丁0022随 decoder profile 安装；默认所有新增生命周期日志关闭，不改变显示策略、初始化、RDMA模式、时钟状态、帧所有权或视频输出。
 
-**状态：主机检查通过；完整 ARM 编译和新 hook 实机验证待完成。不是黑屏修复，也没有新增已校准的 VD1/VPP 像素回采点。**
+**状态：构建45341511160完整ARM编译通过，Image287/SYSTEM287已配对部署；新hook、SR0能力保护和成对回采已实机执行。重播黑屏仍在。没有新增独立VD1/PPS像素回采点。**
 
 ## 观察面与边界
 
@@ -114,7 +115,7 @@ python3 e900-debug.py compare /path/to/normal-directory /path/to/abnormal-direct
 
 既有Image280上已在新启动首播取得真实运动彩条输出回环；[原始依据、格式校准和证据](LEGACY-LOOPBACK-CALIBRATION-20261124.md)。这是legacy输出观察点，不是新增独立VD1/VPP WB取点。`inspect-vdin-snapshot.py --yuv444-bt601 --reverse64`提供已校准的显式预览。
 
-`e900-calibrate-loopback.py`须在新启动、初始化已完成且未播放时运行，将旧式采集会话保持到Stop/replay之后，避免每启动一次保护。工具会操作播放器并启动VDIN，与只读状态采集器的作用不同；保持静音，结束先停VDIN后停播放器。无需现场看屏幕，标签仍注明无人观察。
+`e900-calibrate-loopback.py`须在新启动、初始化已完成且未播放时运行，将旧式采集会话保持到Stop/replay之后，避免每启动一次保护。工具会操作播放器并启动VDIN，与只读状态采集器的作用不同；保持静音，结束先停VDIN后停播放器。每张回采前后另记Kodi GUI状态及单调时间区间，防止将菜单覆盖或窗口切换归为视频黑图。无需现场看屏幕，标签仍注明无人观察。
 
 ## 源码GEN3单变量试验（0023）
 
@@ -128,8 +129,12 @@ python3 e900-debug.py compare /path/to/normal-directory /path/to/abnormal-direct
 python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 ```
 
-保持同一VDIN会话先取默认首播、默认重播，再显式开启候选、停止重播取第三组。结束恢复原开关并关闭有限日志。该选项尚未ARM构建/实机执行。
+保持同一VDIN会话先取默认首播、默认重播，再显式开启候选、停止重播取第三组。结束恢复原开关并关闭有限日志。该选项已在287构建并实机执行；未恢复输出，详见[287验证记录](BUILD287-VALIDATION.md)。
 
 若需要捕获驱动探测/复位早期事件，可在新内核诊断启动参数中加入各通道的有限预算：`rdma.gxlx2_debug_events=256 rdma_mgr.gxlx2_debug_events=256 vpu.gxlx2_debug_events=128 register_ops.gxlx2_debug_events=256 amvideo.gxlx2_debug_events=128 di.gxlx2_debug_events=128`。管理器reset_request记录VC/HHI软件就绪状态；固定可疑VC写丢失记录为drop_vc。不改变总线初始化顺序，不重新播放丢写。
 
 逐函数职责、控制流与数据流、观测边界和后续分析分支：[显示链路分析导航](DISPLAY-CHAIN-ANALYSIS.md)。
+
+## GEN3来源与OSD单项实验（0024）
+
+独立固定寄存器RMW预算、软件基值来源、默认关闭的legacy OSD blender-only实验及A/B流程见[实验说明](GEN3-OSD-EXPERIMENT.md)。新增功能主机检查通过，完整ARM/实机仍待新构建。

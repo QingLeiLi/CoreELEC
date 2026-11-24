@@ -3,10 +3,11 @@
 
 Requires a fresh boot with completed video initialization and idle Kodi.
 Starts/stops the chosen sample and existing diagnostic VDIN service. Does not
-change OSD, DI or RDMA policy or use arbitrary register access. The explicit
---gen3-experiment option requests one narrowly scoped source experiment.
+use arbitrary register access. Optional GEN3/OSD experiments are explicit and
+mutually exclusive; policy is restored on exit. --control-only avoids VDIN.
 """
 import argparse
+import runpy
 import json
 import hashlib
 import struct
@@ -26,7 +27,14 @@ def main():
     p.add_argument('--debug-tool', default=str(local_debug) if local_debug.exists() else '/storage/e900-debug.py')
     p.add_argument('--wait', type=int, default=18)
     p.add_argument('--gen3-experiment', action='store_true', help='After baseline repeat, explicitly enable the source GEN3 experiment for a third playback; restore on exit')
+    p.add_argument('--control-only', action='store_true', help='Collect state/Canvas only; do not start VDIN')
+    p.add_argument('--osd-blender-only', action='store_true', help='Enable source OSD experiment before first playback; restore on exit')
+    p.add_argument('--osd-cycle', action='store_true', help='Explicitly hide/restore OSD during first playback; requires --control-only')
     a = p.parse_args()
+    if a.gen3_experiment and a.osd_blender_only:
+        p.error('GEN3 and OSD experiments must use separate boots')
+    if a.osd_cycle and not a.control_only:
+        p.error('--osd-cycle requires --control-only: validate scene response separately')
     if not 15 <= a.wait <= 20:
         p.error('--wait must be 15..20 seconds; use the known 60-second sample')
     scripts = Path(__file__).resolve().parent
@@ -38,17 +46,33 @@ def main():
     decoder = Path('/sys/class/vdec/vdec_status')
     if decoder.read_text().strip() != 'No vdec.':
         p.error('Decoder active; refusing to interrupt another playback')
+    # Record the UI state at each packet, not just at the earlier Canvas snapshot.
+    # A menu in a downstream frame must not be mislabeled as missing video.
+    kodi_state = runpy.run_path(a.debug_tool)['kodi_state']
     boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
     output = Path(a.output); output.mkdir(parents=True, exist_ok=True)
     if shutil.disk_usage(output).free < 16*1024*1024:
         p.error('At least16MiB free required')
     out = output/(boot+'-'+str(time.time_ns())); out.mkdir()
     report = {'schema':1,'boot_id':boot,'screen_observed':False,'output':str(out),
-              'point':'legacy_ENCP_output_loopback','sample':a.sample,
+              'point':'display_canvas_via_ge2d' if a.control_only else 'legacy_ENCP_output_loopback','sample':a.sample,
+              'control_only':a.control_only, 'osd_cycle':a.osd_cycle,
               'vdin_start_count':0,'steps':[], 'captures':[]}
     started = False; playing = False
     gen3 = Path('/sys/module/amvideo/parameters/gxlx2_gen3_clear_high')
     gen3_original = None
+    osd = Path('/sys/module/fb/parameters/gxlx2_osd_blender_only')
+    blank = Path('/sys/class/graphics/fb0/blank')
+    osd_original = None
+    if a.osd_blender_only or a.osd_cycle:
+        if not osd.exists() or not blank.exists():
+            p.error('This kernel has no OSD source experiment; no playback started')
+        osd_original = osd.read_text()
+        report['osd_original'] = osd_original.strip()
+        if gen3.exists() and gen3.read_text().strip() not in ('N', '0'):
+            p.error('Disable GEN3 experiment before OSD test')
+        if Path('/sys/module/rdma/parameters/enable').read_text().strip() != '1,0':
+            p.error('Restore default RDMA before OSD test')
     if a.gen3_experiment:
         if not gen3.exists():
             p.error('This kernel has no source GEN3 experiment; no playback started')
@@ -78,30 +102,44 @@ def main():
         report[label+'_state_path']=result.strip();save()
 
     def pair(label):
+        if a.control_only:
+            return
         for i in range(2):
             active()
+            observation_start=time.monotonic()
+            gui_before=kodi_state()
             name='PAIR_'+str(time.time_ns())+'_'+label+'_'+str(i)
             packet=run(['env','E900_CAPTURE_SKIP_SYNC=1','sh',str(scripts/'e900-capture-ready.sh'),name],timeout=12).strip().splitlines()[-1]
+            gui_after=kodi_state()
+            observation_end=time.monotonic()
             source=Path(packet);target=out/(label+'_'+str(i)+'.e9cap')
             data=source.read_bytes()
             header=struct.unpack_from('<8s10I4Q',data)
             if header[0]!=b'E9VDIN1\0' or header[1:3]!=(1,80) or header[10]!=3 or len(data)!=80+header[14]:
                 raise ValueError('Invalid/incomplete completed packet')
             target.write_bytes(data)
-            report['captures'].append({'phase':label,'file':target.name,'source':packet,'sha256':hashlib.sha256(data).hexdigest(),'completion_count':header[13],'frame_timestamp':header[11],'sample_jiffies':header[12],'decoder':active()});save()
+            report['captures'].append({'phase':label,'gui_before':gui_before,'gui_after':gui_after,'observation_start':observation_start,'observation_end':observation_end,'file':target.name,'source':packet,'sha256':hashlib.sha256(data).hexdigest(),'completion_count':header[13],'frame_timestamp':header[11],'sample_jiffies':header[12],'decoder':active()});save()
             time.sleep(1)
     try:
         run(['python3',a.debug_tool,'arm','--budget','256'])
+        if osd_original is not None:
+            osd.write_text('Y\n' if a.osd_blender_only else 'N\n')
+            report['osd_requested']=osd.read_text().strip();save()
         run(['kodi-send','--action=SetVolume(0)'])
         run(['kodi-send','--action=PlayMedia('+a.sample+')']);playing=True
         time.sleep(a.wait);active();snapshot('first_unobserved')
         # Exactly one start per boot. Keep the service alive during Stop/replay;
         # capture-ready uses its managed shared-clock API and checks fresh IRQs.
-        run(['sh',str(scripts/'e900-start-capture.sh')],timeout=35)
-        started=True;report['vdin_start_count']=1;save()
+        if not a.control_only:
+            run(['sh',str(scripts/'e900-start-capture.sh')],timeout=35)
+            started=True;report['vdin_start_count']=1;save()
         pair('first')
+        if a.osd_cycle:
+            blank.write_text('1\n');time.sleep(1);snapshot('osd_hidden_unobserved')
+            blank.write_text('0\n');time.sleep(1);snapshot('osd_restored_unobserved')
         run(['python3',a.debug_tool,'arm','--budget','256'])
         run(['kodi-send','--action=Stop']);time.sleep(2)
+        snapshot('stopped_unobserved')
         run(['kodi-send','--action=PlayMedia('+a.sample+')'])
         time.sleep(a.wait);active();snapshot('repeat_unobserved');pair('repeat')
         if a.gen3_experiment:
@@ -121,6 +159,12 @@ def main():
         if playing:
             try:run(['kodi-send','--action=Stop'])
             except Exception as e:report['player_cleanup_error']=str(e)
+        if osd_original is not None:
+            try:
+                blank.write_text('0\n')
+                osd.write_text(osd_original)
+                report['osd_restored']=osd.read_text().strip()
+            except Exception as e:report['osd_restore_error']=str(e)
         if gen3_original is not None:
             try:
                 gen3.write_text(gen3_original)

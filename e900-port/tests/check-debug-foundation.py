@@ -85,6 +85,11 @@ static unsigned live(unsigned r){reads++;return r;}
 #define VIU_MISC_CTRL1 0x1a07
 #define VPP_HOLD_LINES 0x1d22
 #define VPP_OFIFO_SIZE 0x1d27
+#define VIU_OSD1_CTRL_STAT 0x1a10
+#define AFBC_ENABLE 0x1ae0
+#define VPP_CLIP_MISC0 0x1dd9
+#define VPP_CLIP_MISC1 0x1dda
+#define VPP_VADJ_CTRL 0x1d40
 '''
     rd = (t / 'drivers/amlogic/media/common/rdma/rdma.c').read_text()
     mgr = (t / 'drivers/amlogic/media/common/rdma/rdma_mgr.c').read_text()
@@ -120,7 +125,7 @@ int main(void){struct kernel_param p={&gxlx2_debug_events};struct vframe_s vf={0
  char out[4096];irq_count[0]=123;rdma_info.rdma_ins[1].rdma_item_count=77;
  assert(e900_rdma_state_get(out,&p)>0);assert(strstr(out,"irq=123"));
  assert(e900_manager_state_get(out,&p)>0);assert(strstr(out,"items=77"));
- vd_layer[0].dispbuf=&vf;e900_debug_output(0);assert(reads==14);assert(lines==9);
+ vd_layer[0].dispbuf=&vf;e900_debug_output(0);assert(reads==19);assert(lines==10);
  for(unsigned flags=0;flags<32;flags++){
   cpu=(flags&1)?0x2a:0x21;legacy_vpp=!!(flags&2);gxlx2_gen3_clear_high=!!(flags&4);vd_layer[0].vd1_vd2_mux=!!(flags&8);vd_layer[0].vd_mif_reg.vd_if0_gen_reg3=(flags&16)?0x1aa7:0x3216;
   unsigned before=bit_writes;e900_gen3_experiment(&vd_layer[0],&vd_layer[0].vd_mif_reg,0);

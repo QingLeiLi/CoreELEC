@@ -590,5 +590,13 @@
     "git_blob_sha1": "a94f411e89de5ceb190af484ae22666664735e98",
     "sha256": "ee5df1b698732e3089efb6a437a433f87144a1b4365f7e9ad25cfe867d03433e",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/osd/osd_hw.c",
+    "git_blob_sha1": "12d2dfc30b1c222f48c8f96643519828895a07f8",
+    "sha256": "374b36d11d091df5da15bddf8af90eea1900bf138d7df58ae6149eda35b67125",
+    "verified": true
   }
 ]

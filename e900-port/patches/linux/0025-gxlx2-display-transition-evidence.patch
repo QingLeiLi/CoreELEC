@@ -1,0 +1,100 @@
+Subject: [DIAGNOSTIC] complete GEN3 full-write, OSD lifecycle and active black-path evidence
+
+--- a/drivers/amlogic/media/common/rdma/rdma.c
++++ b/drivers/amlogic/media/common/rdma/rdma.c
+@@ -303,6 +303,8 @@
+ {
+ 	int enable_ = cur_enable[VSYNC_RDMA] & 0xf;
+ 
++	e900_gen3_rmw(adr, vsync_rdma_handle[VSYNC_RDMA], enable_,
++		0, 32, 0, 0, val, 4, __builtin_return_address(0));
+ 	if ((enable_ != 0) && (vsync_rdma_handle[VSYNC_RDMA] > 0)) {
+ 		rdma_write_reg(vsync_rdma_handle[VSYNC_RDMA], adr, val);
+ 	} else {
+--- a/drivers/amlogic/media/common/rdma/rdma_mgr.c
++++ b/drivers/amlogic/media/common/rdma/rdma_mgr.c
+@@ -853,6 +853,8 @@
+ 	if (ins->rdma_table_size == 0)
+ 		return -1;
+ 
++	e900_gen3_rmw(adr, handle, -1, 0, 32, 0, 0, val, 4,
++		__builtin_return_address(0));
+ 	if (debug_flag & 1)
+ 		pr_info("rdma_write(%d) %d(%x)<=%x\n",
+ 			handle, ins->rdma_item_count, adr, val);
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -139,6 +139,9 @@
+ 		}
+ 		return;
+ 	}
++	if (bus_type == IO_VC_BUS)
++		e900_gen3_rmw(reg, 0, 0, 0, 32, 0, 0, val, 4,
++			__builtin_return_address(0));
+ 	/* Fixed suspect legacy registers only, at CPU dispatch; RDMA hardware
+ 	 * executions are not visible here. No reads or register replay. */
+ 	if (bus_type == IO_VC_BUS &&
+--- a/drivers/amlogic/media/osd/osd_hw.c
++++ b/drivers/amlogic/media/osd/osd_hw.c
+@@ -18,6 +18,8 @@
+ /* Linux Headers */
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/amlogic/media/registers/e900_debug.h>
++E900_DEBUG_CHANNEL("osd")
+ #include <linux/spinlock.h>
+ #include <linux/irqreturn.h>
+ #include <linux/errno.h>
+@@ -3739,6 +3741,8 @@
+ 	int count = (pxp_mode == 1)?3:WAIT_AFBC_READY_COUNT;
+ 	u32 output_index;
+ 
++	e900_debug_event("enable_request", index, enable,
++		osd_hw.enable[index], osd_hw.osd_meson_dev.osd_ver);
+ 	if (index == 0) {
+ 		osd_log_info("osd[%d] enable: %d (%s)\n",
+ 				index, enable, current->comm);
+@@ -6166,6 +6170,8 @@
+ 	u32 temp_val = 0;
+ 	struct hw_osd_reg_s *osd_reg = &hw_osd_reg_array[index];
+ 
++	e900_debug_event("enable_update", index, osd_hw.enable[index],
++		osd_hw.osd_meson_dev.afbc_type, e900_keep_osd_fetch(index));
+ 	/*
+ 	if (!osd_hw.buffer_alloc[index])
+ 		return;
+@@ -6203,6 +6209,8 @@
+ 			notify_to_amvideo();
+ 			VSYNCOSD_CLR_MPEG_REG_MASK(VPP_MISC, temp_val);
+ 		}
++		e900_debug_event("disable_policy", index, temp_val,
++			osd_vpp_misc, e900_keep_osd_fetch(index));
+ 		if (!(osd_hw.osd_meson_dev.cpu_id ==
+ 			__MESON_CPU_MAJOR_ID_G12B) && !e900_keep_osd_fetch(index))
+ 			VSYNCOSD_CLR_MPEG_REG_MASK(
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -280,6 +280,10 @@
+ 
+  if (l->switch_vf && l->vf_ext)
+   vf = l->vf_ext;
++ pr_info("e900-snapshot kind=black_path osd1_ctrl=%x afbc_enable=%x clip0=%x clip1=%x vadj=%x epoch=%u\n",
++  READ_VCBUS_REG(VIU_OSD1_CTRL_STAT), READ_VCBUS_REG(AFBC_ENABLE),
++  READ_VCBUS_REG(VPP_CLIP_MISC0), READ_VCBUS_REG(VPP_CLIP_MISC1),
++  READ_VCBUS_REG(VPP_VADJ_CTRL), READ_ONCE(e900_stage_epoch));
+  pr_info("e900-snapshot kind=software enabled=%u saved=%u onoff=%u disable=%u global=%u black=%u property=%u new_frame=%u new_setting=%u bypass_pps=%u canvas_slot=%u epoch=%u\n",
+   l->enabled, l->enabled_status_saved, l->onoff_state,
+   l->disable_video, l->global_output, l->force_black,
+--- a/drivers/amlogic/media/common/vpu/vpu.c
++++ b/drivers/amlogic/media/common/vpu/vpu.c
+@@ -569,8 +569,9 @@
+ 
+ 	spin_lock_irqsave(&vpu_mem_lock, flags);
+ 	e900_debug_event("memory_request", vmod, flag, 0, 0);
+-	vpu_conf.data->mempd_switch(vmod, flag);
++	ret = vpu_conf.data->mempd_switch(vmod, flag);
+ 	spin_unlock_irqrestore(&vpu_mem_lock, flags);
++	e900_debug_event("memory_result", vmod, flag, ret, 0);
+ 
+ 	if (vpu_debug_print_flag) {
+ 		if (vmod < VPU_MOD_MAX) {

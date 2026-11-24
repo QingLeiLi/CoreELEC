@@ -1,0 +1,159 @@
+Subject: [DIAGNOSTIC] fixed GEN3 RMW provenance and opt-in legacy OSD blender test
+
+No new register reads. GEN3 intent/base/result budgets independent from IRQ logs.
+OSD experiment default off, GXLX2 legacy OSD1 without AFBC only.
+
+--- /dev/null
++++ b/include/linux/amlogic/media/registers/e900_gen3_debug.h
+@@ -0,0 +1,28 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_GEN3_DEBUG_H
++#define E900_GEN3_DEBUG_H
++#include <linux/amlogic/media/registers/e900_debug.h>
++/* Expand after E900_DEBUG_CHANNEL. Independent budget: completion IRQ noise
++ * cannot consume the GEN3 investigation. Values are from existing operations;
++ * this helper never reads hardware, changes ordering, or accepts an address.
++ */
++#define E900_GEN3_RMW_CHANNEL(channel) \
++static unsigned int gxlx2_gen3_rmw_events; \
++module_param_cb(gxlx2_gen3_rmw_events, &e900_debug_ops, &gxlx2_gen3_rmw_events, 0600); \
++MODULE_PARM_DESC(gxlx2_gen3_rmw_events, "E900 fixed GEN3 RMW log budget 0..512; default off"); \
++static noinline void e900_gen3_rmw(u32 reg, int handle, int mode, u32 start, u32 len, \
++ u32 hardware, u32 base, u32 result, int source, void *caller) \
++{ \
++ unsigned int n; \
++ if (!is_meson_gxlx2_cpu() || reg != 0x1aa7) return; \
++ n = READ_ONCE(gxlx2_gen3_rmw_events); \
++ while (n) { \
++  unsigned int seen = cmpxchg(&gxlx2_gen3_rmw_events, n, n - 1); \
++  if (seen == n) break; \
++  n = seen; \
++ } \
++ if (!n) return; \
++ pr_info("e900-gen3 channel=" channel " handle=%d mode=%d start=%u len=%u hardware=%x base=%x result=%x source=%d caller=%pS\n", \
++ handle, mode, start, len, hardware, base, result, source, caller); \
++}
++#endif
+--- a/drivers/amlogic/media/common/rdma/rdma.c
++++ b/drivers/amlogic/media/common/rdma/rdma.c
+@@ -22,6 +22,8 @@
+ #include <linux/module.h>
+ #include <linux/amlogic/media/registers/e900_debug.h>
+ E900_DEBUG_CHANNEL("rdma")
++#include <linux/amlogic/media/registers/e900_gen3_debug.h>
++E900_GEN3_RMW_CHANNEL("rdma")
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/fs.h>
+@@ -321,6 +323,10 @@
+ 	int enable_ = cur_enable[VSYNC_RDMA] & 0xf;
+ 
+ 	if ((enable_ != 0) && (vsync_rdma_handle[VSYNC_RDMA] > 0)) {
++		/* source=-1 is intent only: manager records the actual base/result.
++		 * Pass the existing value argument; no extra register read here. */
++		e900_gen3_rmw(adr, vsync_rdma_handle[VSYNC_RDMA], enable_,
++			start, len, 0, 0, val, -1, __builtin_return_address(0));
+ 		rdma_write_reg_bits(vsync_rdma_handle[VSYNC_RDMA],
+ 			adr, val, start, len);
+ 	} else {
+@@ -328,6 +334,8 @@
+ 		u32 write_val = (read_val & ~(((1L<<(len))-1)<<(start)))
+ 			|((unsigned int)(val) << (start));
+ 		Wr(adr, write_val);
++		e900_gen3_rmw(adr, 0, enable_, start, len,
++			read_val, read_val, write_val, 0, __builtin_return_address(0));
+ 		if (debug_flag[VSYNC_RDMA] & 1)
+ 			pr_info("VSYNC_WR(%x)<=%x\n", adr, write_val);
+ 	}
+--- a/drivers/amlogic/media/common/rdma/rdma_mgr.c
++++ b/drivers/amlogic/media/common/rdma/rdma_mgr.c
+@@ -21,6 +21,8 @@
+ #include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/amlogic/media/registers/register_ops.h>
+ E900_DEBUG_CHANNEL("rdma_mgr")
++#include <linux/amlogic/media/registers/e900_gen3_debug.h>
++E900_GEN3_RMW_CHANNEL("rdma_mgr")
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/fs.h>
+@@ -901,6 +903,7 @@
+ 	struct rdma_device_info *info = &rdma_info;
+ 	struct rdma_instance_s *ins = &info->rdma_ins[handle];
+ 	u32 read_val = READ_VCBUS_REG(adr);
++	u32 e900_hardware = read_val;
+ 	u32 oth_val = 0;
+ 	u32 write_val;
+ 
+@@ -939,6 +942,9 @@
+ 	}
+ 	write_val = (read_val & ~(((1L<<(len))-1)<<(start)))
+ 		|((unsigned int)(val) << (start));
++	e900_gen3_rmw(adr, handle, -1, start, len,
++		e900_hardware, read_val, write_val, read_from,
++		__builtin_return_address(0));
+ 	if (match_oth)
+ 		rdma_update_conflict(adr, write_val);
+ 	for (j = 0; j < rdma_trace_num; j++) {
+--- a/drivers/amlogic/media/osd/osd_hw.c
++++ b/drivers/amlogic/media/osd/osd_hw.c
+@@ -6143,6 +6143,24 @@
+ }
+ 
+ 
++
++/* Opt-in test of the mainline plane-disable principle, using this SoC's
++ * legacy blender. Never touch G12 blend registers. Keep the OSD fetch engine
++ * enabled when removing OSD1 from postblend; unblank follows the normal path.
++ * Not a proven fix. Disable the option only after unblanking OSD1.
++ */
++static bool gxlx2_osd_blender_only;
++module_param_named(gxlx2_osd_blender_only, gxlx2_osd_blender_only, bool, 0600);
++MODULE_PARM_DESC(gxlx2_osd_blender_only,
++ "Experimental GXLX2 legacy OSD1 disable via blender only; default off");
++static bool e900_keep_osd_fetch(u32 index)
++{
++ return is_meson_gxlx2_cpu() && READ_ONCE(gxlx2_osd_blender_only) &&
++  index == OSD1 && osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL &&
++  osd_hw.osd_meson_dev.afbc_type != MESON_AFBC &&
++  osd_hw.osd_meson_dev.afbc_type != MALI_AFBC;
++}
++
+ static void osd_update_enable(u32 index)
+ {
+ 	u32 temp_val = 0;
+@@ -6186,7 +6204,7 @@
+ 			VSYNCOSD_CLR_MPEG_REG_MASK(VPP_MISC, temp_val);
+ 		}
+ 		if (!(osd_hw.osd_meson_dev.cpu_id ==
+-			__MESON_CPU_MAJOR_ID_G12B))
++			__MESON_CPU_MAJOR_ID_G12B) && !e900_keep_osd_fetch(index))
+ 			VSYNCOSD_CLR_MPEG_REG_MASK(
+ 				osd_reg->osd_ctrl_stat, 1 << 0);
+ 	}
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -19,6 +19,8 @@
+ #include <linux/module.h>
+ #include <linux/amlogic/media/registers/e900_debug.h>
+ E900_DEBUG_CHANNEL("registers")
++#include <linux/amlogic/media/registers/e900_gen3_debug.h>
++E900_GEN3_RMW_CHANNEL("registers")
+ #include <linux/notifier.h>
+ #include <linux/atomic.h>
+ #include <linux/types.h>
+@@ -167,11 +169,15 @@
+ 	 *((unsigned)((val)&((1L<<(len))-1)) << (start)))
+ 	 */
+ 	u32 toval = codec_reg_read(bus_type, reg);
++	u32 e900_before = toval;
+ 	u32 mask = (((1L << (len)) - 1) << (start));
+ 
+ 	toval &= ~mask;
+ 	toval |= (val << start) & mask;
+ 	codec_reg_write(bus_type, reg, toval);
++	if (bus_type == IO_VC_BUS)
++		e900_gen3_rmw(reg, 0, 0, start, len, e900_before,
++			e900_before, toval, 0, __builtin_return_address(0));
+ }
+ EXPORT_SYMBOL(codec_reg_write_bits);
+ 

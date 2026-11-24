@@ -22,17 +22,18 @@ import zlib
 # Pinned public enum AMVIDEOCAP_STATE_FINISHED_CAPTURE (decimal).
 CAPTURE_FINISHED = 300
 ROOT = Path('/')
-CHANNELS = ('amvideo', 'di', 'vpu', 'rdma', 'rdma_mgr', 'register_ops')
+CHANNELS = ('amvideo', 'di', 'vpu', 'rdma', 'rdma_mgr', 'register_ops', 'fb')
 PARAMS = {
     'amvideo': ('gxlx2_debug_events', 'gxlx2_stage_samples', 'gxlx2_hw_init_status',
                 'gxlx2_hw_init_step', 'gxlx2_hw_init_wait', 'gxlx2_g12_mif',
                 'gxlx2_gen3_clear_high', 'gxlx2_gen3_clear_high_submits'),
     'rdma': ('enable', 'irq_count', 'vsync_cfg_count', 'force_rdma_config',
-             'gxlx2_debug_state', 'gxlx2_debug_events'),
+             'gxlx2_debug_state', 'gxlx2_debug_events', 'gxlx2_gen3_rmw_events'),
     'di': ('bypass_all', 'bypass_post', 'bypass_post_state', 'gxlx2_debug_events'),
     'vpu': ('gxlx2_debug_events',),
-    'rdma_mgr': ('gxlx2_debug_events', 'gxlx2_debug_state'),
-    'register_ops': ('gxlx2_debug_events',),
+    'rdma_mgr': ('gxlx2_debug_events', 'gxlx2_debug_state', 'gxlx2_gen3_rmw_events'),
+    'fb': ('gxlx2_osd_blender_only', 'gxlx2_debug_events', 'osd_vpp_misc'),
+    'register_ops': ('gxlx2_debug_events', 'gxlx2_gen3_rmw_events'),
 }
 # These getters have been inspected; do not enumerate arbitrary sysfs attributes.
 READS = {
@@ -69,7 +70,10 @@ def arm(budget):
     if not 0 <= budget <= 512:
         raise ValueError('Event budget must be 0..512')
     marker('ARM budget=%d' % budget)
-    return {m: knob(m, 'gxlx2_debug_events', budget) for m in CHANNELS}
+    result = {m: knob(m, 'gxlx2_debug_events', budget) for m in CHANNELS}
+    result['gen3_rmw'] = {m: knob(m, 'gxlx2_gen3_rmw_events', budget)
+                          for m in ('rdma', 'rdma_mgr', 'register_ops', 'fb')}
+    return result
 
 
 def marker(text):
@@ -169,7 +173,7 @@ def canvas_capture(folder):
 def parse_logs(text):
     rows = []
     for line in text.splitlines():
-        for prefix in ('e900-stage ', 'e900-snapshot ', 'e900-debug '):
+        for prefix in ('e900-stage ', 'e900-snapshot ', 'e900-debug ', 'e900-gen3 ', 'e900-capture '):
             if prefix in line:
                 payload = line.split(prefix, 1)[1]
                 fields = dict(re.findall(r'([A-Za-z0-9_]+)=([^\s]+)', payload))
@@ -216,7 +220,7 @@ def snapshot(args):
         report['dmesg_status'] = d.returncode
         history = text.rsplit('E900_DEBUG ARM ', 1)
         report['lifecycle_since_arm'] = ([r for r in parse_logs(history[1])
-            if r['source'] == 'e900-debug'] if len(history) == 2 else [])
+            if r['source'] in ('e900-debug', 'e900-gen3')] if len(history) == 2 else [])
         (folder / 'dmesg.txt').write_text(text)
         begin, end = 'E900_DEBUG BEGIN ' + token, 'E900_DEBUG END ' + token
         if begin in text and end in text:
