@@ -1,0 +1,302 @@
+Subject: [DIAGNOSTIC] fixed legacy intermediate VPP pixel scan on active VSync
+
+Opt-in bounded 8 candidate taps x 2 coordinate grids x 8 points. Raw words
+and sparse samples only; hardware ports and packing require calibration.
+Restores probe fields; stops/contended selectors invalidate the scan.
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -231,6 +231,7 @@
+ }
+ 
+ E900_DEBUG_CHANNEL("video")
++#include "e900_pixel_probe.h"
+ 
+ /* Diagnostic experiment, not a default policy fix. Restores only the two
+  * bits differing between matched first-good/repeat-black GEN3 snapshots.
+@@ -862,6 +863,7 @@
+  */
+ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
+ {
++	e900_pixel_before_disable(layer_id, on);
+ 	e900_debug_event("layer_switch", layer_id, on, async, vd_layer[0].onoff_state);
+ 	if (layer_id == 0xff)
+ 		pr_debug("VID: VD all %s with async %s\n",
+@@ -5492,6 +5494,7 @@
+ 			vpp_misc_set);
+ 	}
+ 	e900_stage_output(vpp_misc_set);
++	e900_pixel_step(vinfo);
+ 	vpp_misc_set_save = vpp_misc_set;
+ 	post_blend_dummy_data_update();
+ 
+--- /dev/null
++++ b/drivers/amlogic/media/video_sink/e900_pixel_probe.h
+@@ -0,0 +1,267 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_PIXEL_PROBE_H
++#define E900_PIXEL_PROBE_H
++/* Candidate taps are the named ports in the pinned amvecm matrix_set API.
++ * No claim that GXLX2 implements all taps or the G12 data packing. Calibrate
++ * every port against a known scene. These are sparse pixels, NOT screenshots.
++ * Runs only on the normal VSync path with an owned, active legacy VD1 frame.
++ */
++#define E900_PIXEL_COUNT 128
++#define E900_PIXEL_PAGE 16
++#define E900_PIXEL_SELECT_MASK (0x3fu << 10)
++#define E900_PIXEL_POS_MASK 0x1fff1fffu
++/* Same legacy second word used by amvecm_post_matrix_data_show. */
++#define E900_PIXEL_COLOR1 0x1dd7
++struct e900_pixel_record {
++ u32 port, grid, x, y, raw0, raw1, frame, pts;
++};
++static const u32 e900_pixel_ports[] = {1, 33, 2, 34, 8, 40, 16, 48};
++static DEFINE_SPINLOCK(e900_pixel_lock);
++static struct e900_pixel_record e900_pixel_records[E900_PIXEL_COUNT];
++static unsigned int e900_pixel_status, e900_pixel_page, e900_pixel_count;
++static unsigned int e900_pixel_generation, e900_pixel_epoch, e900_pixel_wait;
++static unsigned int e900_pixel_reason, e900_pixel_guard;
++static unsigned int e900_pixel_iw, e900_pixel_ih, e900_pixel_ow, e900_pixel_oh;
++static u32 e900_pixel_saved_select, e900_pixel_saved_pos;
++static u32 e900_pixel_our_select, e900_pixel_our_pos;
++static bool e900_pixel_owned, e900_pixel_cancel, e900_pixel_restored;
++/* status: 0 idle, 1 queued, 2 running, 3 complete, 4 cancelled, 5 invalid,
++ * 6 restore deferred until an active/bus-ready frame. All state under lock.
++ */
++static void e900_pixel_restore(void)
++{
++ u32 select = READ_VCBUS_REG(VPP_MATRIX_CTRL);
++ u32 pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++ bool own_select = (select & E900_PIXEL_SELECT_MASK) == e900_pixel_our_select;
++ bool own_pos = (pos & E900_PIXEL_POS_MASK) == e900_pixel_our_pos;
++ /* Do not overwrite another selector user's changes. Restore only our
++  * fields and preserve current conversion coefficients/enables/reserved bits.
++  */
++ if (own_select)
++  WRITE_VCBUS_REG(VPP_MATRIX_CTRL,
++   (select & ~E900_PIXEL_SELECT_MASK) | e900_pixel_saved_select);
++ if (own_pos)
++  WRITE_VCBUS_REG(VPP_MATRIX_PROBE_POS,
++   (pos & ~E900_PIXEL_POS_MASK) | e900_pixel_saved_pos);
++ e900_pixel_restored = own_select && own_pos &&
++  (READ_VCBUS_REG(VPP_MATRIX_CTRL) & E900_PIXEL_SELECT_MASK) == e900_pixel_saved_select &&
++  (READ_VCBUS_REG(VPP_MATRIX_PROBE_POS) & E900_PIXEL_POS_MASK) == e900_pixel_saved_pos;
++ e900_pixel_owned = false;
++}
++static void e900_pixel_select(void)
++{
++ unsigned int slot = e900_pixel_count % 16;
++ unsigned int grid = slot / 8, col = slot % 8;
++ unsigned int w = grid ? e900_pixel_ow : e900_pixel_iw;
++ unsigned int h = grid ? e900_pixel_oh : e900_pixel_ih;
++ struct e900_pixel_record *r = &e900_pixel_records[e900_pixel_count];
++ u32 v;
++ r->port = e900_pixel_ports[e900_pixel_count / 16];
++ r->grid = grid;
++ r->x = ((2 * col + 1) * w) / 16;
++ r->y = h / 2;
++ e900_pixel_our_select = r->port << 10;
++ e900_pixel_our_pos = (r->x << 16) | r->y;
++ v = READ_VCBUS_REG(VPP_MATRIX_CTRL);
++ WRITE_VCBUS_REG(VPP_MATRIX_CTRL,
++  (v & ~E900_PIXEL_SELECT_MASK) | e900_pixel_our_select);
++ v = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++ WRITE_VCBUS_REG(VPP_MATRIX_PROBE_POS,
++  (v & ~E900_PIXEL_POS_MASK) | e900_pixel_our_pos);
++ e900_pixel_wait = 2; /* observe after two subsequent VSync callbacks */
++}
++static bool e900_pixel_active(const struct vinfo_s *vinfo,
++                             struct vframe_s **frame)
++{
++ struct video_layer_s *l = &vd_layer[0];
++ struct vframe_s *vf = l->dispbuf;
++ if (l->switch_vf && l->vf_ext)
++  vf = l->vf_ext;
++ e900_pixel_guard = 0;
++ if (!is_meson_gxlx2_cpu()) e900_pixel_guard |= 1;
++ if (!legacy_vpp) e900_pixel_guard |= 2;
++ if (gxlx2_g12_mif) e900_pixel_guard |= 4;
++ if (l->vd1_vd2_mux) e900_pixel_guard |= 8;
++ if (!l->enabled) e900_pixel_guard |= 16;
++ if (!vf) e900_pixel_guard |= 32;
++ if (vf && (vf->type & VIDTYPE_COMPRESS)) e900_pixel_guard |= 64;
++ if (!codec_reg_bus_ready(IO_VC_BUS)) e900_pixel_guard |= 128;
++ if (l->vd_mif_reg.vd_if0_gen_reg != 0x1a50 ||
++     l->vd_mif_reg.vd_if0_gen_reg3 != 0x1aa7) e900_pixel_guard |= 256;
++ if (cur_dev->vpp_off) e900_pixel_guard |= 512;
++ if (!vinfo) e900_pixel_guard |= 1024;
++ if ((vf && (!vf->width || !vf->height || vf->width > 1920 || vf->height > 1080)) ||
++     (vinfo && (!vinfo->width || !vinfo->height || vinfo->width > 1920 || vinfo->height > 1080)))
++  e900_pixel_guard |= 2048;
++ if (vinfo && vinfo->field_height != vinfo->height) e900_pixel_guard |= 4096;
++ if (e900_pixel_guard)
++  return false;
++ *frame = vf;
++ return true;
++}
++static void e900_pixel_step(const struct vinfo_s *vinfo)
++{
++ struct vframe_s *vf = NULL;
++ unsigned long flags;
++ struct e900_pixel_record *r;
++ bool active;
++ if (!is_meson_gxlx2_cpu())
++  return;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ if (e900_pixel_status != 1 && e900_pixel_status != 2 &&
++     e900_pixel_status != 6)
++  goto out;
++ active = e900_pixel_active(vinfo, &vf);
++ if (!active) {
++  /* Never probe or restore registers in a stopped/unknown-powered state.
++   * The explicit pre-disable hook normally restores before teardown. */
++  e900_pixel_reason = 1;
++  e900_pixel_status = e900_pixel_owned ? 6 : 5;
++  goto out;
++ }
++ if (e900_pixel_cancel || e900_pixel_status == 6 ||
++     (e900_pixel_status == 2 &&
++      (e900_pixel_epoch != READ_ONCE(e900_stage_epoch) ||
++       e900_pixel_iw != vf->width || e900_pixel_ih != vf->height ||
++       e900_pixel_ow != vinfo->width || e900_pixel_oh != vinfo->height))) {
++  e900_pixel_reason = e900_pixel_cancel ? 5 : (e900_pixel_status == 6 ? 1 : 2);
++  if (e900_pixel_owned)
++   e900_pixel_restore();
++  e900_pixel_status = e900_pixel_cancel ? 4 : 5;
++  goto out;
++ }
++ if (e900_pixel_status == 1) {
++  e900_pixel_saved_select = READ_VCBUS_REG(VPP_MATRIX_CTRL) & E900_PIXEL_SELECT_MASK;
++  e900_pixel_saved_pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS) & E900_PIXEL_POS_MASK;
++  e900_pixel_iw = vf->width; e900_pixel_ih = vf->height;
++  e900_pixel_ow = vinfo->width; e900_pixel_oh = vinfo->height;
++  e900_pixel_epoch = READ_ONCE(e900_stage_epoch);
++  e900_pixel_owned = true; e900_pixel_status = 2;
++  e900_pixel_select();
++  goto out;
++ }
++ if ((READ_VCBUS_REG(VPP_MATRIX_CTRL) & E900_PIXEL_SELECT_MASK) != e900_pixel_our_select ||
++     (READ_VCBUS_REG(VPP_MATRIX_PROBE_POS) & E900_PIXEL_POS_MASK) != e900_pixel_our_pos) {
++  e900_pixel_restore(); e900_pixel_status = 5; e900_pixel_reason = 3;
++  goto out;
++ }
++ if (--e900_pixel_wait)
++  goto out;
++ r = &e900_pixel_records[e900_pixel_count];
++ r->raw0 = READ_VCBUS_REG(VPP_MATRIX_PROBE_COLOR);
++ r->raw1 = READ_VCBUS_REG(E900_PIXEL_COLOR1);
++ r->frame = vf->index; r->pts = vf->pts;
++ e900_pixel_count++;
++ if (e900_pixel_count == E900_PIXEL_COUNT) {
++  e900_pixel_restore();
++  e900_pixel_status = e900_pixel_restored ? 3 : 5;
++  if (!e900_pixel_restored) e900_pixel_reason = 4;
++ } else {
++  e900_pixel_select();
++ }
++out:
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++}
++/* Called before the ordinary layer-disable writes, while the display owns
++ * its frame and before deferred memory/clock teardown. No stopped-bank read.
++ */
++static void e900_pixel_before_disable(u32 layer_id, bool on)
++{
++ struct vframe_s *vf = NULL;
++ unsigned long flags;
++ if (!is_meson_gxlx2_cpu() || (layer_id && layer_id != 0xff) || on)
++  return;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ if (e900_pixel_status == 1) {
++  e900_pixel_status = 4; e900_pixel_reason = 5;
++ } else if (e900_pixel_owned) {
++  if (e900_pixel_active(get_current_vinfo(), &vf)) {
++   e900_pixel_restore();
++   e900_pixel_status = 4; e900_pixel_reason = 5;
++  } else {
++   e900_pixel_status = 6; e900_pixel_reason = 1;
++  }
++ }
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++}
++static int e900_pixel_scan_set(const char *s, const struct kernel_param *kp)
++{
++ unsigned int value;
++ unsigned long flags;
++ int ret = kstrtouint(s, 0, &value);
++ (void)kp;
++ if (ret) return ret;
++ if (value > 1) return -EINVAL;
++ if (!is_meson_gxlx2_cpu()) return -ENODEV;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ if (!value) {
++  e900_pixel_cancel = true;
++  if (e900_pixel_status == 1) e900_pixel_status = 4;
++ } else if (e900_pixel_owned || e900_pixel_status == 1 || e900_pixel_status == 2) {
++  ret = -EBUSY;
++ } else {
++  e900_pixel_count = 0; e900_pixel_generation++;
++  e900_pixel_reason = e900_pixel_guard = 0;
++  e900_pixel_iw = e900_pixel_ih = e900_pixel_ow = e900_pixel_oh = 0;
++  e900_pixel_cancel = false; e900_pixel_restored = false;
++  e900_pixel_status = 1;
++ }
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++ return ret;
++}
++static int e900_pixel_state_get(char *buf, const struct kernel_param *kp)
++{
++ unsigned long flags;
++ int n;
++ (void)kp;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ n = scnprintf(buf, PAGE_SIZE,
++  "generation=%u status=%u count=%u total=%u owned=%u restored=%u epoch=%u reason=%u guard=%x input=%ux%u output=%ux%u\n",
++  e900_pixel_generation, e900_pixel_status, e900_pixel_count,
++  E900_PIXEL_COUNT, e900_pixel_owned, e900_pixel_restored, e900_pixel_epoch, e900_pixel_reason, e900_pixel_guard,
++  e900_pixel_iw, e900_pixel_ih, e900_pixel_ow, e900_pixel_oh);
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++ return n;
++}
++static int e900_pixel_page_set(const char *s, const struct kernel_param *kp)
++{
++ unsigned int value;
++ int ret = kstrtouint(s, 0, &value);
++ (void)kp;
++ if (ret) return ret;
++ if (value >= E900_PIXEL_COUNT / E900_PIXEL_PAGE) return -EINVAL;
++ WRITE_ONCE(e900_pixel_page, value);
++ return 0;
++}
++static int e900_pixel_data_get(char *buf, const struct kernel_param *kp)
++{
++ unsigned long flags;
++ unsigned int i, begin;
++ int n = 0;
++ (void)kp;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ begin = READ_ONCE(e900_pixel_page) * E900_PIXEL_PAGE;
++ for (i = begin; i < e900_pixel_count && i < begin + E900_PIXEL_PAGE; i++) {
++  const struct e900_pixel_record *r = &e900_pixel_records[i];
++  n += scnprintf(buf + n, PAGE_SIZE - n,
++   "sample=%u generation=%u port=%u grid=%u x=%u y=%u raw0=%08x raw1=%08x frame=%u pts=%u\n",
++   i, e900_pixel_generation, r->port, r->grid, r->x, r->y,
++   r->raw0, r->raw1, r->frame, r->pts);
++ }
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++ return n;
++}
++static const struct kernel_param_ops e900_pixel_scan_ops = {
++ .set = e900_pixel_scan_set, .get = e900_pixel_state_get,
++};
++static const struct kernel_param_ops e900_pixel_page_ops = {
++ .set = e900_pixel_page_set, .get = param_get_uint,
++};
++static const struct kernel_param_ops e900_pixel_data_ops = {
++ .get = e900_pixel_data_get,
++};
++module_param_cb(gxlx2_pixel_scan, &e900_pixel_scan_ops, NULL, 0600);
++module_param_cb(gxlx2_pixel_page, &e900_pixel_page_ops, &e900_pixel_page, 0600);
++module_param_cb(gxlx2_pixel_data, &e900_pixel_data_ops, NULL, 0400);
++MODULE_PARM_DESC(gxlx2_pixel_scan, "Opt-in fixed legacy VPP candidate pixel scan; write 1 start, 0 cancel");
++#endif

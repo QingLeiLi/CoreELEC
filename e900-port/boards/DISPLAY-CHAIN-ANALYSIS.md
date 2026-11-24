@@ -75,3 +75,7 @@ CPU函数负责配置和帧交接，硬件自行处理像素。函数返回、�
 6. **live达到33且回环恢复运动彩条**：重复Stop/replay验证可重复性，并用用户可观察的HDMI结果验收；单次恢复不算完成。
 
 287完整ARM构建和新hook实机取证已完成；GEN3实验未恢复输出，RDMA完成中断正常也能复现重播异常。上述分支保留为原实验设计，最新判读以[287验证记录](BUILD287-VALIDATION.md)为准。
+
+## 新增观测实现（0027，尚待校准）
+
+通过legacy VPP matrix probe进行VADJ1/VADJ2/postblend/OSD1输入输出候选的固定坐标采样。未确认所有selector的物理位置与GXLX2支持，不把它们直接标成VD1/PPS独立截图。保护、数据格式和校准二分流程见[中间像素观测](INTERMEDIATE-PIXEL-PROBES.md)。

@@ -138,3 +138,7 @@ python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 ## GEN3来源与OSD单项实验（0024）
 
 独立固定寄存器RMW预算、软件基值来源、默认关闭的legacy OSD blender-only实验及A/B流程见[实验说明](GEN3-OSD-EXPERIMENT.md)。新增功能主机检查通过，完整ARM/实机仍待新构建。
+
+## 中间像素候选探针（0027）
+
+现已实现8个源码命名的VPP候选selector、128点固定扫描及原始值导出，待实机逐点校准；详见[中间像素观测](INTERMEDIATE-PIXEL-PROBES.md)。上文“尚无独立取点”描述的是既有实测证据，不能把新源码等同于已验证观测。

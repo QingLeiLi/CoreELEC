@@ -35,7 +35,8 @@ PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-r
                                          "linux/0022-gxlx2-debug-foundation.patch",
                                          "linux/0023-gxlx2-gen3-source-experiment.patch",
                                          "linux/0024-gxlx2-rmw-and-osd-diagnostics.patch",
-                                         "linux/0025-gxlx2-display-transition-evidence.patch"]
+                                         "linux/0025-gxlx2-display-transition-evidence.patch",
+                                         "linux/0027-gxlx2-intermediate-pixel-probes.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
 HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")

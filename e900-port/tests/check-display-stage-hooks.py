@@ -67,6 +67,8 @@ static int param_get_uint(char *b,const struct kernel_param *p){return sprintf(b
 static int kstrtouint(const char *s,unsigned base,unsigned *out){char *e;unsigned long n=strtoul(s,&e,base);if(e==s||(*e&&*e!='\n'))return -EINVAL;if(n>UINT32_MAX)return -ERANGE;*out=n;return 0;}
 static unsigned cmpxchg(unsigned *p,unsigned old,unsigned value){unsigned seen=*p;if(seen==old)*p=value;return seen;}
 static void e900_debug_event(const char *s,u32 a,u32 b,u32 c,u32 d){(void)s;(void)a;(void)b;(void)c;(void)d;}
+/* GEN3 provenance itself executes in check-gen3-rmw-osd.py. */
+static void e900_gen3_rmw(u32 reg,int handle,int mode,u32 start,u32 len,u32 hardware,u32 base,u32 result,int source,void*caller){(void)reg;(void)handle;(void)mode;(void)start;(void)len;(void)hardware;(void)base;(void)result;(void)source;(void)caller;}
 static unsigned cpu=0x2a,live_reads,shadow_reads,log_lines,hw_writes;
 static bool is_meson_gxlx2_cpu(void){return cpu==0x2a;}
 static unsigned get_cpu_type(void){return cpu;}

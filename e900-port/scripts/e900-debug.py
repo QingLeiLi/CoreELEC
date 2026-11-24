@@ -26,7 +26,7 @@ CHANNELS = ('amvideo', 'di', 'vpu', 'rdma', 'rdma_mgr', 'register_ops', 'fb')
 PARAMS = {
     'amvideo': ('gxlx2_debug_events', 'gxlx2_stage_samples', 'gxlx2_hw_init_status',
                 'gxlx2_hw_init_step', 'gxlx2_hw_init_wait', 'gxlx2_g12_mif',
-                'gxlx2_gen3_clear_high', 'gxlx2_gen3_clear_high_submits'),
+                'gxlx2_gen3_clear_high', 'gxlx2_gen3_clear_high_submits', 'gxlx2_pixel_scan'),
     'rdma': ('enable', 'irq_count', 'vsync_cfg_count', 'force_rdma_config',
              'gxlx2_debug_state', 'gxlx2_debug_events', 'gxlx2_gen3_rmw_events'),
     'di': ('bypass_all', 'bypass_post', 'bypass_post_state', 'gxlx2_debug_events'),
@@ -212,6 +212,18 @@ def snapshot(args):
         time.sleep(0.75)
         if args.pixels:
             report['pixel_capture'] = canvas_capture(folder)
+        if getattr(args, 'pipeline_pixels', False):
+            import runpy
+            probe = Path(__file__).resolve().with_name('e900-pixel-probe.py')
+            if probe.is_file():
+                client = runpy.run_path(str(probe))
+                result = client['collect']()
+                if result.get('status') == 'collected_uncalibrated':
+                    (folder / 'pipeline-pixels.svg').write_text(client['render_svg'](result))
+                report['pipeline_pixels'] = result
+                (folder / 'pipeline-pixels.json').write_text(json.dumps(result, indent=2) + '\n')
+            else:
+                report['pipeline_pixels'] = {'status':'unavailable', 'error':'Missing e900-pixel-probe.py'}
         report['after'] = state()
         report['kodi'] = kodi_state()
         marker('END ' + token)
@@ -276,12 +288,17 @@ def compare(left, right):
     for key in ('video_state', 'display_mode', 'vfm'):
         if aa.get(key) != bb.get(key):
             readback_diffs[key] = {'left': aa.get(key), 'right': bb.get(key)}
+    import runpy
+    probe = Path(__file__).resolve().with_name('e900-pixel-probe.py')
+    pipeline = {'status':'unavailable', 'error':'Missing probe collector'}
+    if probe.is_file():
+        pipeline = runpy.run_path(str(probe))['compare_scans'](a.get('pipeline_pixels', {}), b.get('pipeline_pixels', {}))
     return {'schema': 1, 'labels': [a['label'], b['label']],
             'same_boot': a['before']['boot_id'] == b['before']['boot_id'],
             'missing_interval_evidence': missing, 'configuration_differences': diffs,
-            'pixel_comparison': pixels, 'software_readback_differences': readback_diffs,
+            'pixel_comparison': pixels, 'pipeline_pixel_comparison': pipeline, 'software_readback_differences': readback_diffs,
             'parameters': {'left': a.get('after', {}).get('parameters', {}), 'right': b.get('after', {}).get('parameters', {})},
-            'conclusion': 'Differences are candidates; no automatic root-cause verdict. No VD1/VPP pixel tap is implemented.'}
+            'conclusion': 'Differences are candidates; no automatic root-cause verdict. Intermediate sparse taps require per-port hardware/scene calibration.'}
 
 
 def main():
@@ -291,6 +308,7 @@ def main():
     sub.add_parser('disarm')
     s = sub.add_parser('snapshot'); s.add_argument('--label', required=True)
     s.add_argument('--output', default='/storage/e900-debug'); s.add_argument('--pixels', action='store_true')
+    s.add_argument('--pipeline-pixels', action='store_true', help='Opt-in fixed legacy intermediate sparse pixel scan; calibration required')
     c = sub.add_parser('compare'); c.add_argument('normal'); c.add_argument('abnormal')
     args = p.parse_args()
     if args.command == 'compare':

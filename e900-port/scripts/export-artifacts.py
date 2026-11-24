@@ -76,6 +76,8 @@ for source in paths:
 port = pathlib.Path(__file__).resolve().parents[1]
 for relative, source in [
     ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
+    ("debug-tools/e900-pixel-probe.py", port / "scripts/e900-pixel-probe.py"),
+    ("debug-tools/INTERMEDIATE-PIXEL-PROBES.md", port / "boards/INTERMEDIATE-PIXEL-PROBES.md"),
     ("debug-tools/DEBUG-FOUNDATION.md", port / "boards/DEBUG-FOUNDATION.md"),
     *[("debug-tools/" + name, port / "boards" / name) for name in
       ("GEN3-OSD-EXPERIMENT.md", "GEN3-RESEARCH-20261124.md", "BUILD287-VALIDATION.md")],

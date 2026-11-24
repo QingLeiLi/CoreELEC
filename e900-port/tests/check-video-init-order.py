@@ -130,6 +130,8 @@ static int blocking_notifier_call_chain(struct fake_chain *c,unsigned long event
 }
 ''' + buses + '\n' + struct + r'''
 static void e900_debug_event(const char*s,unsigned a,unsigned b,unsigned c,unsigned d){(void)s;(void)a;(void)b;(void)c;(void)d;}
+/* Executed independently by check-gen3-rmw-osd.py. */
+static void e900_gen3_rmw(unsigned reg,int handle,int mode,unsigned start,unsigned len,unsigned hardware,unsigned base,unsigned result,int source,void*caller){(void)reg;(void)handle;(void)mode;(void)start;(void)len;(void)hardware;(void)base;(void)result;(void)source;(void)caller;}
 static struct chip_register_ops *amports_ops[BUS_MAX];
 static unsigned e900_bus_write_drops[BUS_MAX];
 #define atomic_inc(p) (++*(p))

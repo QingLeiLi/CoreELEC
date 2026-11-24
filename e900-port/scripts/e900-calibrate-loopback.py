@@ -98,7 +98,12 @@ def main():
         return text
 
     def snapshot(label):
-        result=run(['python3',a.debug_tool,'snapshot','--label',label,'--pixels'])
+        command=['python3',a.debug_tool,'snapshot','--label',label,'--pixels']
+        # Only the active playback scan is useful. Stopped state remains software
+        # evidence; it must not request reads from powered-down pixel banks.
+        if label != 'stopped_unobserved' and Path('/sys/module/amvideo/parameters/gxlx2_pixel_scan').exists():
+            command.append('--pipeline-pixels')
+        result=run(command,timeout=25)
         report[label+'_state_path']=result.strip();save()
 
     def pair(label):
