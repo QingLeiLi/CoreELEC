@@ -55,6 +55,7 @@ with tempfile.TemporaryDirectory(prefix='e900-debug-check-') as temp:
 typedef uint32_t u32;
 #define noinline __attribute__((noinline))
 #define READ_ONCE(x) (x)
+#define IS_ENABLED(x) 0 /* exercise the no-RDMA progress fallback */
 #define WRITE_ONCE(x,v) ((x)=(v))
 #define ATOMIC_INIT(x) {x}
 typedef struct {int v;} atomic_t;
@@ -122,6 +123,7 @@ int main(void){struct kernel_param p={&gxlx2_debug_events};struct vframe_s vf={0
  assert(!e900_debug_ops.set("2",&p));cpu=0x21;e900_debug_event("other",0,0,0,0);assert(lines==0&&gxlx2_debug_events==2);
  cpu=0x2a;e900_debug_event("one",0,0,0,0);e900_debug_event("two",0,0,0,0);e900_debug_event("exhausted",0,0,0,0);assert(lines==2&&gxlx2_debug_events==0);
  assert(!e900_debug_ops.set("0",&p));assert(!e900_debug_ops.set("512",&p));
+ u32 progress[4]={1,2,3,4};e900_rdma_progress(progress);assert(!progress[0]&&!progress[1]&&!progress[2]&&!progress[3]);
  char out[4096];irq_count[0]=123;rdma_info.rdma_ins[1].rdma_item_count=77;
  assert(e900_rdma_state_get(out,&p)>0);assert(strstr(out,"irq=123"));
  assert(e900_manager_state_get(out,&p)>0);assert(strstr(out,"items=77"));

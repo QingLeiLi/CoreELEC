@@ -1,0 +1,100 @@
+{
+  "boot": "56956c13-d111-4a0f-af89-3d3cc85d1e36",
+  "steps": [
+    {
+      "label": "pure1",
+      "state": {
+        "generation": "1",
+        "status": "3",
+        "count": "128",
+        "total": "128",
+        "owned": "0",
+        "restored": "1",
+        "epoch": "0",
+        "reason": "0",
+        "guard": "0",
+        "input": "1280x720",
+        "output": "1920x1080"
+      },
+      "port1_unique": 8
+    },
+    {
+      "label": "pure2",
+      "state": {
+        "generation": "2",
+        "status": "3",
+        "count": "128",
+        "total": "128",
+        "owned": "0",
+        "restored": "1",
+        "epoch": "0",
+        "reason": "0",
+        "guard": "0",
+        "input": "1280x720",
+        "output": "1920x1080"
+      },
+      "port1_unique": 8
+    },
+    {
+      "label": "after-register-log",
+      "state": {
+        "generation": "3",
+        "status": "3",
+        "count": "128",
+        "total": "128",
+        "owned": "0",
+        "restored": "1",
+        "epoch": "3",
+        "reason": "0",
+        "guard": "0",
+        "input": "1280x720",
+        "output": "1920x1080"
+      },
+      "port1_unique": 8
+    },
+    {
+      "label": "after-ge2d",
+      "state": {
+        "generation": "4",
+        "status": "3",
+        "count": "128",
+        "total": "128",
+        "owned": "0",
+        "restored": "1",
+        "epoch": "3",
+        "reason": "0",
+        "guard": "0",
+        "input": "1280x720",
+        "output": "1920x1080"
+      },
+      "port1_unique": 8
+    }
+  ],
+  "screen_observed": false,
+  "register_log_snapshot": "/storage/e900-debug/56956c13-d111-4a0f-af89-3d3cc85d1e36-1795539623930153625-sham-register-only",
+  "ge2d": {
+    "point": "display_canvas_via_ge2d",
+    "width": 320,
+    "height": 180,
+    "pixel_order": "BGR24",
+    "downstream_pixel_evidence": false,
+    "actual_width": 320,
+    "actual_height": 180,
+    "state": 300,
+    "source_width": 1280,
+    "source_height": 720,
+    "timestamp_ms_low32": 23966655,
+    "format": 16777728,
+    "bytes": 172800,
+    "seconds": 0.004742583000009404,
+    "status": "ok",
+    "sha256": "2cd522c9967bb4ca9a11a2117f57106b44aaa65973d7d950f8c76c560ddaa8e7",
+    "statistics": {
+      "minimum": 0,
+      "maximum": 255,
+      "mean_byte": 127.80267939814814,
+      "unique_byte_values": 52
+    }
+  },
+  "status": "all_positive"
+}

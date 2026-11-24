@@ -113,7 +113,7 @@ with tempfile.TemporaryDirectory(prefix="e900-usb-check-") as directory:
         # build look flash-ready. Require the core bundle, allow only diagnostic
         # paths, and check every exported file against source + metadata hash.
         required = {"debug-tools/" + name for name in [
-            "e900-debug.py", "e900-pixel-probe.py", "INTERMEDIATE-PIXEL-PROBES.md",
+            "e900-debug.py", "e900-pixel-probe.py", "e900-transition.py", "BLEND-TRANSITION-RECORDER.md", "INTERMEDIATE-PIXEL-PROBES.md",
             "DEBUG-FOUNDATION.md", "DISPLAY-CHAIN-ANALYSIS.md",
             "LEGACY-LOOPBACK-CALIBRATION-20261124.md", "GEN3-OSD-EXPERIMENT.md",
             "GEN3-RESEARCH-20261124.md", "BUILD287-VALIDATION.md",

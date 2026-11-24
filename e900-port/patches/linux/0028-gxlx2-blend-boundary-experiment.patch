@@ -1,0 +1,62 @@
+Subject: [DIAGNOSTIC] split GXLX2 active-frame pre/post blend shutdown
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -231,6 +231,48 @@
+ }
+ 
+ E900_DEBUG_CHANNEL("video")
++
++/* Diagnostic only: split the legacy VD1 pre/post blend shutdown boundary.
++ * Never retain a fetch path after Stop, frame release, or a real layer-off.
++ * The caller still uses the existing RDMA submission and owns the frame.
++ */
++static unsigned int gxlx2_blend_hold;
++static int e900_blend_hold_set(const char *s, const struct kernel_param *kp)
++{
++ unsigned int value;
++ int ret = kstrtouint(s, 0, &value);
++ (void)kp;
++ if (ret) return ret;
++ if (value > 3) return -EINVAL;
++ WRITE_ONCE(gxlx2_blend_hold, value);
++ return 0;
++}
++static const struct kernel_param_ops e900_blend_hold_ops = {
++ .set = e900_blend_hold_set, .get = param_get_uint,
++};
++module_param_cb(gxlx2_blend_hold, &e900_blend_hold_ops, &gxlx2_blend_hold, 0600);
++MODULE_PARM_DESC(gxlx2_blend_hold,
++ "Diagnostic active-frame global-output gating: 0=normal, 1=keep pre, 2=keep post, 3=keep both; default off");
++static u32 e900_blend_hold_apply(u32 requested, u32 mode, bool off_req)
++{
++ struct video_layer_s *l = &vd_layer[0];
++ struct vframe_s *vf = l->dispbuf;
++ unsigned int hold = READ_ONCE(gxlx2_blend_hold);
++ if (!hold || hold > 3 || !is_meson_gxlx2_cpu() || !legacy_vpp ||
++     gxlx2_g12_mif || l->vd1_vd2_mux || cur_dev->vpp_off ||
++     (mode & COMPOSE_MODE_3D) || off_req || l->global_output ||
++     l->force_black || l->disable_video || !l->enabled_status_saved ||
++     l->onoff_state != VIDEO_ENABLE_STATE_IDLE || l->switch_vf ||
++     !vf || is_local_vf(vf) || (vf->type & VIDTYPE_COMPRESS) ||
++     l->vd_mif_reg.vd_if0_gen_reg != 0x1a50)
++  return requested;
++ /* Reinsert only the selected input bit(s), never the other layer or the
++  * global preblend-enable bit. Mode2/3 can intentionally keep video visible.
++  */
++ if (hold & 1) requested |= VPP_VD1_PREBLEND;
++ if (hold & 2) requested |= VPP_VD1_POSTBLEND;
++ return requested;
++}
+ #include "e900_pixel_probe.h"
+ 
+ /* Diagnostic experiment, not a default policy fix. Restores only the two
+@@ -5345,6 +5387,8 @@
+ 			VPP_VD2_POSTBLEND);
+ 
+ 	force_flush |= vpp_zorder_check();
++
++	vpp_misc_set = e900_blend_hold_apply(vpp_misc_set, mode, video1_off_req);
+ 
+ 	if (!legacy_vpp) {
+ 		u32 set_value = 0;

@@ -1,0 +1,355 @@
+Subject: [DIAGNOSTIC] fixed-point bounded blend-transition recorder
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/version.h>
+ #include <linux/kernel.h>
++#include <linux/jiffies.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+@@ -274,6 +275,7 @@
+  return requested;
+ }
+ #include "e900_pixel_probe.h"
++#include "e900_edge_probe.h"
+ 
+ /* Diagnostic experiment, not a default policy fix. Restores only the two
+  * bits differing between matched first-good/repeat-black GEN3 snapshots.
+@@ -905,6 +907,7 @@
+  */
+ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
+ {
++	e900_edge_before_disable(layer_id, on);
+ 	e900_pixel_before_disable(layer_id, on);
+ 	e900_debug_event("layer_switch", layer_id, on, async, vd_layer[0].onoff_state);
+ 	if (layer_id == 0xff)
+@@ -5174,6 +5177,7 @@
+ 	vpp_misc_save = READ_VCBUS_REG(VPP_MISC + vpp_off);
+ 
+ 	vpp_misc_set = vpp_misc_save;
++	e900_edge_hook(vinfo, 0, vpp_misc_set, false);
+ 	if (mode & COMPOSE_MODE_BYPASS_CM) {
+ 		vpp_misc_set &= ~VPP_CM_ENABLE;
+ 	} else if (is_dolby_vision_on()) {
+@@ -5537,6 +5541,7 @@
+ 			VPP_MISC + vpp_off,
+ 			vpp_misc_set);
+ 	}
++	e900_edge_hook(vinfo, 1, vpp_misc_set, video1_off_req);
+ 	e900_stage_output(vpp_misc_set);
+ 	e900_pixel_step(vinfo);
+ 	vpp_misc_set_save = vpp_misc_set;
+--- a/drivers/amlogic/media/video_sink/e900_pixel_probe.h
++++ b/drivers/amlogic/media/video_sink/e900_pixel_probe.h
+@@ -24,6 +24,7 @@
+ static unsigned int e900_pixel_iw, e900_pixel_ih, e900_pixel_ow, e900_pixel_oh;
+ static u32 e900_pixel_saved_select, e900_pixel_saved_pos;
+ static u32 e900_pixel_our_select, e900_pixel_our_pos;
++static bool e900_edge_reserved;
+ static bool e900_pixel_owned, e900_pixel_cancel, e900_pixel_restored;
+ /* status: 0 idle, 1 queued, 2 running, 3 complete, 4 cancelled, 5 invalid,
+  * 6 restore deferred until an active/bus-ready frame. All state under lock.
+@@ -197,7 +198,7 @@
+  if (!value) {
+   e900_pixel_cancel = true;
+   if (e900_pixel_status == 1) e900_pixel_status = 4;
+- } else if (e900_pixel_owned || e900_pixel_status == 1 || e900_pixel_status == 2) {
++ } else if (e900_edge_reserved || e900_pixel_owned || e900_pixel_status == 1 || e900_pixel_status == 2) {
+   ret = -EBUSY;
+  } else {
+   e900_pixel_count = 0; e900_pixel_generation++;
+--- a/include/linux/amlogic/media/registers/e900_debug.h
++++ b/include/linux/amlogic/media/registers/e900_debug.h
+@@ -38,4 +38,13 @@
+   atomic_inc_return(&e900_debug_seq), event, a, b, c, d, __builtin_return_address(0)); \
+ }
+ void e900_video_event(const char *event, u32 a, u32 b, u32 c, u32 d);
++/* Software-only progress, counters are not an atomic hardware snapshot. */
++#if IS_ENABLED(CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA)
++void e900_rdma_progress(u32 values[4]);
++#else
++static inline void e900_rdma_progress(u32 values[4])
++{
++ values[0] = values[1] = values[2] = values[3] = 0;
++}
+ #endif
++#endif
+--- a/drivers/amlogic/media/common/rdma/rdma.c
++++ b/drivers/amlogic/media/common/rdma/rdma.c
+@@ -85,6 +85,15 @@
+ };
+ module_param_cb(gxlx2_debug_state, &e900_rdma_state_ops, NULL, 0400);
+ MODULE_PARM_DESC(gxlx2_debug_state, "Read-only software RDMA channel state");
++
++void e900_rdma_progress(u32 values[4])
++{
++ values[0] = READ_ONCE(irq_count[0]);
++ values[1] = READ_ONCE(vsync_cfg_count[0]);
++ values[2] = READ_ONCE(force_rdma_config[0]);
++ values[3] = READ_ONCE(rdma_done[0]);
++}
++EXPORT_SYMBOL(e900_rdma_progress);
+ 
+ static void vsync_rdma_irq(void *arg);
+ static void line_n_int_rdma_irq(void *arg);
+--- /dev/null
++++ b/drivers/amlogic/media/video_sink/e900_edge_probe.h
+@@ -0,0 +1,255 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_EDGE_PROBE_H
++#define E900_EDGE_PROBE_H
++/* Bounded, fixed-point BEFORE / submitted / next-VSync observations.
++ * No printk, policy changes, arbitrary addresses or DMA reads. Shares the
++ * existing pixel selector lease; a software-disabled blend is NOT necessarily
++ * a powered-down VD1. Unknown raw-color validity is never called black.
++ */
++#define E900_EDGE_COUNT 512
++#define E900_EDGE_PAGE 8
++struct e900_edge_record {
++ u64 stamp;
++ u32 tick, phase, flags, guard, global, enabled, disable, off, epoch;
++ u32 frame, pts, mem, gen, gen3, fmt, fifo, vpp_fifo;
++ u32 live, wanted, shadow, ctrl, pos;
++ u32 dummy, clip0, clip1, route0, route1, gate0, gate1, sc_gate, xvy_gate;
++ u32 raw0, raw1, irq, configured, force, done;
++};
++static struct e900_edge_record e900_edge_records[E900_EDGE_COUNT];
++static unsigned int e900_edge_status, e900_edge_generation, e900_edge_count;
++static unsigned int e900_edge_tick, e900_edge_page, e900_edge_restore_ticks;
++static unsigned int e900_edge_reason, e900_edge_guard, e900_edge_x, e900_edge_y;
++static unsigned int e900_edge_width, e900_edge_height, e900_edge_ow, e900_edge_oh;
++static bool e900_edge_seen_off, e900_edge_cancel;
++static int e900_edge_mem;
++/* Existing active-scan guards plus a narrow exception for GLOBAL blend-off.
++ * No exception for real disable, released/local/compressed frames, clocks
++ * unavailable, memory-off, a foreign register bank, or layer-off requests.
++ */
++static bool e900_edge_safe(const struct vinfo_s *vi, bool off_req,
++                           struct vframe_s **frame)
++{
++ struct video_layer_s *l = &vd_layer[0];
++ struct vframe_s *vf = l->dispbuf;
++ e900_edge_guard = 0;
++ if (!is_meson_gxlx2_cpu()) e900_edge_guard |= 1;
++ if (!legacy_vpp || gxlx2_g12_mif || l->vd1_vd2_mux || cur_dev->vpp_off)
++  e900_edge_guard |= 2;
++ if (!vf || l->switch_vf || (vf && (is_local_vf(vf) ||
++     (vf->type & (VIDTYPE_COMPRESS | VIDTYPE_MVC))))) e900_edge_guard |= 4;
++ if (l->disable_video || !l->enabled_status_saved || off_req ||
++     l->onoff_state != VIDEO_ENABLE_STATE_IDLE) e900_edge_guard |= 8;
++ if (!l->enabled && l->global_output &&
++     !(e900_edge_status == 2 && e900_edge_seen_off && e900_pixel_owned))
++  e900_edge_guard |= 16;
++ if (!codec_reg_bus_ready(IO_VC_BUS)) e900_edge_guard |= 32;
++ if (l->vd_mif_reg.vd_if0_gen_reg != 0x1a50 ||
++     l->vd_mif_reg.vd_if0_gen_reg3 != 0x1aa7) e900_edge_guard |= 64;
++ if (!vi || !vi->width || !vi->height || vi->width > 1920 || vi->height > 1080 ||
++     vi->field_height != vi->height || (vf && (!vf->width || !vf->height ||
++     vf->width > 1920 || vf->height > 1080))) e900_edge_guard |= 128;
++ e900_edge_mem = -1;
++ if (e900_edge_guard) return false;
++ /* Driver callback reads the fixed HHI memory-power control, not VD1 data. */
++ e900_edge_mem = get_vpu_mem_pd_vmod(VPU_VIU_VD1);
++ if (e900_edge_mem != VPU_MEM_POWER_ON) {
++  e900_edge_guard |= 256;
++  return false;
++ }
++ *frame = vf;
++ return true;
++}
++static void e900_edge_finish(unsigned int status, unsigned int reason,
++                             bool safe)
++{
++ e900_edge_reason = reason;
++ if (e900_pixel_owned) {
++  if (!safe) { e900_edge_status = 6; return; }
++  e900_pixel_restore();
++  if (!e900_pixel_restored) { status = 5; e900_edge_reason = 4; }
++ }
++ e900_edge_status = status;
++ e900_edge_reserved = false;
++}
++static void e900_edge_record(unsigned int phase, u32 wanted, bool off_req,
++                             struct vframe_s *vf, bool safe)
++{
++ struct video_layer_s *l = &vd_layer[0];
++ struct e900_edge_record *r;
++ u32 progress[4] = {0, 0, 0, 0};
++ if (e900_edge_count >= E900_EDGE_COUNT) return;
++ r = &e900_edge_records[e900_edge_count++];
++ memset(r, 0, sizeof(*r));
++ r->stamp = get_jiffies_64(); r->tick = e900_edge_tick; r->phase = phase;
++ r->guard = e900_edge_guard; r->global = l->global_output;
++ r->enabled = l->enabled; r->disable = l->disable_video;
++ r->off = off_req; r->epoch = READ_ONCE(e900_stage_epoch);
++ r->wanted = wanted; r->mem = e900_edge_mem;
++ e900_rdma_progress(progress);
++ r->irq = progress[0]; r->configured = progress[1];
++ r->force = progress[2]; r->done = progress[3];
++ if (!safe) return; /* Software-only row: zeros below are NOT hardware. */
++ r->frame = vf->index; r->pts = vf->pts;
++ r->gen = READ_VCBUS_REG(0x1a50); r->gen3 = READ_VCBUS_REG(0x1aa7);
++ r->fmt = READ_VCBUS_REG(0x1a68); r->fifo = READ_VCBUS_REG(0x1a63);
++ r->vpp_fifo = READ_VCBUS_REG(VPP_FIFO_STATUS);
++ r->live = READ_VCBUS_REG(VPP_MISC); r->shadow = VSYNC_RD_MPEG_REG(VPP_MISC);
++ r->ctrl = READ_VCBUS_REG(VPP_MATRIX_CTRL);
++ r->pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++ r->dummy = READ_VCBUS_REG(VPP_DUMMY_DATA1);
++ r->clip0 = READ_VCBUS_REG(VPP_CLIP_MISC0); r->clip1 = READ_VCBUS_REG(VPP_CLIP_MISC1);
++ r->route0 = READ_VCBUS_REG(VIU_MISC_CTRL0); r->route1 = READ_VCBUS_REG(VIU_MISC_CTRL1);
++ r->gate0 = READ_VCBUS_REG(VPP_GCLK_CTRL0); r->gate1 = READ_VCBUS_REG(VPP_GCLK_CTRL1);
++ r->sc_gate = READ_VCBUS_REG(VPP_SC_GCLK_CTRL);
++ r->xvy_gate = READ_VCBUS_REG(0x1d79); /* fixed GXL VPP_XVYCC_GCLK_CTRL */
++ r->flags = 1; /* Safe register reads; NOT a hardware pixel-valid bit. */
++ if ((r->ctrl & E900_PIXEL_SELECT_MASK) != e900_pixel_our_select ||
++     (r->pos & E900_PIXEL_POS_MASK) != e900_pixel_our_pos) return;
++ r->flags |= 2;
++ if (e900_edge_tick < 3) return; /* two subsequent VSyncs after selection */
++ r->flags |= 4;
++ r->raw0 = READ_VCBUS_REG(VPP_MATRIX_PROBE_COLOR);
++ r->raw1 = READ_VCBUS_REG(E900_PIXEL_COLOR1);
++}
++/* phase0: beginning, before this callback computes/submits blend changes.
++ * phase1: end, after normal submission. Submission does not imply latch;
++ * the NEXT phase0 and RDMA counters provide the temporal comparison.
++ */
++static void e900_edge_hook(const struct vinfo_s *vi, unsigned int phase,
++                           u32 wanted, bool off_req)
++{
++ struct vframe_s *vf = NULL;
++ unsigned long flags;
++ bool safe;
++ if (!READ_ONCE(e900_edge_reserved)) return;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ if (!e900_edge_reserved) goto out;
++ safe = e900_edge_safe(vi, off_req, &vf);
++ if (e900_edge_status == 6) {
++  e900_edge_finish(5, e900_edge_reason, safe);
++  goto out;
++ }
++ if (e900_edge_cancel || !safe) {
++  e900_edge_record(phase, wanted, off_req, vf, false);
++  e900_edge_finish(e900_edge_cancel ? 4 : 5,
++                    e900_edge_cancel ? 5 : 1, safe);
++  goto out;
++ }
++ if (e900_edge_status == 2 && (vf->width != e900_edge_width ||
++     vf->height != e900_edge_height || vi->width != e900_edge_ow || vi->height != e900_edge_oh)) {
++  e900_edge_guard |= 512;
++  e900_edge_record(phase, wanted, off_req, vf, false);
++  e900_edge_finish(5, 7, true); goto out;
++ }
++ if (e900_edge_status == 1) {
++  u32 ctrl, pos;
++  if (phase || !vd_layer[0].enabled || !vd_layer[0].global_output) goto out;
++  ctrl = READ_VCBUS_REG(VPP_MATRIX_CTRL); pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++  e900_pixel_saved_select = ctrl & E900_PIXEL_SELECT_MASK;
++  e900_pixel_saved_pos = pos & E900_PIXEL_POS_MASK;
++  e900_edge_width = vf->width; e900_edge_height = vf->height;
++  e900_edge_ow = vi->width; e900_edge_oh = vi->height;
++  e900_edge_x = vf->width / 16; e900_edge_y = vf->height / 2;
++  e900_pixel_our_select = 1u << 10; /* fixed source-named VADJ1 input */
++  e900_pixel_our_pos = (e900_edge_x << 16) | e900_edge_y;
++  e900_pixel_owned = true; e900_pixel_restored = false;
++  WRITE_VCBUS_REG(VPP_MATRIX_CTRL, (ctrl & ~E900_PIXEL_SELECT_MASK) | e900_pixel_our_select);
++  WRITE_VCBUS_REG(VPP_MATRIX_PROBE_POS, (pos & ~E900_PIXEL_POS_MASK) | e900_pixel_our_pos);
++  e900_edge_status = 2;
++ }
++ if (!phase) e900_edge_tick++;
++ e900_edge_record(phase, wanted, off_req, vf, true);
++ if (!(e900_edge_records[e900_edge_count - 1].flags & 2)) {
++  e900_edge_finish(5, 3, true); goto out;
++ }
++ if (!phase) {
++  if (!vd_layer[0].global_output) e900_edge_seen_off = true;
++  else if (e900_edge_seen_off) e900_edge_restore_ticks++;
++ }
++ if (phase && (e900_edge_restore_ticks >= 16 || e900_edge_tick >= 256 ||
++               e900_edge_count >= E900_EDGE_COUNT))
++  e900_edge_finish(3, e900_edge_seen_off ? 0 : 2, true);
++out:
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++}
++static void e900_edge_before_disable(unsigned int layer, bool on)
++{
++ struct vframe_s *vf = NULL;
++ unsigned long flags;
++ if (!e900_edge_reserved || on || (layer && layer != 0xff)) return;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ e900_edge_finish(5, 6, e900_edge_safe(get_current_vinfo(), true, &vf));
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++}
++static int e900_edge_set(const char *s, const struct kernel_param *kp)
++{
++ unsigned int value; unsigned long flags;
++ int ret = kstrtouint(s, 0, &value);
++ (void)kp;
++ if (ret) return ret;
++ if (value > 1) return -EINVAL;
++ if (!is_meson_gxlx2_cpu()) return -ENODEV;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ if (!value) e900_edge_cancel = true;
++ else if (e900_edge_reserved || e900_pixel_owned || e900_pixel_status == 1 || e900_pixel_status == 2)
++  ret = -EBUSY;
++ else {
++  e900_edge_reserved = true; e900_edge_generation++; e900_pixel_restored = false;
++  e900_edge_status = 1; e900_edge_count = e900_edge_tick = e900_edge_restore_ticks = 0;
++  e900_edge_reason = e900_edge_guard = e900_edge_x = e900_edge_y = 0;
++  e900_edge_cancel = e900_edge_seen_off = false;
++ }
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++ return ret;
++}
++static int e900_edge_get(char *buf, const struct kernel_param *kp)
++{
++ unsigned long flags; int n;
++ (void)kp;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ n = scnprintf(buf, PAGE_SIZE,
++  "generation=%u status=%u count=%u tick=%u off=%u restored=%u reason=%u guard=%x x=%u y=%u\n",
++  e900_edge_generation, e900_edge_status, e900_edge_count, e900_edge_tick,
++  e900_edge_seen_off, e900_pixel_restored, e900_edge_reason, e900_edge_guard,
++  e900_edge_x, e900_edge_y);
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++ return n;
++}
++static int e900_edge_page_set(const char *s, const struct kernel_param *kp)
++{
++ unsigned int value; int ret = kstrtouint(s, 0, &value);
++ (void)kp;
++ if (ret) return ret;
++ if (value >= E900_EDGE_COUNT / E900_EDGE_PAGE) return -EINVAL;
++ WRITE_ONCE(e900_edge_page, value); return 0;
++}
++static int e900_edge_data_get(char *buf, const struct kernel_param *kp)
++{
++ unsigned int i, begin; unsigned long flags; int n = 0;
++ (void)kp;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ begin = READ_ONCE(e900_edge_page) * E900_EDGE_PAGE;
++ for (i = begin; i < e900_edge_count && i < begin + E900_EDGE_PAGE; i++) {
++  const struct e900_edge_record *r = &e900_edge_records[i];
++  n += scnprintf(buf + n, PAGE_SIZE - n,
++   "%u %u %llx %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x\n",
++   i, e900_edge_generation, (unsigned long long)r->stamp, r->tick, r->phase,
++   r->flags, r->guard, r->global, r->enabled, r->disable,
++   r->off, r->epoch, r->frame, r->pts, r->mem,
++   r->gen, r->gen3, r->fmt, r->fifo, r->vpp_fifo,
++   r->live, r->wanted, r->shadow, r->ctrl, r->pos,
++   r->dummy, r->clip0, r->clip1, r->route0, r->route1,
++   r->gate0, r->gate1, r->sc_gate, r->xvy_gate, r->raw0,
++   r->raw1, r->irq, r->configured, r->force, r->done);
++ }
++ spin_unlock_irqrestore(&e900_pixel_lock, flags);
++ return n;
++}
++static const struct kernel_param_ops e900_edge_ops = { .set = e900_edge_set, .get = e900_edge_get };
++static const struct kernel_param_ops e900_edge_page_ops = { .set = e900_edge_page_set, .get = param_get_uint };
++static const struct kernel_param_ops e900_edge_data_ops = { .get = e900_edge_data_get };
++module_param_cb(gxlx2_edge_scan, &e900_edge_ops, NULL, 0600);
++module_param_cb(gxlx2_edge_page, &e900_edge_page_ops, &e900_edge_page, 0600);
++module_param_cb(gxlx2_edge_data, &e900_edge_data_ops, NULL, 0400);
++#endif
