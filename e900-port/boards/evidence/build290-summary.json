@@ -1,0 +1,78 @@
+{
+  "run": 45456482461,
+  "commit": "4ce91f4585ca57d11d87a2d60f28ef05fdb92df0",
+  "collector_fix": "1e3cd4cbef",
+  "boot": "48c9d7f3-d27c-4f91-abb0-8ee448be16e8",
+  "screen_observed": false,
+  "shots": [
+    {
+      "label": "first",
+      "port1_unique": 8,
+      "canvas_sha256": "90cd957cf72ec5ce052079ccb62d9de2a8e16b1c3dc9ccebc4aea9456feb2b6a"
+    },
+    {
+      "label": "restored",
+      "port1_unique": 1,
+      "canvas_sha256": "b541476da5271f98eb5c9d56ddb59a1a845829397cbe9c3a58b275cfde99c0fc"
+    }
+  ],
+  "hdr_events": [
+    "[   80.410785@0]h e900-debug channel=hdr seq=1 event=hdr_request a=1 b=1 c=0 d=0 caller=hdr_func.part.0+0x54/0x2140",
+    "[   80.420827@0]h e900-debug channel=hdr seq=2 event=hdr_submitted a=1 b=1 c=0 d=0 caller=hdr_func.part.0+0x2fc/0x2140",
+    "[   80.431109@0]h e900-debug channel=hdr seq=3 event=hdr_request a=3 b=1 c=0 d=0 caller=hdr_func.part.0+0x54/0x2140",
+    "[   80.441204@0]h e900-debug channel=hdr seq=4 event=hdr_osd_wrap_off a=3 b=1 c=0 d=0 caller=hdr_func.part.0+0x838/0x2140",
+    "[   80.451867@0]h e900-debug channel=hdr seq=5 event=hdr_submitted a=3 b=20000001 c=0 d=0 caller=hdr_func.part.0+0x2fc/0x2140",
+    "[   90.681712@0]h e900-debug channel=hdr seq=6 event=hdr_request a=1 b=1 c=0 d=0 caller=hdr_func.part.0+0x54/0x2140",
+    "[   90.691677@0]h e900-debug channel=hdr seq=7 event=hdr_submitted a=1 b=1 c=0 d=0 caller=hdr_func.part.0+0x2fc/0x2140",
+    "[   90.701953@0]h e900-debug channel=hdr seq=8 event=hdr_request a=3 b=1 c=0 d=0 caller=hdr_func.part.0+0x54/0x2140",
+    "[   90.712041@0]h e900-debug channel=hdr seq=9 event=hdr_osd_wrap_off a=3 b=1 c=0 d=0 caller=hdr_func.part.0+0x838/0x2140",
+    "[   90.722713@0]h e900-debug channel=hdr seq=10 event=hdr_submitted a=3 b=20000001 c=0 d=0 caller=hdr_func.part.0+0x2fc/0x2140"
+  ],
+  "refresh": {
+    "boot": "48c9d7f3-d27c-4f91-abb0-8ee448be16e8",
+    "screen_observed": false,
+    "steps": [
+      {
+        "label": "before-refresh",
+        "path": "/storage/e900-build290/refresh-test/48c9d7f3-d27c-4f91-abb0-8ee448be16e8-1795563849621383987-before-refresh",
+        "unique": 1,
+        "scan_state": {
+          "generation": "3",
+          "status": "3",
+          "count": "128",
+          "total": "128",
+          "owned": "0",
+          "restored": "1",
+          "epoch": "9",
+          "reason": "0",
+          "guard": "0",
+          "input": "1280x720",
+          "output": "1920x1080"
+        }
+      },
+      {
+        "label": "after-refresh",
+        "path": "/storage/e900-build290/refresh-test/48c9d7f3-d27c-4f91-abb0-8ee448be16e8-1795563857982096241-after-refresh",
+        "unique": 1,
+        "scan_state": {
+          "generation": "4",
+          "status": "3",
+          "count": "128",
+          "total": "128",
+          "owned": "0",
+          "restored": "1",
+          "epoch": "12",
+          "reason": "0",
+          "guard": "0",
+          "input": "1280x720",
+          "output": "1920x1080"
+        }
+      }
+    ],
+    "unchanged_offset": "0 0",
+    "refresh_requested": true,
+    "status": "collected"
+  },
+  "rdma_rearm_requests_after_test": 4,
+  "flash_free_mib": 68.9
+}

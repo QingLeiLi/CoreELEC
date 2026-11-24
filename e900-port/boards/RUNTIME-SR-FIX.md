@@ -9,3 +9,8 @@
 0031随后补白盒跟踪，不改变HDR策略：固定点边界记录增加pps_calls/sr_support/sr_refresh，以及CSC/HDR状态、flags、null帧计数、video_on/wait_on、实际post/legacy/fake分支计数。未开启边界采集时不累计诊断计数。CSC分支计数是本次启动中开启采集期间的累计值，应看同一次记录内的增量，不能要求首项为0。
 
 G12数值判断在本机是否选到了不兼容硬件路径，仍需跟踪结果和寄存器映射证据；本补丁没有将所有G12判断改掉，也未继续清未知GEN3位。
+
+
+## 2026-11-25 实机更新
+
+0030/0031已随run45456482461完成ARM构建并在USB启动。视频初始化完成，运行时PPS/CSC日志可读；重播及global_output恢复异常仍存在。详见[BUILD290-VALIDATION.md](BUILD290-VALIDATION.md)，不能再把本保护修复描述为黑屏已解决。
