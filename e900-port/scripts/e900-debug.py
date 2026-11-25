@@ -33,7 +33,7 @@ PARAMS = {
              'gxlx2_stall_frames', 'gxlx2_stall_rearms'),
     'di': ('bypass_all', 'bypass_post', 'bypass_post_state', 'gxlx2_debug_events'),
     'vpu': ('gxlx2_debug_events',),
-    'rdma_mgr': ('gxlx2_debug_events', 'gxlx2_debug_state', 'gxlx2_gen3_rmw_events'),
+    'rdma_mgr': ('gxlx2_submit_scan', 'gxlx2_debug_events', 'gxlx2_debug_state', 'gxlx2_gen3_rmw_events'),
     'fb': ('gxlx2_osd_blender_only', 'gxlx2_debug_events', 'osd_vpp_misc'),
     'register_ops': ('gxlx2_debug_events', 'gxlx2_gen3_rmw_events'),
 }

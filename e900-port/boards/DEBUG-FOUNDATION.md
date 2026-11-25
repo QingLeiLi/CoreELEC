@@ -149,3 +149,8 @@ python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 ### HDR 请求与提交事件
 
 0033 将 `am_vecm` 加入标准 `arm` / `disarm` / 快照模块列表。`channel=hdr` 的 `hdr_request`、`hdr_osd_wrap_off`、`hdr_submitted`、`hdr_flush_disabled` 用于将普通 HDR 配置与输出关闭/恢复边界对齐；`a` 为模块，`b` 为策略，submitted 的 `c/d` 为 LUT/矩阵开关。submitted 仅指配置函数返回，不等同硬件提交完成。默认关闭，受已有 0..512 预算限制，无新增 MMIO。详细覆盖及限制见 BLEND-SOURCE-AUDIT-20261125.md。
+
+
+### PPS/HDR 软件准备表
+
+0035增加独立、默认关闭的实际RDMA准备表记录器，保留重复系数及IRQ/取消关联。现有HDR入口日志无法替代逐字表项证据；用法与严格覆盖限制见[SUBMISSION-TABLES.md](SUBMISSION-TABLES.md)。尚需ARM构建和实机验证。

@@ -76,6 +76,8 @@ for source in paths:
 port = pathlib.Path(__file__).resolve().parents[1]
 for relative, source in [
     ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
+    ("debug-tools/e900-submit-trace.py", port / "scripts/e900-submit-trace.py"),
+    ("debug-tools/SUBMISSION-TABLES.md", port / "boards/SUBMISSION-TABLES.md"),
     ("debug-tools/e900-transition.py", port / "scripts/e900-transition.py"),
     ("debug-tools/BLEND-SOURCE-AUDIT-20261125.md", port / "boards/BLEND-SOURCE-AUDIT-20261125.md"),
     ("debug-tools/RUNTIME-SR-FIX.md", port / "boards/RUNTIME-SR-FIX.md"),

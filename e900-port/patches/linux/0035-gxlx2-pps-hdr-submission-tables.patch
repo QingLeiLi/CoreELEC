@@ -1,0 +1,220 @@
+Subject: [DIAGNOSTIC] bounded software capture of PPS/HDR prepared tables and IRQs
+
+No additional MMIO or printk; default off and GXLX2 only.
+
+--- a/drivers/amlogic/media/common/rdma/rdma_mgr.c
++++ b/drivers/amlogic/media/common/rdma/rdma_mgr.c
+@@ -79,6 +79,7 @@
+ static int rdma_force_reset = -1;
+ 
+ #define RDMA_NUM 8
++#include "e900_submit_trace.h"
+ #define RDMA_TABLE_SIZE (16 * (PAGE_SIZE))
+ #define MAX_TRACE_NUM  16
+ #define RDMA_MGR_CLASS_NAME  "rdma_mgr"
+@@ -429,6 +430,7 @@
+ 			if (debug_flag & 2)
+ 				pr_info("%s: process %d\r\n", __func__, i);
+ 
++			e900_submit_end(i, rdma_status, 2);
+ 			if (ins->op && ins->op->irq_cb)
+ 				ins->op->irq_cb(ins->op->arg);
+ 
+@@ -496,6 +498,7 @@
+ 
+ 	trigger_type &= ~RDMA_AUTO_START_MASK;
+ 	if (auto_start) {
++		e900_submit_end(handle, 2, 3);
+ 		WRITE_VCBUS_REG_BITS(
+ 			ins->rdma_regadr->trigger_mask_reg,
+ 			0,
+@@ -520,6 +523,7 @@
+ 		ret = 1;
+ 		ins->rdma_write_count = 0;
+ 	} else if (ins->rdma_item_count <= 0 || trigger_type == 0) {
++		e900_submit_end(handle, 0, 3);
+ 		if (trigger_type == RDMA_TRIGGER_MANUAL)
+ 			WRITE_VCBUS_REG(RDMA_ACCESS_MAN,
+ 				READ_VCBUS_REG(RDMA_ACCESS_MAN) & (~1));
+@@ -540,6 +544,8 @@
+ 		if (trigger_type > 0 && trigger_type <= RDMA_TRIGGER_MANUAL) {
+ 			ins->rdma_write_count = ins->rdma_item_count;
+ 			ins->prev_trigger_type = trigger_type;
++			e900_submit_table(handle, trigger_type,
++				ins->rdma_table_addr, ins->rdma_item_count);
+ 			if (trigger_type == RDMA_TRIGGER_MANUAL) {
+ 				/*manual RDMA */
+ 				struct rdma_instance_s *man_ins =
+@@ -606,7 +612,8 @@
+ 				ins->rdma_regadr->trigger_mask_reg_bitpos,
+ 				rdma_meson_dev.trigger_mask_len);
+ 			}
+-		} else if (trigger_type == 0x101) {	/* debug mode */
++		} else if (trigger_type == 0x101) {
++			e900_submit_end(handle, 3, 3);	/* debug mode */
+ 			int i;
+ 
+ 			for (i = 0; i < ins->rdma_item_count; i++) {
+@@ -618,7 +625,8 @@
+ 					ins->rdma_table_addr[(i << 1) + 1]);
+ 			}
+ 			ins->rdma_write_count = 0;
+-		} else if (trigger_type == 0x102) { /* debug mode */
++		} else if (trigger_type == 0x102) {
++			e900_submit_end(handle, 3, 3); /* debug mode */
+ 			int i;
+ 
+ 			for (i = 0; i < ins->rdma_item_count; i++) {
+@@ -659,6 +667,7 @@
+ 			__func__, handle);
+ 		return -1;
+ 	}
++	e900_submit_end(handle, 1, 3);
+ 	WRITE_VCBUS_REG_BITS(
+ 		ins->rdma_regadr->trigger_mask_reg,
+ 		0, ins->rdma_regadr->trigger_mask_reg_bitpos,
+@@ -871,6 +880,7 @@
+ 		e900_debug_event("overflow_fallback", handle, ins->rdma_item_count, ins->rdma_table_size, adr);
+ 		pr_info("%s(%d, %x, %x ,%d) buf overflow\n",
+ 		__func__, rdma_watchdog_count, handle, adr, val);
++		e900_submit_end(handle, 4, 3);
+ 		for (i = 0; i < ins->rdma_item_count; i++)
+ 			WRITE_VCBUS_REG(ins->reg_buf[i << 1],
+ 				ins->reg_buf[(i << 1) + 1]);
+--- /dev/null
++++ b/drivers/amlogic/media/common/rdma/e900_submit_trace.h
+@@ -0,0 +1,134 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_SUBMIT_TRACE_H
++#define E900_SUBMIT_TRACE_H
++#include <linux/jiffies.h>
++/* Software copies only. No MMIO, printk, policy change or address parameter.
++ * kind0: prepared normal-trigger table; kind1: selected ordered table word;
++ * kind2: manager saw completion, BEFORE callback may submit the next table.
++ * kind3: clear/stop/untracked mode canceled the pending association.
++ * Preparation + IRQ is not proof that any particular pixel reached HDMI.
++ */
++#define E900_SUBMIT_CAP 4096
++#define E900_SUBMIT_PAGE 8
++struct e900_submit_row { u64 stamp; u32 batch, handle, kind, reg, value, item; };
++static struct e900_submit_row e900_submit_rows[E900_SUBMIT_CAP];
++static DEFINE_SPINLOCK(e900_submit_lock);
++static unsigned int e900_submit_status, e900_submit_generation, e900_submit_count;
++static unsigned int e900_submit_overflow, e900_submit_page, e900_submit_batch;
++static u32 e900_submit_pending[RDMA_NUM];
++static bool e900_submit_selected(u32 reg)
++{
++ return (reg >= 0x1d00 && reg <= 0x1dff) ||
++        (reg >= 0x3800 && reg <= 0x38ff) ||
++        (reg >= 0x3d60 && reg <= 0x3d6f);
++}
++/* Caller holds only the trace lock; no nesting into manager/hardware locks. */
++static void e900_submit_add(u32 batch, u32 handle, u32 kind,
++                            u32 reg, u32 value, u32 item)
++{
++ struct e900_submit_row *r = &e900_submit_rows[e900_submit_count++];
++ r->stamp = get_jiffies_64(); r->batch = batch; r->handle = handle;
++ r->kind = kind; r->reg = reg; r->value = value; r->item = item;
++}
++static void e900_submit_table(int handle, int trigger, const u32 *table, int count)
++{
++ unsigned long flags;
++ unsigned int selected = 0, i;
++ u32 batch;
++ if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_submit_status) != 1 ||
++     handle <= 0 || handle >= RDMA_NUM || count <= 0) return;
++ spin_lock_irqsave(&e900_submit_lock, flags);
++ if (e900_submit_status != 1) goto out;
++ for (i = 0; i < (unsigned int)count; i++)
++  if (e900_submit_selected(table[i * 2])) selected++;
++ /* A re-submit has no hardware cookie: retire the old association. */
++ if (e900_submit_pending[handle]) {
++  if (e900_submit_count == E900_SUBMIT_CAP) {
++   e900_submit_status = 2; e900_submit_overflow = 1; goto out;
++  }
++  e900_submit_add(e900_submit_pending[handle], handle, 3, 0, 5, 0);
++ }
++ e900_submit_pending[handle] = 0;
++ if (!selected) goto out;
++ if (selected + 1 > E900_SUBMIT_CAP - e900_submit_count) {
++  e900_submit_status = 2; e900_submit_overflow = 1; goto out;
++ }
++ batch = ++e900_submit_batch;
++ if (!batch) batch = ++e900_submit_batch;
++ e900_submit_add(batch, handle, 0, 0, trigger, count);
++ for (i = 0; i < (unsigned int)count; i++)
++  if (e900_submit_selected(table[i * 2]))
++   e900_submit_add(batch, handle, 1, table[i * 2], table[i * 2 + 1], i);
++ e900_submit_pending[handle] = batch;
++out:
++ spin_unlock_irqrestore(&e900_submit_lock, flags);
++}
++static void e900_submit_end(int handle, u32 status, u32 kind)
++{
++ unsigned long flags;
++ u32 batch;
++ if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_submit_status) != 1 ||
++     handle <= 0 || handle >= RDMA_NUM) return;
++ spin_lock_irqsave(&e900_submit_lock, flags);
++ if (e900_submit_status != 1) goto out;
++ batch = e900_submit_pending[handle]; e900_submit_pending[handle] = 0;
++ if (!batch) goto out;
++ if (e900_submit_count == E900_SUBMIT_CAP) {
++  e900_submit_status = 2; e900_submit_overflow = 1; goto out;
++ }
++ e900_submit_add(batch, handle, kind, 0, status, 0);
++out:
++ spin_unlock_irqrestore(&e900_submit_lock, flags);
++}
++static int e900_submit_set(const char *s, const struct kernel_param *kp)
++{
++ unsigned int command; unsigned long flags;
++ int ret = kstrtouint(s, 0, &command);
++ (void)kp;
++ if (ret) return ret;
++ if (command > 1) return -EINVAL;
++ if (!is_meson_gxlx2_cpu()) return -ENODEV;
++ spin_lock_irqsave(&e900_submit_lock, flags);
++ if (command) {
++  if (e900_submit_status == 1) { ret = -EBUSY; goto out; }
++  e900_submit_generation++; e900_submit_count = e900_submit_overflow = 0;
++  e900_submit_batch = e900_submit_page = 0;
++  memset(e900_submit_pending, 0, sizeof(e900_submit_pending));
++  e900_submit_status = 1;
++ } else e900_submit_status = 2;
++out:
++ spin_unlock_irqrestore(&e900_submit_lock, flags);
++ return ret;
++}
++static int e900_submit_get(char *buf, const struct kernel_param *kp)
++{
++ unsigned long flags; int n; (void)kp;
++ spin_lock_irqsave(&e900_submit_lock, flags);
++ n = scnprintf(buf, PAGE_SIZE,
++  "generation=%u status=%u count=%u capacity=%u overflow=%u\n",
++  e900_submit_generation, e900_submit_status, e900_submit_count,
++  E900_SUBMIT_CAP, e900_submit_overflow);
++ spin_unlock_irqrestore(&e900_submit_lock, flags); return n;
++}
++static int e900_submit_data(char *buf, const struct kernel_param *kp)
++{
++ unsigned long flags; unsigned int i, begin; int n = 0; (void)kp;
++ spin_lock_irqsave(&e900_submit_lock, flags);
++ if (e900_submit_status == 1) { n = -EBUSY; goto out; }
++ if (e900_submit_page >= E900_SUBMIT_CAP / E900_SUBMIT_PAGE) { n = -EINVAL; goto out; }
++ begin = e900_submit_page * E900_SUBMIT_PAGE;
++ for (i = begin; i < e900_submit_count && i < begin + E900_SUBMIT_PAGE; i++) {
++  const struct e900_submit_row *r = &e900_submit_rows[i];
++  n += scnprintf(buf + n, PAGE_SIZE - n, "%u %u %llx %x %x %x %x %x %x\n",
++   i, e900_submit_generation, (unsigned long long)r->stamp,
++   r->batch, r->handle, r->kind, r->reg, r->value, r->item);
++ }
++out:
++ spin_unlock_irqrestore(&e900_submit_lock, flags); return n;
++}
++static const struct kernel_param_ops e900_submit_ops = { .set = e900_submit_set, .get = e900_submit_get };
++static const struct kernel_param_ops e900_submit_data_ops = { .get = e900_submit_data };
++module_param_cb(gxlx2_submit_scan, &e900_submit_ops, NULL, 0600);
++module_param_named(gxlx2_submit_page, e900_submit_page, uint, 0600);
++module_param_cb(gxlx2_submit_data, &e900_submit_data_ops, NULL, 0400);
++#endif
