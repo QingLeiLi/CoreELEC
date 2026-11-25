@@ -154,3 +154,8 @@ python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 ### PPS/HDR 软件准备表
 
 0035增加独立、默认关闭的实际RDMA准备表记录器，保留重复系数及IRQ/取消关联。现有HDR入口日志无法替代逐字表项证据；用法与严格覆盖限制见[SUBMISSION-TABLES.md](SUBMISSION-TABLES.md)。尚需ARM构建和实机验证。
+
+
+### 固定点非零值的限制（2026-11-25）
+
+双混合位保留对照中，固定点持续非零，但下一次同点采样全零；控制组因没有稳定参考而未切换输出。因此非零值不能证明持续有效数据，可能存在旧值保持或探针重配置依赖。后续需先以无像素探针的目视对照校准，不能据此宣布某显示阶段正常。详见[VD1-VPP-CONVERGENCE.md](VD1-VPP-CONVERGENCE.md)。
