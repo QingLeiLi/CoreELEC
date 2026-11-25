@@ -51,6 +51,14 @@ assert all(row['flags']==1 and not row['pixel_read_coherent'] for row in r['reco
 assert r['summary']['row_indices']['before'] and r['summary']['row_indices']['during'] and r['summary']['row_indices']['after']
 assert [v for k,v in io.writes if k=='global']==[0,1]
 assert all(row['registers']['canvas']==0x1000 for row in r['records'])
+# A short pulse must still include all three windows, while invalid durations
+# must fail before arming any recorder or mutating output.
+c=Clock();io=IO(c);r=m['collect'](io,True,True,off_seconds=.2,clock=c.time,sleep=c.sleep)
+assert r['status']=='collected_register_transition' and r['requested_off_seconds']==.2
+assert all(r['summary']['row_indices'].values()) and abs(io.restored-io.off-.2)<1e-8
+for duration in (0,-1,2.1,float('nan'),float('inf')):
+ c=Clock();io=IO(c);r=m['collect'](io,True,True,off_seconds=duration,clock=c.time,sleep=c.sleep)
+ assert r['status']=='failed' and not io.writes
 c=Clock();io=IO(c);io.gen=0xffffffff;r=run(io,c);assert r['state']['generation']==0
 c=Clock();io=IO(c);r=run(io,c,False);assert r['status']=='failed' and not io.writes
 c=Clock();io=IO(c);io.bad_regs=True;r=run(io,c);assert r['status']=='failed' and 'misaligned' in r['error']

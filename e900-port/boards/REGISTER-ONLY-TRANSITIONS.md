@@ -107,3 +107,21 @@ VDIN初始化及持续会话自身也可能影响共享资源或时序。正控�
 联合脉冲记录从正常图像参考之后开始，不能回填此前已经写过的初始化或首播系数。如果需要逐项对比首次PPS系数，使用现有e900-submit-trace.py在首次播放前start，正常配置完成后stop保存initial-submit.json；随后同一boot再作联合脉冲记录。必须按各自代次和jiffies关联，不把恢复阶段没有再写某项直接当漏恢复。此步骤使用已有接口，不需新增内核补丁。
 
 当前主机检查28项通过；ARM构建、当前版本回环正控与真实故障采集仍待执行。构建需要保留vdin_capture=true（工作流默认false）；source_trace不因本功能而需要开启。
+
+### 缩短关闭窗口以保留恢复期提交
+
+Build291默认1秒关闭每VSync重刷约87—89字PPS表，4096行缓冲在恢复前溢出。
+采集器新增`--off-seconds 0.2`（默认仍为1，合法范围`0 < x <= 2`）；结果记录`requested_off_seconds`。
+这是改变复现刺激长度，不改变内核策略，不能假定与1秒刺激等效。
+
+本次约定：软件重启（非冷启动），原Build291及20分钟同源H264、静音、hold=0、GEN3实验=N，
+每boot只启动一次VDIN会话；先用新鲜双帧彩条作正常参考，再执行0.2秒global_output关闭恢复。
+只有guard=0、前/中/后窗口完整、提交无溢出、前后回采新鲜时才作完整对照。
+若短脉冲不触发黑屏，不宣布修复；若参考无效则不切换输出，若仍溢出则停止并保留缺口。
+不在黑态追加试验、不重启VDIN恢复时钟，完整表/IRQ关联仍不是逐字硬件执行证明。
+
+```sh
+python3 e900-register-transition.py --off-seconds 0.2 \
+  --with-submissions --with-loopback --loopback-calibrated \
+  --exercise-global-output --out /storage/e900-build291-short/transition.json
+```

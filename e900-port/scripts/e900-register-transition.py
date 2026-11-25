@@ -86,6 +86,7 @@ def summary(rows):
 def collect(io, exercise=False, baseline_confirmed=False, submit=None,
             timeout=15, off_seconds=1, clock=time.monotonic, sleep=time.sleep, image_capture=None):
     result = dict(schema=1, mode='register_only', status='failed', pixels='not_collected',
+                  requested_off_seconds=off_seconds,
                   baseline_confirmation_provided=baseline_confirmed,
                   physical_screen_observed=False, mutations=[], error=None)
     generation = submit_generation = None
@@ -205,11 +206,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--exercise-global-output', action='store_true')
+    parser.add_argument('--off-seconds', type=float, default=1,
+                        help='Output-off hold in (0, 2] seconds; shorten to fit submission buffer')
     parser.add_argument('--baseline-confirmed', action='store_true', help='Only after an actual operator reply confirming the current picture')
     parser.add_argument('--with-submissions', action='store_true')
     parser.add_argument('--with-loopback', action='store_true', help='Use an already running calibrated VDIN session; never starts it or recovers clocks')
     parser.add_argument('--loopback-calibrated', action='store_true', help='Current route/byte order has been calibrated; each run still requires fresh moving colorbar images')
     a = parser.parse_args()
+    if not 0 < a.off_seconds <= 2:
+        parser.error('--off-seconds must be in (0, 2]')
     if a.with_loopback and a.exercise_global_output and not a.loopback_calibrated:
         parser.error('Calibrate the current running loopback session before using it as image evidence')
     if a.exercise_global_output:
@@ -230,7 +235,8 @@ def main():
         for name in ('e900-edge', 'e900-pixel-probe', 'e900-submit', 'e900-loopback'):
             lock = open('/run/' + name + '.lock', 'w'); locks.append(lock)
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        result = collect(EDGE['Kernel'](), a.exercise_global_output, a.baseline_confirmed, submit, image_capture=image_capture)
+        result = collect(EDGE['Kernel'](), a.exercise_global_output, a.baseline_confirmed, submit,
+                         off_seconds=a.off_seconds, image_capture=image_capture)
         result['boot_id'] = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
         result['loopback_calibration_claimed'] = a.loopback_calibrated
         result['policy_after'] = {name: (EDGE['Kernel'].root / name).read_text().strip()
