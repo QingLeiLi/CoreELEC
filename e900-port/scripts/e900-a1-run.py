@@ -144,7 +144,9 @@ def prepare(run, tools, tools_commit):
     if shutil.disk_usage(run.parent).free < 128*1024*1024: raise RuntimeError('Need 128 MiB free')
     if snap['video_init'] != '2' or snap['hold'] != '0' or snap['gen3'] != 'N':
         raise RuntimeError('Unexpected video init/hold/GEN3; do not alter existing settings')
-    if snap['global_output'] != '1' or snap['disable_video'] != '0':
+    # Before first playback the real layer is normally disabled (1). The
+    # pulse stage separately requires an active layer with disable_video=0.
+    if snap['global_output'] != '1' or snap['disable_video'] not in ('0', '1'):
         raise RuntimeError('Unexpected global output/layer disable')
     if snap['display_mode'] != '1080p60hz' or not isinstance(snap['rdma'], str) or not snap['rdma']:
         raise RuntimeError('Output/RDMA baseline missing or differs; stop for review')
