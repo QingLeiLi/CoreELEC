@@ -1,0 +1,635 @@
+{
+  "boot_id": "b8356d5d-a96f-405e-ad16-74121e661f92",
+  "status": "collected_register_transition",
+  "error": null,
+  "requested_off_seconds": 0.2,
+  "state": {
+    "generation": 1,
+    "status": 3,
+    "count": 66,
+    "tick": 33,
+    "off": 1,
+    "restored": 1,
+    "reason": 0,
+    "guard": 0,
+    "x": 0,
+    "y": 0,
+    "mode": 2
+  },
+  "cleanup_state": {
+    "generation": 1,
+    "status": 3,
+    "count": 66,
+    "tick": 33,
+    "off": 1,
+    "restored": 1,
+    "reason": 0,
+    "guard": 0,
+    "x": 0,
+    "y": 0,
+    "mode": 2
+  },
+  "policy_after": {
+    "gxlx2_blend_hold": "0",
+    "gxlx2_gen3_clear_high": "N"
+  },
+  "mutations": [
+    {
+      "global_output": 0,
+      "time": 221.170182186
+    },
+    {
+      "global_output": 1,
+      "time": 221.392828353
+    }
+  ],
+  "summary": {
+    "first_off": 8,
+    "first_restore": 34,
+    "row_indices": {
+      "before": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "during": [
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24,
+        26,
+        28,
+        30,
+        32
+      ],
+      "after": [
+        34,
+        36,
+        38,
+        40,
+        42,
+        44,
+        46,
+        48,
+        50,
+        52,
+        54,
+        56,
+        58,
+        60,
+        62,
+        64
+      ]
+    },
+    "last_four_values": {
+      "before": {
+        "gen": [
+          943718467,
+          943849539
+        ],
+        "gen3": [
+          51
+        ],
+        "fmt": [
+          540085265
+        ],
+        "fifo": [
+          16711872
+        ],
+        "vpp_fifo": [
+          0,
+          386462,
+          67235838
+        ],
+        "live": [
+          268457136
+        ],
+        "wanted": [
+          268457136
+        ],
+        "shadow": [
+          268457136
+        ],
+        "route0": [
+          0
+        ],
+        "route1": [
+          983040
+        ],
+        "gate0": [
+          0
+        ],
+        "gate1": [
+          0
+        ],
+        "sc_gate": [
+          0
+        ],
+        "xvy_gate": [
+          0
+        ],
+        "dummy": [
+          1081472
+        ],
+        "clip0": [
+          1073741823
+        ],
+        "clip1": [
+          0
+        ],
+        "pps_calls": [
+          0
+        ],
+        "sr_support": [
+          0
+        ],
+        "sr_refresh": [
+          0
+        ],
+        "csc_status": [
+          1
+        ],
+        "csc_flags": [
+          0
+        ],
+        "csc_null": [
+          0
+        ],
+        "csc_on": [
+          1
+        ],
+        "csc_wait": [
+          0
+        ],
+        "csc_branch": [
+          0
+        ],
+        "csc_post": [
+          0
+        ],
+        "csc_fake": [
+          0
+        ],
+        "canvas": [
+          5921112,
+          6315870
+        ],
+        "gen2": [
+          1
+        ],
+        "luma_x": [
+          83820544
+        ],
+        "luma_y": [
+          47120384
+        ],
+        "chroma_x": [
+          41877504
+        ],
+        "chroma_y": [
+          23527424
+        ],
+        "fmt_width": [
+          83886720
+        ],
+        "fmt_height": [
+          0
+        ],
+        "sc_misc": [
+          492548
+        ],
+        "line_in": [
+          1280
+        ],
+        "pic_in": [
+          720
+        ],
+        "h_phase": [
+          11184832
+        ],
+        "v_phase": [
+          11184768
+        ],
+        "h_ctrl": [
+          2359296
+        ],
+        "v_ctrl": [
+          9252
+        ],
+        "out_size": [
+          125830200
+        ]
+      },
+      "during": {
+        "gen": [
+          943849539
+        ],
+        "gen3": [
+          51
+        ],
+        "fmt": [
+          540085265
+        ],
+        "fifo": [
+          16711872
+        ],
+        "vpp_fifo": [
+          126974
+        ],
+        "live": [
+          268439728
+        ],
+        "wanted": [
+          268439728
+        ],
+        "shadow": [
+          268439728
+        ],
+        "route0": [
+          0
+        ],
+        "route1": [
+          983040
+        ],
+        "gate0": [
+          0
+        ],
+        "gate1": [
+          0
+        ],
+        "sc_gate": [
+          0
+        ],
+        "xvy_gate": [
+          0
+        ],
+        "dummy": [
+          1081472
+        ],
+        "clip0": [
+          1073741823
+        ],
+        "clip1": [
+          0
+        ],
+        "pps_calls": [
+          10,
+          11,
+          12,
+          13
+        ],
+        "sr_support": [
+          0
+        ],
+        "sr_refresh": [
+          1
+        ],
+        "csc_status": [
+          2
+        ],
+        "csc_flags": [
+          0
+        ],
+        "csc_null": [
+          3
+        ],
+        "csc_on": [
+          0
+        ],
+        "csc_wait": [
+          0
+        ],
+        "csc_branch": [
+          1
+        ],
+        "csc_post": [
+          1
+        ],
+        "csc_fake": [
+          1
+        ],
+        "canvas": [
+          5921112,
+          6315870
+        ],
+        "gen2": [
+          1
+        ],
+        "luma_x": [
+          83820544
+        ],
+        "luma_y": [
+          47120384
+        ],
+        "chroma_x": [
+          41877504
+        ],
+        "chroma_y": [
+          23527424
+        ],
+        "fmt_width": [
+          83886720
+        ],
+        "fmt_height": [
+          0
+        ],
+        "sc_misc": [
+          492548
+        ],
+        "line_in": [
+          1280
+        ],
+        "pic_in": [
+          720
+        ],
+        "h_phase": [
+          11184832
+        ],
+        "v_phase": [
+          11184768
+        ],
+        "h_ctrl": [
+          2359296
+        ],
+        "v_ctrl": [
+          9252
+        ],
+        "out_size": [
+          125830200
+        ]
+      },
+      "after": {
+        "gen": [
+          943718467,
+          943849539
+        ],
+        "gen3": [
+          51
+        ],
+        "fmt": [
+          540085265
+        ],
+        "fifo": [
+          16711872
+        ],
+        "vpp_fifo": [
+          0
+        ],
+        "live": [
+          268457136
+        ],
+        "wanted": [
+          268457136
+        ],
+        "shadow": [
+          268457136
+        ],
+        "route0": [
+          0
+        ],
+        "route1": [
+          983040
+        ],
+        "gate0": [
+          0
+        ],
+        "gate1": [
+          0
+        ],
+        "sc_gate": [
+          0
+        ],
+        "xvy_gate": [
+          0
+        ],
+        "dummy": [
+          1081472
+        ],
+        "clip0": [
+          1073741823
+        ],
+        "clip1": [
+          0
+        ],
+        "pps_calls": [
+          14
+        ],
+        "sr_support": [
+          0
+        ],
+        "sr_refresh": [
+          1
+        ],
+        "csc_status": [
+          1
+        ],
+        "csc_flags": [
+          0
+        ],
+        "csc_null": [
+          0
+        ],
+        "csc_on": [
+          1
+        ],
+        "csc_wait": [
+          0
+        ],
+        "csc_branch": [
+          1
+        ],
+        "csc_post": [
+          1
+        ],
+        "csc_fake": [
+          1
+        ],
+        "canvas": [
+          5921112,
+          6315870
+        ],
+        "gen2": [
+          1
+        ],
+        "luma_x": [
+          83820544
+        ],
+        "luma_y": [
+          47120384
+        ],
+        "chroma_x": [
+          41877504
+        ],
+        "chroma_y": [
+          23527424
+        ],
+        "fmt_width": [
+          83886720
+        ],
+        "fmt_height": [
+          0
+        ],
+        "sc_misc": [
+          492548
+        ],
+        "line_in": [
+          1280
+        ],
+        "pic_in": [
+          720
+        ],
+        "h_phase": [
+          11184832
+        ],
+        "v_phase": [
+          11184768
+        ],
+        "h_ctrl": [
+          2359296
+        ],
+        "v_ctrl": [
+          9252
+        ],
+        "out_size": [
+          125830200
+        ]
+      }
+    },
+    "restored_window_differences": {
+      "vpp_fifo": {
+        "before": [
+          0,
+          386462,
+          67235838
+        ],
+        "after": [
+          0
+        ]
+      },
+      "pps_calls": {
+        "before": [
+          0
+        ],
+        "after": [
+          14
+        ]
+      },
+      "sr_refresh": {
+        "before": [
+          0
+        ],
+        "after": [
+          1
+        ]
+      },
+      "csc_branch": {
+        "before": [
+          0
+        ],
+        "after": [
+          1
+        ]
+      },
+      "csc_post": {
+        "before": [
+          0
+        ],
+        "after": [
+          1
+        ]
+      },
+      "csc_fake": {
+        "before": [
+          0
+        ],
+        "after": [
+          1
+        ]
+      }
+    },
+    "note": "Differences include dynamic status/counters, not causal verdicts. VD1 GEN bit17 is source-named BUSY; configuration equality is not pixel validation."
+  },
+  "submission_evidence_complete": true,
+  "image_evidence_complete": false,
+  "submission_state": {
+    "generation": 4,
+    "status": 2,
+    "count": 1472,
+    "capacity": 4096,
+    "overflow": 0
+  },
+  "submission_status": "collected_software_tables",
+  "batch_terminals": {
+    "irq_observed": 35,
+    "pending": 1
+  },
+  "initial_submission_state": {
+    "generation": 3,
+    "status": 2,
+    "count": 763,
+    "capacity": 4096,
+    "overflow": 0
+  },
+  "initial_coefficient_tables": 3,
+  "transition_coefficient_tables": 14,
+  "all_coefficient_streams_match": true,
+  "shared_register_final_differences": [
+    {
+      "reg": "0x1a51",
+      "initial": "0x605f5e",
+      "transition": "0x5a5958"
+    },
+    {
+      "reg": "0x1a52",
+      "initial": "0x636261",
+      "transition": "0x5d5c5b"
+    }
+  ],
+  "initial_hdr_writes": 0,
+  "transition_hdr_writes": 78,
+  "physical_feedback": "User confirmed black screen after pulse",
+  "images": {
+    "image_before": {
+      "status": "fresh_completed_pair",
+      "error": null,
+      "frames": [
+        {
+          "completion_count": 37,
+          "frame_timestamp": 4294940979,
+          "rgb_min": 0,
+          "rgb_max": 255,
+          "colorbar_reference": true,
+          "rgb_sha256": "0cf2e58f27ebcc2dbada872f05dd88479196e3d38e52fc95716976c1cf481a4e"
+        },
+        {
+          "completion_count": 494,
+          "frame_timestamp": 4294943825,
+          "rgb_min": 0,
+          "rgb_max": 255,
+          "colorbar_reference": true,
+          "rgb_sha256": "5cd97c65ec4fdd8b483916cf0290f8f791865e30ded22a0da614fb453687de63"
+        }
+      ]
+    },
+    "image_after": {
+      "status": "failed",
+      "error": "Command '['sh', '/storage/e900-build291/debug-tools/e900-capture-ready.sh', 'REG_1795583855902795693_after_1']' timed out after 15 seconds",
+      "frames": [
+        {
+          "completion_count": 1139,
+          "frame_timestamp": 4294947854,
+          "rgb_min": 0,
+          "rgb_max": 0,
+          "colorbar_reference": false,
+          "rgb_sha256": "65b095f8650bf6f8d9be6e7529fe0808bfd6068dad62aa31b2e02031e5e587d6"
+        }
+      ]
+    }
+  }
+}
