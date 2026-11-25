@@ -1,5 +1,7 @@
 # 混合关闭/恢复白盒追踪（2026-11-25）
 
+> 当前工作入口与结论分级见[跟进台账](VD1-VPP-CONVERGENCE.md)。本文源码行号以固定上游为准，早期“未记录”是历史审计状态；目前0030—0033已在Build290运行，0035/0036仅主机验证，尚未构建实测。
+
 固定上游：linux-amlogic 50c8e8154c5aba3c7cd8438d04dd5fdd51733e41。本地媒体源码coreelec-audit/gen3-research-20261124/linux-amlogic；以下行号相对该检出，实际固件另叠加e900补丁。本文是代码审计，不是新增实机修复结论。
 
 ## GEN3：用途已知，差异位仍未知
@@ -51,7 +53,7 @@ video.c:4244 primary_render_frame：即使没有new_vpp_setting，get_video_enab
 
 本次仅只读确认本机am_vecm模块参数：csc_en=7、hdr_policy=1、sdr_mode=0、空闲video_process_status=2,2；因此不能说CSC被配置关闭。上述函数是否在故障边界执行到具体分支，尚需证据。数值选到G12路径也不能单凭这一点断言硬件绝不兼容，不能将整个amcsc一刀切改成GXL。
 
-## 当前诊断的真实边界
+## 历史诊断边界（0029审计起点）
 
 0029已覆盖混合入口/提交出口的固定点、配置、背景色/裁剪/路由、VPP时钟门控和RDMA进度。但尚未记录PPS系数的提交内容/次数，也没有amvecm内部video_on、null_vf_cnt、video_process_status、flags及fake/真实帧处理决策。仅拿0029的VPP寄存器时间线，不能声称已跟踪全部关闭副作用。
 
@@ -59,16 +61,16 @@ video.c:4244 primary_render_frame：即使没有new_vpp_setting，get_video_enab
 
 ## 后续落实
 
-0030已修运行时SR专属访问的能力保护，保留共享尺寸与其他CPU行为；0031已将上述PPS重刷和amvecm业务状态/分支计数接入边界记录。本文前述“未记录”描述审计时的af48dae4f4状态，新增实现见[RUNTIME-SR-FIX.md](RUNTIME-SR-FIX.md)。尚未ARM编译/实机验证改动效果。
+0030已修运行时SR专属访问的能力保护，保留共享尺寸与其他CPU行为；0031已将上述PPS重刷和amvecm业务状态/分支计数接入边界记录。本文前述“未记录”描述审计时的af48dae4f4状态，新增实现见[RUNTIME-SR-FIX.md](RUNTIME-SR-FIX.md)。0030/0031已随Build290完成ARM构建并取得业务计数；保护修复未消除黑屏，见[实机记录](BUILD290-VALIDATION.md)。
 
 
-## 独立视频 RDMA 看门狗（0032，待实机）
+## 独立视频 RDMA 看门狗（0032，已在Build290运行）
 
 rdma_mgr 的看门狗由多个通道共享。健康 OSD 的完成处理可以不断清零共享计数，掩盖视频通道长期没有完成中断的问题。0032 在 GXLX2 的 VSYNC 视频通道单独累计未完成帧，默认 20 帧后请求现有 force_rdma_config 提交流程重试；不复位共享硬件、不改工作模式、不直接写寄存器。其他 CPU、LINE 通道与正常完成路径保留原行为。
 
 `rdma.gxlx2_stall_frames` 可设为 0 禁用；只读 `gxlx2_stall_rearms` 记录重试次数，两者纳入 e900-debug 快照。事件预算开启时输出 stall_resubmit。这里的恢复计数仅表示发起重提，不代表硬件已经恢复，仍需对照 irq_count/vsync_cfg_count。
 
-主机测试执行实际修改前后 _vsync_rdma_config 和管理器看门狗函数，模拟健康 OSD 持续清共享计数：原版视频停滞，修改版每到独立阈值重新提交；同时验证其他 CPU、模式及通道行为。尚未 ARM 编译和实机验证。
+主机测试执行实际修改前后 _vsync_rdma_config 和管理器看门狗函数，模拟健康 OSD 持续清共享计数：原版视频停滞，修改版每到独立阈值重新提交；同时验证其他 CPU、模式及通道行为。已随Build290完成ARM构建；实机观察到重提计数增长，IRQ健康时黑屏仍在。计数不是每次恢复成功证明。
 
 这修复的是已独立观察到的 RDMA 饥饿问题。此前 IRQ 健康的冷启动仍能复现重播黑屏，因此不能宣称它解决重播问题。
 
@@ -81,10 +83,19 @@ VD1_HDR2_CTRL 为 0x3800、OSD1_HDR2_CTRL 为 0x38a0（源码 arch/vpp_hdr_regs.
 普通 PPS 系数通过 VPP_SCALE_COEF_IDX 后连续写 VPP_SCALE_COEF。rdma_write_reg 保留这些同地址的顺序写入；尚未发现软件队列将系数去重的证据。队列语义检查不能替代硬件系数验证。
 
 
-## HDR 提交边界观测（0033，待实机）
+## HDR 提交边界观测（0033，已取得实机日志）
 
 0031 的 CSC 分支计数不能证明具体执行了哪个 HDR 模块或策略。0033 因此在实际 hdr_func 中增加四类事件：hdr_flush_disabled（软件禁止刷新，提前返回）、hdr_request（请求模块/策略）、hdr_osd_wrap_off（即将关闭 OSD wrap 矩阵）、hdr_submitted（矩阵/LUT/直方图配置函数均已返回，含有效策略及 LUT/矩阵开关）。最后一项仅证明软件提交路径走完，不证明 RDMA 完成或输出有效像素。
 
 使用既有 E900_DEBUG_CHANNEL 机制，默认关闭、GXLX2 限定、root 权限、每次最多 512 条预算，不读新增寄存器、不改 HDR 策略。参数位于 am_vecm.gxlx2_debug_events，e900-debug 的 arm/disarm/快照已纳入该模块。事件具有已有内核时间戳，可与边界记录对齐。预算耗尽后事件缺失不能解释为没有执行。范围是普通 hdr_func；HDR10+ 的 hdr10p_func 不在此钩子范围，当前 SDR 彩条复现不走该专用入口。
 
-主机检查：去掉显式诊断语句后源码与前版逐字一致；执行实际刷新保护、OSD 分支和提交尾部代码，覆盖五种 CPU、三个模块及刷新开启/关闭，并校验提交事件在八步配置调用之后。复用现有通道预算测试。ARM 编译及实机故障边界日志仍待完成。
+主机检查：去掉显式诊断语句后源码与前版逐字一致；执行实际刷新保护、OSD 分支和提交尾部代码，覆盖五种 CPU、三个模块及刷新开启/关闭，并校验提交事件在八步配置调用之后。复用现有通道预算测试。已随Build290完成ARM构建，故障边界抓到VD1与OSD请求、提交及OSD wrap事件；首播与关闭的有效策略一致。逐项准备表和无像素选择器状态对照由0035/0036补充，仍待新构建实机采集。
+
+
+## 后续审计状态（2026-11-25）
+
+已完成的白盒观察不是PPS/CSC归因。软件关闭会触发多个副作用；实际比较须检查哪些配置在恢复时未恢复、是否先于有效新帧丢失，并关联完整图像，不能按模块名称猜。
+
+旧普通stage无法覆盖enabled=0，但旧edge可以，代价是像素选择器也被编程。0036复用其窄安全守卫，增加无像素寄存器访问的mode2以及MIF/格式器/PPS扩展页。0035/0036准备表保留重复系数及IRQ/取消关联；联合图像回采不再自动开钟。主机检查通过不等于已取得新的正常/异常数据。
+
+上游冲突表问题的原函数复现及草稿位于本地trial-build290/check-upstream-conflict.py、upstream-conflict-reproduction.txt和0034-gxlx2-rdma-conflict-shadow-fixes.draft.patch。该草稿未接入构建：槽分配i/k行为已复现，但读表优先级的语义及两者与黑屏的联系仍需独立证据。
