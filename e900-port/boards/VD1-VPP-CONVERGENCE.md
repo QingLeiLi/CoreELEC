@@ -49,3 +49,14 @@ boot830c28b7：保留双混合位的72条边界记录，VPP_MISC全程100054b0�
 当前参数已恢复hold=0、global_output=1，解码器No vdec.。实验停止。下一步需用户屏幕校准：先不启用像素探针，用正常首播作为目视参考；收到参考正常的明确回复后再做hold=3下的关闭/恢复，等待实际画面反馈后才选择后续分支。不要在未得到回复时继续播放或切换。
 
 原始对照：[build290-hold-controls.json](evidence/build290-hold-controls.json)。这是测量可靠性的补充证据，未证明新的修复。
+
+
+## 无像素探针的目视确认
+
+boot f5ee55c0-b6d8-4d79-8a91-c33cc02e119e：首次播放20分钟同源H264片（原片无重编码循环封装），用户确认彩条正常；设置hold=3，global_output=0保持1秒，再恢复1并恢复hold=0，用户明确回复“黑屏”。此次未开启像素探针，因此真实故障不以像素探针为必要前提。
+
+黑屏后才执行不含像素采集的寄存器快照：enabled/saved/global均1，onoff=0，disable=0，black=0；VPP_MISC的live/shadow/requested均100054b0；MIF GEN为38400043/38420043；GEN3在3033与33间变化而画面均黑。RDMA IRQ持续，VPU驱动报告664MHz，mem_pd0=c0（VD1字段为ON）。不能由这些配置读数宣布硬件实际取数/时钟/握手都正常。
+
+本次未逐帧读取关闭期间VPP_MISC，因此严格结论是“设置hold=3的操作仍可触发用户确认的黑屏”，并非“本次已硬件证明混合位从未下降”；先前仪器对照证明同一hold路径可保持两位。后续隔离仍须区分PPS关闭重刷、CSC关闭处理及其他业务副作用，不直接认定其中之一。测试当前global=1、hold=0；黑屏视频仍在运行，未自动再做下一次切换。
+
+证据：[build290-visual-held-black.json](evidence/build290-visual-held-black.json)。
