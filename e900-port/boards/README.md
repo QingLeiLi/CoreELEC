@@ -1,5 +1,7 @@
 # E900V21C USB 首轮板级描述
 
+> 当前黑屏排查入口：[线索、验证顺序与结果台账](VD1-VPP-CONVERGENCE.md)。下方早期计划及状态以该台账为准，不直接沿历史候选重新试验。
+
 适用待测板：创维 E900V21C / 5800-2ATA411，GXLX2（CPU ID 0x2a）、1GB DDR3L、8GB eMMC。目标是使用现有 Android 引导程序从外置 USB 启动 CoreELEC 21.3 NG；已用等价 DT 修改启动并验证 MP2 GPU、固定 framebuffer、USB 根系统与有线网；最新整套源码仍待重新 ARM 构建。当前状态见 [正常启动记录](NORMAL-USB-BOOT.md)，下方首轮诊断为历史记录。
 
 ## 配置依据
