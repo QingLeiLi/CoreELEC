@@ -1,0 +1,167 @@
+{
+  "purpose": "Historical default-pulse negative control; NOT an A1 hardware experiment",
+  "source": "trial-build291/short/transition.json",
+  "input_manifest": "boot_id copied from historical record only; no new run manifest asserted",
+  "result": {
+    "verdict": "REJECTED",
+    "scope": "Gate for COMPLETE A1 evidence only. Preserve partial evidence for the assigned human/agent audit; never discard a run on this verdict.",
+    "checks": {
+      "boot": "PASS",
+      "raw_register_pages": "PASS",
+      "mode_status": "PASS",
+      "generation": "PASS",
+      "row_sequence": "PASS",
+      "global_windows": "PASS",
+      "guards_flags": "PASS",
+      "actual_hold_bits_and_full_live": "FAIL",
+      "software_disabled": "PASS",
+      "pps_csc_effect": "PASS",
+      "raw_submission_pages": "PASS",
+      "submissions": "PASS",
+      "submission_time_coverage": "PASS",
+      "pps_hdr_submitted_during_off": "PASS",
+      "submission_terminals": "PASS",
+      "restored_16_vsync": "PASS",
+      "before_images": "PASS",
+      "after_images": "FAIL",
+      "image_files": "PASS",
+      "environment_and_cleanup": "UNKNOWN"
+    },
+    "details": {
+      "boot": {
+        "transition": "b8356d5d-a96f-405e-ad16-74121e661f92",
+        "manifest": "b8356d5d-a96f-405e-ad16-74121e661f92"
+      },
+      "raw_register_pages": "Parsed raw pages must equal exported records",
+      "mode_status": {
+        "generation": 1,
+        "status": 3,
+        "count": 66,
+        "tick": 33,
+        "off": 1,
+        "restored": 1,
+        "reason": 0,
+        "guard": 0,
+        "x": 0,
+        "y": 0,
+        "mode": 2
+      },
+      "generation": {
+        "state": 1,
+        "rows": 66
+      },
+      "row_sequence": "Complete paired VSync rows with monotonic kernel timestamps",
+      "global_windows": {
+        "off": 8,
+        "restore": 34,
+        "counts": [
+          8,
+          26,
+          32
+        ]
+      },
+      "guards_flags": {
+        "bad_indices": []
+      },
+      "actual_hold_bits_and_full_live": {
+        "baseline": "0x100054b0",
+        "bad_indices": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37
+        ],
+        "phase_counts": [
+          8,
+          26,
+          32
+        ]
+      },
+      "software_disabled": {
+        "enabled_by_window": [
+          [
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "pps_csc_effect": {
+        "pps_calls": 13,
+        "csc_post": 1,
+        "csc_fake": 1
+      },
+      "raw_submission_pages": "Prepared tables and terminals must match raw pages",
+      "submissions": {
+        "state": {
+          "generation": 4,
+          "status": 2,
+          "count": 1472,
+          "capacity": 4096,
+          "overflow": 0
+        },
+        "batch_count": 36,
+        "terminals": [
+          "irq_observed",
+          "pending"
+        ]
+      },
+      "submission_time_coverage": "Submissions span before off through final register sample",
+      "pps_hdr_submitted_during_off": "Counter increments alone do not establish PPS/HDR table submission",
+      "submission_terminals": {
+        "terminals": [
+          "irq_observed",
+          "pending"
+        ],
+        "pending_batches": [
+          "36"
+        ],
+        "note": "Canceled batches require manual causal review"
+      },
+      "restored_16_vsync": {
+        "phase0_count": 16
+      },
+      "before_images": {
+        "status": "fresh_completed_pair",
+        "frames": 2
+      },
+      "after_images": {
+        "status": "failed",
+        "frames": 1
+      },
+      "image_files": "Available raw packets, interpreted pixels and PNGs match; pair completeness checked separately",
+      "environment_and_cleanup": "Verify run manifest, no Stop/replay/mode change/VDIN restart/clock gate, and collector inactive"
+    },
+    "limitation": "VSync samples cannot rule out changes between samples; software IRQ does not prove each hardware write."
+  }
+}
