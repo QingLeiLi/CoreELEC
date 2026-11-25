@@ -95,4 +95,17 @@ c=Clock();io=IO(c);sub,calls=submission(foreign=True);r=m['collect'](io,True,Tru
 assert 'not stopping foreign' in r['submission_error'] and calls==[1] and not r['submission_evidence_complete']
 c=Clock();io=IO(c);sub,calls=submission(active=True);r=m['collect'](io,True,True,sub,clock=c.time,sleep=c.sleep)
 assert r['status']=='failed' and not calls and not io.writes
+# Valid calibrated image evidence can supply the reference without another TV reply.
+c=Clock();io=IO(c);sub,calls=submission();images=[]
+def image_pair(label):
+ if label=='after':assert calls==[1,0]  # freeze software submissions before image capture
+ images.append(label);return dict(status='fresh_completed_pair')
+r=m['collect'](io,True,False,sub,clock=c.time,sleep=c.sleep,image_capture=image_pair)
+assert r['status']=='collected_register_transition' and r['image_evidence_complete'] and images==['before','after'] and r['baseline_source']=='fresh_calibrated_loopback'
+c=Clock();io=IO(c);sub,calls=submission()
+r=m['collect'](io,True,False,sub,clock=c.time,sleep=c.sleep,image_capture=lambda label:dict(status='failed'))
+assert r['status']=='failed' and not io.writes and not calls
+c=Clock();io=IO(c)
+r=m['collect'](io,True,False,clock=c.time,sleep=c.sleep,image_capture=lambda label:dict(status='fresh_completed_pair' if label=='before' else 'failed'))
+assert r['status']=='collected_register_transition' and not r['image_evidence_complete'] and io.global_==1
 print('PASS: mode2 export alignment, sysfs newline, before/off/restore windows, explicit baseline consent, timeouts/restore, generation wrap and foreign-session ownership')

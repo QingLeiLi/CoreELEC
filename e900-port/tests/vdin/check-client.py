@@ -56,26 +56,31 @@ sync() { :; }
 with tempfile.TemporaryDirectory(prefix='e900-capture-clock-') as t:
  root=Path(t);attr=root/'attr';attr.touch();gate=root/'gate';gate.touch();irq=root/'interrupts';folder=root/'captures'
  script=(H/'capture-ready.sh').read_text().replace('attr=/sys/class/vdin/vdin1/attr','attr='+shlex.quote(str(attr))).replace('folder=/storage/e900-capture','folder='+shlex.quote(str(folder))).replace('/sys/class/vpu/gate',str(gate)).replace('/proc/interrupts',str(irq))
- for fresh in [False,True]:
-  irq.write_text('42: 0 0 0 0 GIC-0 117 Edge vdin1-irq\n')
-  update='command printf "%s\\n" "42: 1 0 0 0 GIC-0 117 Edge vdin1-irq" > '+shlex.quote(str(irq)) if fresh else ':'
-  shim=r'''printf() {
- if [ "$1" = 'w 72 1\n' ]; then
-  UPDATE
- elif [ "$1" = 'capture_ready %s\n' ]; then
-  cp SOURCE "$2"
-  return 0
- fi
- command printf "$@"
-}
-sync() { :; }
-sleep() { :; }
-'''.replace('UPDATE',update).replace('SOURCE',shlex.quote(str(H/'synthetic.e9cap')))
-  f=root/'capture.sh';f.write_text('#!/bin/sh\n'+shim+script);name='fresh' if fresh else 'stale'
-  result=subprocess.run(['sh',str(f),name],capture_output=True,text=True)
-  assert (result.returncode==0)==fresh,result.stderr
-  assert (folder/(name+'.e9cap')).exists()==fresh
-  if not fresh:assert 'No fresh VDIN interrupt' in result.stderr
-  cases+=1
+ for no_gate in [False,True]:
+  for fresh in [False,True]:
+   if no_gate:
+    if gate.exists():gate.unlink()
+   else:gate.write_text('')
+   irq.write_text('42: 0 0 0 0 GIC-0 117 Edge vdin1-irq\n')
+   update='command printf "%s\\n" "42: 1 0 0 0 GIC-0 117 Edge vdin1-irq" > '+shlex.quote(str(irq)) if fresh else ':'
+   shim=r'''printf() {
+  if [ "$1" = 'w 72 1\n' ]; then
+   :
+  elif [ "$1" = 'capture_ready %s\n' ]; then
+   cp SOURCE "$2"
+   return 0
+  fi
+  command printf "$@"
+ }
+ sync() { :; }
+ sleep() { UPDATE; }
+ '''.replace('UPDATE',update).replace('SOURCE',shlex.quote(str(H/'synthetic.e9cap')))
+   f=root/'capture.sh';f.write_text('#!/bin/sh\n'+shim+script);name=('nogate_' if no_gate else 'gate_')+('fresh' if fresh else 'stale')
+   result=subprocess.run(['sh',str(f),name],env=dict(os.environ,E900_CAPTURE_NO_GATE='1' if no_gate else '0'),capture_output=True,text=True)
+   assert not gate.exists() if no_gate else gate.read_text()=='w 72 1\n'
+   assert (result.returncode==0)==fresh,result.stderr
+   assert (folder/(name+'.e9cap')).exists()==fresh
+   if not fresh:assert 'No fresh VDIN interrupt' in result.stderr
+   cases+=1
 print('PASS:',cases,'client cases: packet/PNG validity, publication cleanup, shared-clock recovery and stale-IRQ rejection.')
 (H/'client-host-checks.json').write_text(json.dumps({'cases':cases,'scope':'Synthetic C-generated packet plus mocked collector kernel-store command. No real sysfs or device capture invoked.'},indent=2)+'\n')

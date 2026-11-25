@@ -164,6 +164,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-blend-transition.py"
           python3 "$PORT_ROOT/tests/check-transition-client.py"
           python3 "$PORT_ROOT/tests/check-register-transition-client.py"
+          python3 "$PORT_ROOT/tests/check-loopback-pair.py"
           python3 "$PORT_ROOT/tests/check-runtime-sr.py"
           python3 "$PORT_ROOT/tests/check-video-rdma-watchdog.py"
           python3 "$PORT_ROOT/tests/check-hdr-evidence.py"

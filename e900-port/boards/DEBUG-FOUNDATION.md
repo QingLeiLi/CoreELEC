@@ -164,3 +164,8 @@ python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 ### 无像素选择器的关闭期寄存器记录
 
 0036新增mode2，同一VSync前后记录MIF/格式器、PPS和混合状态及扩展字段，不读写像素选择器或颜色数据，并扩展MIF软件提交表覆盖。用法、保护、联合导出及限制见[REGISTER-ONLY-TRANSITIONS.md](REGISTER-ONLY-TRANSITIONS.md)。当前仅完成主机实现验证，仍待ARM/实机。
+
+
+### 联合输出回采
+
+寄存器工具的 --with-loopback 可从已有VDIN会话取得同轮前后各两帧，先验证会变化的彩条正控。联合模式不主动开共享时钟、不重启服务，无新帧则保存失败，不修改状态后再取图。当前版本先做只观察的正控并校准与实际画面一致性，再用 --loopback-calibrated 允许有效图像基准自动驱动对照。详见[REGISTER-ONLY-TRANSITIONS.md](REGISTER-ONLY-TRANSITIONS.md)。

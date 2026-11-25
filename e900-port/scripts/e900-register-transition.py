@@ -84,7 +84,7 @@ def summary(rows):
 
 
 def collect(io, exercise=False, baseline_confirmed=False, submit=None,
-            timeout=15, off_seconds=1, clock=time.monotonic, sleep=time.sleep):
+            timeout=15, off_seconds=1, clock=time.monotonic, sleep=time.sleep, image_capture=None):
     result = dict(schema=1, mode='register_only', status='failed', pixels='not_collected',
                   baseline_confirmation_provided=baseline_confirmed,
                   physical_screen_observed=False, mutations=[], error=None)
@@ -93,7 +93,7 @@ def collect(io, exercise=False, baseline_confirmed=False, submit=None,
     original = None
     changed_global = False
     try:
-        if exercise and not baseline_confirmed:
+        if exercise and not baseline_confirmed and image_capture is None:
             raise ValueError('Explicit operator baseline confirmation required before output mutation')
         if not 0 < off_seconds <= 2:
             raise ValueError('Off interval must be in (0, 2] seconds')
@@ -104,6 +104,10 @@ def collect(io, exercise=False, baseline_confirmed=False, submit=None,
             original = io.global_read()
             if original != '1':
                 raise RuntimeError('Expected global output1')
+        if image_capture is not None:
+            result['image_before'] = image_capture('before')
+            if result['image_before']['status'] != 'fresh_completed_pair':
+                raise RuntimeError('No calibrated fresh output image reference; no output toggle')
         if submit is not None:
             s = submit['state'](submit['read']('scan'))
             if s['status'] == 1:
@@ -183,6 +187,15 @@ def collect(io, exercise=False, baseline_confirmed=False, submit=None,
                 result['submissions'] = submit['export']()
             except Exception as error:
                 result['submission_error'] = str(error)
+    if image_capture is not None and result['status'].startswith('collected_'):
+        try:
+            result['image_after'] = image_capture('after')
+        except Exception as error:
+            result['image_after'] = dict(status='failed', error=str(error))
+    result['image_evidence_complete'] = all(result.get(k, {}).get('status') == 'fresh_completed_pair'
+                                            for k in ('image_before', 'image_after'))
+    result['baseline_source'] = ('fresh_calibrated_loopback' if result.get('image_before', {}).get('status') == 'fresh_completed_pair'
+                                 else 'operator_confirmation' if baseline_confirmed else 'not_provided')
     result['submission_evidence_complete'] = ('submissions' in result and
         result['submissions']['status'] == 'collected_software_tables')
     return result
@@ -194,9 +207,13 @@ def main():
     parser.add_argument('--exercise-global-output', action='store_true')
     parser.add_argument('--baseline-confirmed', action='store_true', help='Only after an actual operator reply confirming the current picture')
     parser.add_argument('--with-submissions', action='store_true')
+    parser.add_argument('--with-loopback', action='store_true', help='Use an already running calibrated VDIN session; never starts it or recovers clocks')
+    parser.add_argument('--loopback-calibrated', action='store_true', help='Current route/byte order has been calibrated; each run still requires fresh moving colorbar images')
     a = parser.parse_args()
+    if a.with_loopback and a.exercise_global_output and not a.loopback_calibrated:
+        parser.error('Calibrate the current running loopback session before using it as image evidence')
     if a.exercise_global_output:
-        if not a.baseline_confirmed:
+        if not a.baseline_confirmed and not a.with_loopback:
             parser.error('Wait for the user to confirm the picture before this operation')
         if 'ammvdec_h264' not in Path('/sys/class/vdec/vdec_status').read_text():
             parser.error('Known H264 video is not active; no playback is started here')
@@ -206,18 +223,23 @@ def main():
         if knob.exists() and knob.read_text().strip() != 'N':
             parser.error('Restore GEN3 experiment to default first')
     submit = runpy.run_path(str(HERE / 'e900-submit-trace.py')) if a.with_submissions else None
+    image_capture = (runpy.run_path(str(HERE / 'e900-loopback.py'))['Loopback'](
+        a.out.parent / (a.out.stem + '-images')) if a.with_loopback else None)
     locks = []
     try:
-        for name in ('e900-edge', 'e900-pixel-probe', 'e900-submit'):
+        for name in ('e900-edge', 'e900-pixel-probe', 'e900-submit', 'e900-loopback'):
             lock = open('/run/' + name + '.lock', 'w'); locks.append(lock)
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        result = collect(EDGE['Kernel'](), a.exercise_global_output, a.baseline_confirmed, submit)
+        result = collect(EDGE['Kernel'](), a.exercise_global_output, a.baseline_confirmed, submit, image_capture=image_capture)
         result['boot_id'] = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+        result['loopback_calibration_claimed'] = a.loopback_calibrated
         result['policy_after'] = {name: (EDGE['Kernel'].root / name).read_text().strip()
                                   for name in ('gxlx2_blend_hold', 'gxlx2_gen3_clear_high')}
         a.out.parent.mkdir(parents=True, exist_ok=True)
         a.out.write_text(json.dumps(result, indent=2) + '\n')
-        print(json.dumps({k: result.get(k) for k in ('status', 'error', 'submission_evidence_complete')}, indent=2))
+        print(json.dumps({k: result.get(k) for k in ('status', 'error', 'submission_evidence_complete', 'image_evidence_complete')}, indent=2))
+        if a.with_loopback and not result['image_evidence_complete']:
+            raise SystemExit(2)
         if a.with_submissions and not result['submission_evidence_complete']:
             raise SystemExit(2)
         raise SystemExit(0 if result['status'].startswith('collected_') else 1)

@@ -80,6 +80,7 @@ for relative, source in [
     ("debug-tools/VD1-VPP-CONVERGENCE.md", port / "boards/VD1-VPP-CONVERGENCE.md"),
     ("debug-tools/VD1-VPP-CONVERGENCE-HISTORY.md", port / "boards/VD1-VPP-CONVERGENCE-HISTORY.md"),
     ("debug-tools/SUBMISSION-TABLES.md", port / "boards/SUBMISSION-TABLES.md"),
+    ("debug-tools/e900-loopback.py", port / "scripts/e900-loopback.py"),
     ("debug-tools/e900-register-transition.py", port / "scripts/e900-register-transition.py"),
     ("debug-tools/REGISTER-ONLY-TRANSITIONS.md", port / "boards/REGISTER-ONLY-TRANSITIONS.md"),
     ("debug-tools/e900-transition.py", port / "scripts/e900-transition.py"),
