@@ -1,0 +1,199 @@
+Subject: [DIAGNOSTIC] decouple continuous register observations from pixel selection
+
+Mode2 is opt-in, no pixel-selector reads/writes and no display-policy changes.
+
+--- a/drivers/amlogic/media/video_sink/e900_edge_probe.h
++++ b/drivers/amlogic/media/video_sink/e900_edge_probe.h
+@@ -8,6 +8,7 @@
+  */
+ #define E900_EDGE_COUNT 512
+ #define E900_EDGE_PAGE 8
++#define E900_EDGE_REG_WORDS 16
+ struct e900_edge_record {
+  u64 stamp;
+  u32 tick, phase, flags, guard, global, enabled, disable, off, epoch;
+@@ -15,6 +16,7 @@
+  u32 live, wanted, shadow, ctrl, pos;
+  u32 dummy, clip0, clip1, route0, route1, gate0, gate1, sc_gate, xvy_gate;
+  u32 raw0, raw1, irq, configured, force, done;
++ u32 registers[E900_EDGE_REG_WORDS];
+  u32 pps_calls, sr_support, sr_refresh;
+  u32 csc_status, csc_flags, csc_null, csc_on, csc_wait, csc_branch, csc_post, csc_legacy, csc_fake;
+ };
+@@ -24,6 +26,12 @@
+ static unsigned int e900_edge_reason, e900_edge_guard, e900_edge_x, e900_edge_y;
+ static unsigned int e900_edge_width, e900_edge_height, e900_edge_ow, e900_edge_oh;
+ static bool e900_edge_seen_off, e900_edge_cancel;
++/* Immutable within a generation. Mode2 never reads/writes pixel selectors. */
++static bool e900_edge_register_only;
++static const u32 e900_edge_reg_addr[E900_EDGE_REG_WORDS] = {
++ 0x1a51, 0x1a6d, 0x1a53, 0x1a54, 0x1a55, 0x1a56, 0x1a69, 0x1a6a,
++ 0x1d19, 0x1d01, 0x1d02, 0x1d13, 0x1d08, 0x1d18, 0x1d0d, 0x1da5
++};
+ static int e900_edge_mem;
+ static u32 e900_pps_calls, e900_sr_support, e900_sr_refresh;
+ bool e900_edge_tracking(void)
+@@ -56,7 +64,8 @@
+  if (l->disable_video || !l->enabled_status_saved || off_req ||
+      l->onoff_state != VIDEO_ENABLE_STATE_IDLE) e900_edge_guard |= 8;
+  if (!l->enabled && l->global_output &&
+-     !(e900_edge_status == 2 && e900_edge_seen_off && e900_pixel_owned))
++     !(e900_edge_status == 2 && e900_edge_seen_off &&
++       (e900_pixel_owned || e900_edge_register_only)))
+   e900_edge_guard |= 16;
+  if (!codec_reg_bus_ready(IO_VC_BUS)) e900_edge_guard |= 32;
+  if (l->vd_mif_reg.vd_if0_gen_reg != 0x1a50 ||
+@@ -94,6 +103,7 @@
+  struct e900_edge_record *r;
+  u32 progress[4] = {0, 0, 0, 0};
+  u32 csc[9];
++ unsigned int i;
+  if (e900_edge_count >= E900_EDGE_COUNT) return;
+  r = &e900_edge_records[e900_edge_count++];
+  memset(r, 0, sizeof(*r));
+@@ -117,8 +127,10 @@
+  r->fmt = READ_VCBUS_REG(0x1a68); r->fifo = READ_VCBUS_REG(0x1a63);
+  r->vpp_fifo = READ_VCBUS_REG(VPP_FIFO_STATUS);
+  r->live = READ_VCBUS_REG(VPP_MISC); r->shadow = VSYNC_RD_MPEG_REG(VPP_MISC);
+- r->ctrl = READ_VCBUS_REG(VPP_MATRIX_CTRL);
+- r->pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++ if (!e900_edge_register_only) {
++  r->ctrl = READ_VCBUS_REG(VPP_MATRIX_CTRL);
++  r->pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++ }
+  r->dummy = READ_VCBUS_REG(VPP_DUMMY_DATA1);
+  r->clip0 = READ_VCBUS_REG(VPP_CLIP_MISC0); r->clip1 = READ_VCBUS_REG(VPP_CLIP_MISC1);
+  r->route0 = READ_VCBUS_REG(VIU_MISC_CTRL0); r->route1 = READ_VCBUS_REG(VIU_MISC_CTRL1);
+@@ -126,6 +138,11 @@
+  r->sc_gate = READ_VCBUS_REG(VPP_SC_GCLK_CTRL);
+  r->xvy_gate = READ_VCBUS_REG(0x1d79); /* fixed GXL VPP_XVYCC_GCLK_CTRL */
+  r->flags = 1; /* Safe register reads; NOT a hardware pixel-valid bit. */
++ if (e900_edge_register_only) {
++  for (i = 0; i < E900_EDGE_REG_WORDS; i++)
++   r->registers[i] = READ_VCBUS_REG(e900_edge_reg_addr[i]);
++  return;
++ }
+  if ((r->ctrl & E900_PIXEL_SELECT_MASK) != e900_pixel_our_select ||
+      (r->pos & E900_PIXEL_POS_MASK) != e900_pixel_our_pos) return;
+  r->flags |= 2;
+@@ -167,22 +184,27 @@
+  if (e900_edge_status == 1) {
+   u32 ctrl, pos;
+   if (phase || !vd_layer[0].enabled || !vd_layer[0].global_output) goto out;
+-  ctrl = READ_VCBUS_REG(VPP_MATRIX_CTRL); pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
+-  e900_pixel_saved_select = ctrl & E900_PIXEL_SELECT_MASK;
+-  e900_pixel_saved_pos = pos & E900_PIXEL_POS_MASK;
+-  e900_edge_width = vf->width; e900_edge_height = vf->height;
+-  e900_edge_ow = vi->width; e900_edge_oh = vi->height;
+-  e900_edge_x = vf->width / 16; e900_edge_y = vf->height / 2;
+-  e900_pixel_our_select = 1u << 10; /* fixed source-named VADJ1 input */
+-  e900_pixel_our_pos = (e900_edge_x << 16) | e900_edge_y;
+-  e900_pixel_owned = true; e900_pixel_restored = false;
+-  WRITE_VCBUS_REG(VPP_MATRIX_CTRL, (ctrl & ~E900_PIXEL_SELECT_MASK) | e900_pixel_our_select);
+-  WRITE_VCBUS_REG(VPP_MATRIX_PROBE_POS, (pos & ~E900_PIXEL_POS_MASK) | e900_pixel_our_pos);
++  if (!e900_edge_register_only) {
++   ctrl = READ_VCBUS_REG(VPP_MATRIX_CTRL); pos = READ_VCBUS_REG(VPP_MATRIX_PROBE_POS);
++   e900_pixel_saved_select = ctrl & E900_PIXEL_SELECT_MASK;
++   e900_pixel_saved_pos = pos & E900_PIXEL_POS_MASK;
++   e900_edge_width = vf->width; e900_edge_height = vf->height;
++   e900_edge_ow = vi->width; e900_edge_oh = vi->height;
++   e900_edge_x = vf->width / 16; e900_edge_y = vf->height / 2;
++   e900_pixel_our_select = 1u << 10; /* fixed source-named VADJ1 input */
++   e900_pixel_our_pos = (e900_edge_x << 16) | e900_edge_y;
++   e900_pixel_owned = true; e900_pixel_restored = false;
++   WRITE_VCBUS_REG(VPP_MATRIX_CTRL, (ctrl & ~E900_PIXEL_SELECT_MASK) | e900_pixel_our_select);
++   WRITE_VCBUS_REG(VPP_MATRIX_PROBE_POS, (pos & ~E900_PIXEL_POS_MASK) | e900_pixel_our_pos);
++  } else {
++   e900_edge_width = vf->width; e900_edge_height = vf->height;
++   e900_edge_ow = vi->width; e900_edge_oh = vi->height;
++  }
+   e900_edge_status = 2;
+  }
+  if (!phase) e900_edge_tick++;
+  e900_edge_record(phase, wanted, off_req, vf, true);
+- if (!(e900_edge_records[e900_edge_count - 1].flags & 2)) {
++ if (!e900_edge_register_only && !(e900_edge_records[e900_edge_count - 1].flags & 2)) {
+   e900_edge_finish(5, 3, true); goto out;
+  }
+  if (!phase) {
+@@ -210,14 +232,20 @@
+  int ret = kstrtouint(s, 0, &value);
+  (void)kp;
+  if (ret) return ret;
+- if (value > 1) return -EINVAL;
++ if (value > 2) return -EINVAL;
+  if (!is_meson_gxlx2_cpu()) return -ENODEV;
+  spin_lock_irqsave(&e900_pixel_lock, flags);
+- if (!value) e900_edge_cancel = true;
++ if (!value) {
++  e900_edge_cancel = true;
++  if (e900_edge_register_only && e900_edge_status == 1)
++   e900_edge_finish(4, 5, false); /* queued mode2 owns no hardware */
++ }
+  else if (e900_edge_reserved || e900_pixel_owned || e900_pixel_status == 1 || e900_pixel_status == 2)
+   ret = -EBUSY;
+  else {
+-  e900_edge_reserved = true; e900_edge_generation++; e900_pixel_restored = false;
++  e900_edge_register_only = value == 2;
++  e900_edge_reserved = true; e900_edge_generation++;
++  e900_pixel_restored = e900_edge_register_only;
+   e900_pps_calls = e900_sr_support = e900_sr_refresh = 0;
+   e900_edge_status = 1; e900_edge_count = e900_edge_tick = e900_edge_restore_ticks = 0;
+   e900_edge_reason = e900_edge_guard = e900_edge_x = e900_edge_y = 0;
+@@ -232,10 +260,10 @@
+  (void)kp;
+  spin_lock_irqsave(&e900_pixel_lock, flags);
+  n = scnprintf(buf, PAGE_SIZE,
+-  "generation=%u status=%u count=%u tick=%u off=%u restored=%u reason=%u guard=%x x=%u y=%u\n",
++  "generation=%u status=%u count=%u tick=%u off=%u restored=%u reason=%u guard=%x x=%u y=%u mode=%u\n",
+   e900_edge_generation, e900_edge_status, e900_edge_count, e900_edge_tick,
+   e900_edge_seen_off, e900_pixel_restored, e900_edge_reason, e900_edge_guard,
+-  e900_edge_x, e900_edge_y);
++  e900_edge_x, e900_edge_y, e900_edge_register_only ? 2 : 1);
+  spin_unlock_irqrestore(&e900_pixel_lock, flags);
+  return n;
+ }
+@@ -272,6 +300,30 @@
+  spin_unlock_irqrestore(&e900_pixel_lock, flags);
+  return n;
+ }
++/* Separate extension avoids overflowing PAGE_SIZE or changing legacy rows.
++ * Only frozen mode2 exports this data. No hardware reads in sysfs getters.
++ */
++static int e900_edge_regs_get(char *buf, const struct kernel_param *kp)
++{
++ unsigned int i, j, begin; unsigned long flags; int n = 0; (void)kp;
++ spin_lock_irqsave(&e900_pixel_lock, flags);
++ if (!e900_edge_register_only) { n = -EINVAL; goto out; }
++ if (e900_edge_status == 1 || e900_edge_status == 2) { n = -EBUSY; goto out; }
++ begin = READ_ONCE(e900_edge_page) * E900_EDGE_PAGE;
++ for (i = begin; i < e900_edge_count && i < begin + E900_EDGE_PAGE; i++) {
++  const struct e900_edge_record *r = &e900_edge_records[i];
++  n += scnprintf(buf + n, PAGE_SIZE - n, "%u %u %llx %x %x %x",
++   i, e900_edge_generation, (unsigned long long)r->stamp,
++   r->tick, r->phase, r->flags);
++  for (j = 0; j < E900_EDGE_REG_WORDS; j++)
++   n += scnprintf(buf + n, PAGE_SIZE - n, " %x", r->registers[j]);
++  n += scnprintf(buf + n, PAGE_SIZE - n, "\n");
++ }
++out:
++ spin_unlock_irqrestore(&e900_pixel_lock, flags); return n;
++}
++static const struct kernel_param_ops e900_edge_regs_ops = { .get = e900_edge_regs_get };
++module_param_cb(gxlx2_edge_regs, &e900_edge_regs_ops, NULL, 0400);
+ static const struct kernel_param_ops e900_edge_ops = { .set = e900_edge_set, .get = e900_edge_get };
+ static const struct kernel_param_ops e900_edge_page_ops = { .set = e900_edge_page_set, .get = param_get_uint };
+ static const struct kernel_param_ops e900_edge_data_ops = { .get = e900_edge_data_get };
+--- a/drivers/amlogic/media/common/rdma/e900_submit_trace.h
++++ b/drivers/amlogic/media/common/rdma/e900_submit_trace.h
+@@ -18,7 +18,9 @@
+ static u32 e900_submit_pending[RDMA_NUM];
+ static bool e900_submit_selected(u32 reg)
+ {
+- return (reg >= 0x1d00 && reg <= 0x1dff) ||
++ return (reg >= 0x1a50 && reg <= 0x1a6f) || reg == 0x1aa7 ||
++        reg == 0x1a06 || reg == 0x1a07 ||
++        (reg >= 0x1d00 && reg <= 0x1dff) ||
+         (reg >= 0x3800 && reg <= 0x38ff) ||
+         (reg >= 0x3d60 && reg <= 0x3d6f);
+ }

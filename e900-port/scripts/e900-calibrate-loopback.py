@@ -27,6 +27,7 @@ def main():
     p.add_argument('--debug-tool', default=str(local_debug) if local_debug.exists() else '/storage/e900-debug.py')
     p.add_argument('--wait', type=int, default=18)
     p.add_argument('--gen3-experiment', action='store_true', help='After baseline repeat, explicitly enable the source GEN3 experiment for a third playback; restore on exit')
+    p.add_argument('--pipeline-pixels', action='store_true', help='Explicit legacy sparse pixel experiment; default off for loopback calibration')
     p.add_argument('--control-only', action='store_true', help='Collect state/Canvas only; do not start VDIN')
     p.add_argument('--osd-blender-only', action='store_true', help='Enable source OSD experiment before first playback; restore on exit')
     p.add_argument('--osd-cycle', action='store_true', help='Explicitly hide/restore OSD during first playback; requires --control-only')
@@ -56,7 +57,7 @@ def main():
     out = output/(boot+'-'+str(time.time_ns())); out.mkdir()
     report = {'schema':1,'boot_id':boot,'screen_observed':False,'output':str(out),
               'point':'display_canvas_via_ge2d' if a.control_only else 'legacy_ENCP_output_loopback','sample':a.sample,
-              'control_only':a.control_only, 'osd_cycle':a.osd_cycle,
+              'control_only':a.control_only, 'osd_cycle':a.osd_cycle, 'pipeline_pixels':a.pipeline_pixels,
               'vdin_start_count':0,'steps':[], 'captures':[]}
     started = False; playing = False
     gen3 = Path('/sys/module/amvideo/parameters/gxlx2_gen3_clear_high')
@@ -101,7 +102,7 @@ def main():
         command=['python3',a.debug_tool,'snapshot','--label',label,'--pixels']
         # Only the active playback scan is useful. Stopped state remains software
         # evidence; it must not request reads from powered-down pixel banks.
-        if label != 'stopped_unobserved' and Path('/sys/module/amvideo/parameters/gxlx2_pixel_scan').exists():
+        if a.pipeline_pixels and label != 'stopped_unobserved' and Path('/sys/module/amvideo/parameters/gxlx2_pixel_scan').exists():
             command.append('--pipeline-pixels')
         result=run(command,timeout=25)
         report[label+'_state_path']=result.strip();save()

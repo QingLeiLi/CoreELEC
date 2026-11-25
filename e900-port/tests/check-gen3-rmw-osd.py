@@ -162,10 +162,11 @@ with tempfile.TemporaryDirectory(prefix='e900-runner-') as d:
   '/sys/module/fb/parameters/gxlx2_osd_blender_only':'N',
   '/sys/class/graphics/fb0/blank':'0',
   '/sys/module/rdma/parameters/enable':'1,0',
+  '/sys/module/amvideo/parameters/gxlx2_pixel_scan':'idle',
  }.items():
   p=root/name.lstrip('/');p.parent.mkdir(parents=True,exist_ok=True);p.write_text(value);mapping[name]=p
  def paths(value):return mapping.get(str(value),Path(value))
- for candidate,fail in [(False,False),(True,False),(True,True)]:
+ for candidate,fail,pixels in [(False,False,False),(True,False,False),(True,True,False),(False,False,True)]:
   commands=[]
   def command(argv,**kwargs):
    commands.append(argv);out=''
@@ -173,11 +174,13 @@ with tempfile.TemporaryDirectory(prefix='e900-runner-') as d:
    if any('PlayMedia(' in a for a in argv):mapping['/sys/class/vdec/vdec_status'].write_text('ammvdec_h264')
    if '--action=Stop' in argv:mapping['/sys/class/vdec/vdec_status'].write_text('No vdec.')
    if 'snapshot' in argv:
+    assert ('--pipeline-pixels' in argv)==(pixels and 'stopped_unobserved' not in argv)
     if fail:raise RuntimeError('injected snapshot failure')
     out=str(root/'snapshot')+'\n'
    return subprocess.CompletedProcess(argv,0,stdout=out,stderr='')
   args=['case','--control-only','--osd-cycle','--sample',str(sample),'--output',str(root/'output')]
   if candidate:args.append('--osd-blender-only')
+  if pixels:args.append('--pipeline-pixels')
   with mock.patch.object(runner,'Path',side_effect=paths),mock.patch.object(runner.runpy,'run_path',return_value={'kodi_state':lambda:{'status':'ok'}}),mock.patch.object(runner.subprocess,'run',side_effect=command),mock.patch.object(runner.time,'sleep'),mock.patch.object(sys,'argv',args),contextlib.redirect_stdout(io.StringIO()):
    assert runner.main()==(1 if fail else 0)
   assert mapping['/sys/module/fb/parameters/gxlx2_osd_blender_only'].read_text().strip()=='N'

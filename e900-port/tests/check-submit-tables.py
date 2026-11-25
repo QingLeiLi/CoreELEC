@@ -93,7 +93,7 @@ int main(void){
  /* Every exported row fits even at all-ones field values, including sysfs newline. */
  cpu=0x2a;reset();e900_submit_status=2;e900_submit_count=8;e900_submit_generation=~0u;
  for(i=0;i<8;i++)memset(&e900_submit_rows[i],0xff,sizeof e900_submit_rows[i]);assert(e900_submit_data(buf,0)<4095);
- assert(!e900_submit_selected(0x1aa7)&&!e900_submit_selected(0xdead)&&e900_submit_selected(0x3d6d)&&e900_submit_selected(0x3800)&&e900_submit_selected(0x1da5));
+ assert(e900_submit_selected(0x1aa7)&&e900_submit_selected(0x1a51)&&e900_submit_selected(0x1a06)&&!e900_submit_selected(0xdead)&&e900_submit_selected(0x3d6d)&&e900_submit_selected(0x3800)&&e900_submit_selected(0x1da5));
  reset();cpu=0x2a;assert(!e900_submit_set("1",0));prepare();rdma_config(1,1);prepare();rdma_config(1,1);
  assert(e900_submit_rows[8].kind==3&&e900_submit_rows[8].value==5&&e900_submit_pending[1]==2);
  e900_submit_end(1,0x1000000,2);assert(e900_submit_rows[17].batch==2&&e900_submit_rows[17].kind==2);

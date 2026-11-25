@@ -12,7 +12,8 @@ ROOT = Path('/sys/module/rdma_mgr/parameters')
 
 
 def selected(reg):
-    return (0x1d00 <= reg <= 0x1dff or 0x3800 <= reg <= 0x38ff or
+    return (0x1a50 <= reg <= 0x1a6f or reg in (0x1aa7, 0x1a06, 0x1a07) or
+            0x1d00 <= reg <= 0x1dff or 0x3800 <= reg <= 0x38ff or
             0x3d60 <= reg <= 0x3d6f)
 
 
@@ -89,7 +90,7 @@ def export(io_read=read, io_write=write):
                 status='overflow_partial' if before['overflow'] else ('collected_software_tables' if before['count'] else 'empty_no_evidence'),
                 hardware_word_execution='not_verified', physical_screen_observed=False,
                 notes='IRQ association uses software pending-table state, not hardware per-table cookies. '
-                      'Only fixed PPS/CSC/HDR registers in normal-trigger manager submissions are covered; '
+                      'Only fixed MIF/route/VPP/CSC/HDR registers in normal-trigger manager submissions are covered; '
                       'direct/auto-start/debug writes and unselected registers are not complete traces.')
 
 

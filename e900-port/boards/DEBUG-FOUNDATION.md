@@ -159,3 +159,8 @@ python3 /storage/debug-tools/e900-calibrate-loopback.py --gen3-experiment
 ### 固定点非零值的限制（2026-11-25）
 
 双混合位保留对照中，固定点持续非零，但下一次同点采样全零；控制组因没有稳定参考而未切换输出。因此非零值不能证明持续有效数据，可能存在旧值保持或探针重配置依赖。后续需先以无像素探针的目视对照校准，不能据此宣布某显示阶段正常。详见[VD1-VPP-CONVERGENCE.md](VD1-VPP-CONVERGENCE.md)。
+
+
+### 无像素选择器的关闭期寄存器记录
+
+0036新增mode2，同一VSync前后记录MIF/格式器、PPS和混合状态及扩展字段，不读写像素选择器或颜色数据，并扩展MIF软件提交表覆盖。用法、保护、联合导出及限制见[REGISTER-ONLY-TRANSITIONS.md](REGISTER-ONLY-TRANSITIONS.md)。当前仅完成主机实现验证，仍待ARM/实机。

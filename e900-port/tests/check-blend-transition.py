@@ -72,7 +72,7 @@ struct video_layer_s{struct vframe_s*dispbuf,*vf_ext;bool switch_vf,vd1_vd2_mux,
 static struct video_layer_s vd_layer[1];static struct vframe_s frame;static struct vinfo_s vi;
 static struct{unsigned vpp_off;}dev,*cur_dev=&dev;
 static bool legacy_vpp,gxlx2_g12_mif,bus,locked,local,signal_good;
-static unsigned cpu,e900_stage_epoch,tick,reads,writes,colors,ctrl,pos,live,queued;
+static unsigned cpu,e900_stage_epoch,tick,reads,writes,colors,selector_reads,ctrl,pos,live,queued;
 static int mem;
 static unsigned video_process_status[1],video_process_flags[1],null_vf_cnt[1];
 static bool video_on[1],video_layer_wait_on[1];
@@ -86,12 +86,13 @@ static const struct vinfo_s*get_current_vinfo(void){return &vi;}
 static u64 get_jiffies_64(void){return 100+tick;}
 static unsigned read_reg(unsigned reg){
  assert(locked&&cpu==0x2a&&bus&&!mem);reads++;
- switch(reg){case VPP_MATRIX_CTRL:return ctrl;case VPP_MATRIX_PROBE_POS:return pos;
+ switch(reg){case VPP_MATRIX_CTRL:selector_reads++;return ctrl;case VPP_MATRIX_PROBE_POS:selector_reads++;return pos;
  case VPP_MATRIX_PROBE_COLOR:colors++;return signal_good?0xac200200:0;
  case 0x1dd7:colors++;return signal_good?0x80000003:0;
  case 0x1a50:return 0x38400043;case 0x1aa7:return 0x33;case 0x1a68:return 0x20310c11;
  case VPP_DUMMY_DATA1:case VPP_CLIP_MISC0:case VPP_CLIP_MISC1:case VIU_MISC_CTRL0:case VIU_MISC_CTRL1:case VPP_GCLK_CTRL0:case VPP_GCLK_CTRL1:case VPP_SC_GCLK_CTRL:case 0x1d79:return 0x5678;
  case 0x1a63:return 0xff00c0;case VPP_FIFO_STATUS:return 0x1234;case VPP_MISC:return live;}
+ switch(reg){case 0x1a51:case 0x1a6d:case 0x1a53:case 0x1a54:case 0x1a55:case 0x1a56:case 0x1a69:case 0x1a6a:case 0x1d19:case 0x1d01:case 0x1d02:case 0x1d13:case 0x1d08:case 0x1d18:case 0x1d0d:case 0x1da5:return reg^0xdead0000;}
  assert(0);return 0;
 }
 static void write_reg(unsigned reg,unsigned val){assert(locked&&bus&&!mem);writes++;if(reg==VPP_MATRIX_CTRL)ctrl=val;else{assert(reg==VPP_MATRIX_PROBE_POS);pos=val;}}
@@ -102,12 +103,12 @@ static unsigned VSYNC_RD_MPEG_REG(unsigned r){assert(r==VPP_MISC);return queued;
 static void reset(void){
  video_process_status[0]=2;video_process_flags[0]=0x55;null_vf_cnt[0]=3;video_on[0]=true;video_layer_wait_on[0]=false;
  e900_csc_last_branch=1;e900_csc_post_count=4;e900_csc_legacy_count=5;e900_csc_fake_count=6;
- cpu=0x2a;legacy_vpp=bus=signal_good=true;gxlx2_g12_mif=locked=local=false;mem=0;tick=reads=writes=colors=0;dev.vpp_off=0;e900_stage_epoch=1;
+ cpu=0x2a;legacy_vpp=bus=signal_good=true;gxlx2_g12_mif=locked=local=false;mem=0;tick=reads=writes=colors=selector_reads=0;dev.vpp_off=0;e900_stage_epoch=1;
  frame=(struct vframe_s){1280,720,0,1,0};vi=(struct vinfo_s){1920,1080,1080};
  vd_layer[0]=(struct video_layer_s){.dispbuf=&frame,.enabled=true,.vd_mif_reg={0x1a50,0x1aa7},.global_output=true,.enabled_status_saved=true};
  ctrl=0x80407003;pos=0xa000e001;live=queued=0x100054b0;
  e900_pixel_status=e900_pixel_count=0;e900_pixel_owned=e900_pixel_cancel=e900_pixel_restored=false;
- e900_edge_reserved=e900_edge_cancel=e900_edge_seen_off=false;e900_edge_status=e900_edge_count=e900_edge_tick=0;
+ e900_edge_reserved=e900_edge_cancel=e900_edge_seen_off=false;e900_edge_status=e900_edge_count=e900_edge_tick=0;e900_edge_register_only=false;
  irq_count[0]=10;vsync_cfg_count[0]=11;rdma_done[0]=true;force_rdma_config[0]=0;
 }
 static void step(void){
@@ -118,13 +119,14 @@ static void step(void){
  e900_edge_hook(&vi,1,queued,false);
 }
 int main(void){
- unsigned i,j,before,old_ctrl,old_pos,n;char buf[PAGE_SIZE];struct kernel_param kp={&e900_edge_page};
+ unsigned i,j,mode,before,old_ctrl,old_pos,n;char buf[PAGE_SIZE];struct kernel_param kp={&e900_edge_page};
  assert(e900_edge_ops.set==e900_edge_set&&e900_edge_ops.get==e900_edge_get&&e900_edge_page_ops.set==e900_edge_page_set&&e900_edge_page_ops.get==param_get_uint&&e900_edge_data_ops.get==e900_edge_data_get);
+ assert(e900_edge_regs_ops.get==e900_edge_regs_get);
  assert(e900_pixel_scan_ops.set==e900_pixel_scan_set&&e900_pixel_page_ops.set==e900_pixel_page_set&&e900_pixel_data_ops.get==e900_pixel_data_get);
- reset();step();e900_pixel_step(&vi);assert(!reads&&!writes);assert(e900_edge_set("2",NULL)==-EINVAL);
+ reset();step();e900_pixel_step(&vi);assert(!reads&&!writes);assert(e900_edge_set("3",NULL)==-EINVAL);
  cpu=0x21;assert(e900_edge_set("1",NULL)==-ENODEV);
- for(j=0;j<14;j++){
-  reset();assert(!e900_edge_set("1",NULL));
+ for(mode=1;mode<=2;mode++)for(j=0;j<14;j++){
+  reset();assert(!e900_edge_set(mode==1?"1":"2",NULL));
   switch(j){case 0:cpu=0x21;break;case 1:legacy_vpp=false;break;case 2:gxlx2_g12_mif=true;break;case 3:vd_layer[0].vd1_vd2_mux=true;break;case 4:vd_layer[0].dispbuf=NULL;break;case 5:local=true;break;case 6:vd_layer[0].disable_video=true;break;case 7:vd_layer[0].enabled_status_saved=false;break;case 8:bus=false;break;case 9:mem=1;break;case 10:mem=-1;break;case 11:vd_layer[0].vd_mif_reg.vd_if0_gen_reg=0x3210;break;case 12:frame.type=VIDTYPE_COMPRESS;break;case 13:vi.field_height=540;break;}
   e900_edge_hook(&vi,0,0,false);assert(e900_edge_status==5&&!reads&&!writes);assert(!e900_edge_records[0].flags);
  }
@@ -159,6 +161,30 @@ int main(void){
   assert(e900_csc_post_count==(unsigned)(active&&!path&&post));assert(e900_csc_legacy_count==(unsigned)(active&&!path&&!post));
   run_fake(active,path);assert(e900_csc_fake_count==(unsigned)(active&&!path));
  }
+
+ /* Mode2: same actual guard/hook; no selector/color accesses or writes. */
+ reset();old_ctrl=ctrl;old_pos=pos;assert(!e900_edge_set("2",NULL));assert(e900_pixel_scan_set("1",NULL)==-EBUSY);
+ step();step();assert(e900_edge_regs_get(buf,NULL)==-EBUSY);
+ vd_layer[0].global_output=false;step();step();assert(e900_edge_records[7].flags==1&&e900_edge_status==2);
+ assert(e900_edge_records[7].registers[1]==(0x1a6d^0xdead0000));
+ vd_layer[0].global_output=true;step();assert(e900_edge_status==2);for(i=0;i<16;i++)step();
+ assert(e900_edge_status==3&&!e900_edge_reserved&&!e900_pixel_owned&&e900_pixel_restored);
+ assert(!writes&&!colors&&!selector_reads&&ctrl==old_ctrl&&pos==old_pos);
+ assert(!e900_edge_page_set("0",NULL));assert(e900_edge_regs_get(buf,NULL)>0);assert(strstr(buf,"dead1a6d"));
+ assert(e900_edge_get(buf,NULL)>0&&strstr(buf,"mode=2"));
+ for(i=0;i<e900_edge_count;i++)assert(e900_edge_records[i].flags==1&&!e900_edge_records[i].ctrl&&!e900_edge_records[i].raw0);
+ /* Unsafe mode2 termination performs no further VD1 reads or restoration writes. */
+ for(j=0;j<5;j++){
+  reset();e900_edge_set("2",NULL);step();before=reads;
+  switch(j){case 0:mem=1;break;case 1:bus=false;break;case 2:local=true;break;case 3:vd_layer[0].dispbuf=NULL;break;case 4:vd_layer[0].disable_video=true;break;}
+  e900_edge_hook(&vi,0,0,false);assert(e900_edge_status==5&&!e900_edge_reserved&&reads==before&&!writes&&!selector_reads);
+ }
+ reset();e900_edge_set("2",NULL);step();before=reads;e900_edge_before_disable(0,false);assert(e900_edge_status==5&&reads==before&&!writes);
+ reset();e900_edge_set("2",NULL);e900_edge_set("0",NULL);assert(e900_edge_status==4&&!e900_edge_reserved&&!reads&&!writes);
+ reset();e900_edge_set("2",NULL);step();e900_edge_set("0",NULL);step();assert(e900_edge_status==4&&!writes&&!selector_reads);
+ reset();e900_edge_set("2",NULL);for(i=0;i<260;i++)step();assert(e900_edge_count==512&&e900_edge_status==3&&!writes);
+ assert(!e900_edge_page_set("63",NULL));n=e900_edge_regs_get(buf,NULL);assert(n>0&&n<PAGE_SIZE);
+ reset();e900_edge_set("1",NULL);assert(e900_edge_regs_get(buf,NULL)==-EINVAL);
  return 0;
 }
 '''
@@ -166,4 +192,4 @@ int main(void){
  for std in ['gnu89','gnu99']:
   subprocess.run([shutil.which('clang') or 'cc','-std='+std,'-Wall','-Wextra','-Werror',str(r/'test.c'),'-o',str(r/'test')],check=True)
   subprocess.run([str(r/'test')],check=True)
-print('PASS: actual transition recorder; delayed queue latch, disabled-blend reads,14 rejection states, leases, contention, deferred restore,512-row bound; ARM/hardware pending')
+print('PASS: actual transition recorder; delayed queue latch, disabled-blend reads,14 rejection states, leases, contention, deferred restore,512-row bound; mode2 global-off/restore, Stop guards and ZERO selector/color reads/writes; ARM/hardware pending')
