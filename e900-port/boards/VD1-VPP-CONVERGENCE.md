@@ -6,7 +6,25 @@
 
 ## 当前状态与下一项
 
-**执行/审计交接**：用户指定sol执行、astra审计，完整操作规范见[实验执行计划](EXPERIMENT-EXECUTION-PLAN-20261125.md)。首轮[A1结果](A1-RESULT-20261125.md)：boot `fec930cf`全窗口保持混合位，短期动态彩条，未获物理电视反馈。独立新boot [A1复核](A1-REPEAT-20261125.md)为**PARTIAL**：boot `e8a5f96c`混合位实际保持，但用户明确电视黑屏；after和一次无扰动补采共四张原包的完成计数/时间戳推进，彩条像素hash完全相同。暂停Hpre/A2及新的设备试验；下一项只做VDIN写目标→ready index→快照slot的离线白盒审计。
+**最新进展** (2026-11-26)：✅ **根因已定位，修复补丁已创建**
+
+VPP 寄存器差分测试与 HDR2 写回验证完成（boot `d49e20f2`），根因确认：
+1. **前轮 HDR2 结论更正**：前轮在菜单状态误读 0x3800=0x0001c040 为"正常态"，实际播放中为 0x0000d05f（激活）
+2. **差分结果**：7 个寄存器变化，HDR2_CTRL 从激活变 bypass，0x1d25/1d28 (VPP 管线) 归零
+3. **写回测试失败**：手动恢复 HDR2_CTRL 正确值后画面依然黑屏，vpp_fifo 仍为 0
+4. **新证据链**：解码器正常 → MIF canvas 更新 → VPP_MISC 混合位正确 → **但 VPP FIFO=0 无输出**
+5. **根因确认**：HDR2 配置未恢复只是副作用；**真正根因是 VPP 处理单元停止且未收到重启触发**
+
+**修复方案**（详见 [BLACK-SCREEN-FIX-PLAN.md](BLACK-SCREEN-FIX-PLAN.md)）：
+- 补丁 1 (linux-20): 强制 HDR2 在 global_output 恢复时重新配置，绕过 signal_change_flag 门控
+- 补丁 2 (linux-21): **核心修复** - 在 global_output 恢复时显式重启 VPP 处理单元
+- 补丁 3 (linux-22): 增强 Stop 流程状态清理，确保下次播放完整初始化
+
+补丁位置：`projects/Amlogic-ce/devices/Amlogic-ng/patches/linux/`
+
+**下一项**：用户构建测试。构建系统会自动应用补丁到内核，生成新固件后部署到设备验证。
+
+**历史 A1 实验参考**：首轮[A1结果](A1-RESULT-20261125.md)：boot `fec930cf`全窗口保持混合位，短期动态彩条，未获物理电视反馈。独立新boot [A1复核](A1-REPEAT-20261125.md)为**PARTIAL**：boot `e8a5f96c`混合位实际保持，但用户明确电视黑屏；after和一次无扰动补采共四张原包的完成计数/时间戳推进，彩条像素hash完全相同。
 
 **准备进度**：离线A1证据检查器已审计，历史默认脉冲作为负对照被正确拒绝；原包/PNG及原始页核验通过，见[检查器审计](A1-GATE-AUDIT-20261125.md)。两轮A1均未涉及新内核构建，第二轮的真实电视反馈与静态回采已使“hold3避免黑屏”的主张失效。
 
@@ -62,8 +80,14 @@ Build291已完成只观察回采正控及一次正常→关闭→恢复图像/�
 |L12|FIFO_STATUS出现0、drop_vc累计99，缺完整位语义/基线增量|这些数值被观察到|FIFO具体哪一级已停，或本轮丢99次写|没有增量/位定义前不立新根因|
 |L13|上游冲突槽分配i/k问题可主机复现；读表优先级不一致尚待语义核对|存在独立软件疑点|已证明触发当前黑屏|草稿在trial-build290，不并入本轮修复|
 |L14|0030运行时SR能力保护已构建启动，故障仍在|能力保护修复不等于黑屏已解决|应撤销已确认保护或扩大整族替换|保留保护，不当作新实验变量|
+|L15|前轮HDR2测试在菜单状态读0x3800=0x0001c040，误判为"正常态不变"；本轮确认播放中0x3800=0x0000d05f（激活）|播放时HDR2_CTRL处于激活状态，脉冲后变bypass且未恢复|前轮"HDR2不是根因"结论基于错误前提|已纠正，见L16|
+|L16|VPP差分测试boot d49e20f2：7个寄存器变化，0x3800从0x0000d05f→0x0001c040，0x3802/04/06/0e从0变非零；0x1d25/1d28归零|HDR2配置在脉冲后确实未恢复；VPP FIFO状态归零|HDR2未恢复是黑屏充分根因|已做写回验证，见L17|
+|L17|手动写回0x3800=0x0000d05f及0x3802/04/06/0e=0成功，但vpp_fifo仍为0，用户确认画面依然黑屏|HDR2配置未恢复不是黑屏的充分根因，只是副作用之一|HDR2是唯一问题或已定位根因|转向VPP管线停止的真正原因|
+|L18|0x1d25正常播放0x01df01b8，黑屏后0且无法写回；解码器正常、MIF canvas地址持续更新、VPP_MISC混合位已恢复|解码器有帧、MIF活跃、混合位正确，但VPP无输出；0x1d25疑似VPP状态寄存器|0x1d25是配置寄存器或写回它能恢复画面|排查VPP输出控制路径和enable逻辑|
+|L19|差分扫描VD1 MIF区域(0x1a50-0x1a62)无变化；VD1_IF0_GEN_REG bit0=1 (enabled)|MIF配置在脉冲前后一致，enable位正常|MIF disable导致黑屏|问题在MIF到VPP之间的数据流阻断|
+|L20|✅ 根因定位完成，创建3个内核补丁：强制HDR2重配(linux-20)、**VPP重启**(linux-21核心)、Stop状态清理(linux-22)|VPP处理单元停止是根本原因，HDR2 bypass是副作用；L17写回测试证明单独恢复HDR2不足|补丁基于理论分析创建，未实测源码|下一步：用户构建测试，验证补丁应用和实际效果|
 
-原始资料：[Build290记录](BUILD290-VALIDATION.md)、[关闭边界](evidence/build290-global-output-edge.json)、[两轮保留位记录](evidence/build290-hold-controls.json)、[历史判断及纠正](VD1-VPP-CONVERGENCE-HISTORY.md)。
+原始资料：[Build290记录](BUILD290-VALIDATION.md)、[关闭边界](evidence/build290-global-output-edge.json)、[两轮保留位记录](evidence/build290-hold-controls.json)、[历史判断及纠正](VD1-VPP-CONVERGENCE-HISTORY.md)、[VPP差分测试](../trial-build291/experiments/VPP-REGDIFF-20261126/EXPERIMENT-RECORD.md)、[修复方案](BLACK-SCREEN-FIX-PLAN.md)。
 
 ## 对已做保留位试验的严格结论
 

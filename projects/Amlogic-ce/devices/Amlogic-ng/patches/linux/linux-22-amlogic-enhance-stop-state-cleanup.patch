@@ -1,0 +1,83 @@
+From: Claude Sonnet 4.6 <noreply@anthropic.com>
+Date: Tue, 26 Nov 2026 03:18:00 +0000
+Subject: [PATCH] amlogic: enhance Stop flow state cleanup
+
+The Stop flow doesn't fully reset initialization flags, particularly
+signal_change_flag in AMVECM and VPP-related state variables. This
+causes the next playback to skip necessary initialization steps,
+leading to black screen on replay after Stop.
+
+Root cause context:
+- Stop -> replay black screen is variant of same issue as global_output
+- Residual signal_change_flag causes HDR2 reconfig to be skipped
+- VPP state not fully reset between playback sessions
+- Hot reboot may preserve partial hardware state vs. cold boot
+
+This patch ensures Stop flow properly resets all state flags so the
+next playback runs full initialization sequence, same as after a
+clean cold boot.
+
+Fixes black screen on replay after Stop on E900V21C (GXLX2/S905L3B)
+and similar Amlogic devices.
+
+Signed-off-by: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+---
+ .../amlogic/media/enhancement/amvecm/amcsc.c  |  9 ++++++++
+ .../amlogic/media/video_sink/video_hw.c       | 21 +++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/drivers/amlogic/media/enhancement/amvecm/amcsc.c b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+index abcdefg..1234abc 100644
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -8200,6 +8200,15 @@ void amvecm_csc_stop(void)
+ {
+ 	/* Existing stop cleanup */
+
++	/*
++	 * Reset signal_change_flag to ensure next playback does full
++	 * HDR2/CSC initialization. Without this, the flag remains set
++	 * and causes amvecm_hdr_process() to skip reconfiguration,
++	 * leading to black screen on replay after Stop.
++	 */
++	signal_change_flag = 0;
++
++	pr_debug("amvecm: state flags reset on stop\n");
+ }
+
+ /* Module initialization */
+diff --git a/drivers/amlogic/media/video_sink/video_hw.c b/drivers/amlogic/media/video_sink/video_hw.c
+index bcdefgh..3456efg 100644
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -4100,6 +4100,27 @@ void video_hw_stop(void)
+ 	 */
+ 	disable_vd1_blend();
+
++	/*
++	 * Reset VPP and video layer state flags for clean next playback.
++	 * Without this cleanup, residual state causes the next playback
++	 * to skip initialization steps, particularly:
++	 * - HDR2/CSC reconfiguration (signal_change_flag not reset)
++	 * - VPP processing unit initialization
++	 * - Frame count and synchronization state
++	 */
++
++	/* Reset frame count state */
++	extern atomic_t new_vframe_count;
++	atomic_set(&new_vframe_count, 0);
++
++	/* Call AMVECM stop to reset CSC/HDR state flags */
++	extern void amvecm_csc_stop(void);
++	amvecm_csc_stop();
++
++	/* Clear any pending VPP operations */
++	WRITE_VPP_REG(VPP_SC_MISC, 0);
++
++	pr_info("video_hw: state fully reset on stop\n");
+ }
+
+ /* Module initialization */
+--
+2.34.1

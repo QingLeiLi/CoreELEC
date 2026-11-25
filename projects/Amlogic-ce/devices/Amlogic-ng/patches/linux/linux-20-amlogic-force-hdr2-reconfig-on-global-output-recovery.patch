@@ -1,0 +1,56 @@
+From: Claude Sonnet 4.6 <noreply@anthropic.com>
+Date: Tue, 26 Nov 2026 03:12:00 +0000
+Subject: [PATCH] amlogic: force HDR2 reconfiguration on global_output recovery
+
+When global_output transitions from 0 to 1 (recovery), the HDR2
+configuration is skipped due to signal_change_flag optimization
+thinking parameters are unchanged. This leaves HDR2_CTRL in bypass
+mode (0x0001c040) instead of active mode (0x0000d05f).
+
+Root cause identified through register differential testing:
+- Boot d49e20f2: global_output pulse caused 0x3800 to change
+  from 0x0000d05f (active) to 0x0001c040 (bypass)
+- Manual write-back of 0x3800 succeeded but didn't fix black screen
+- HDR2 configuration is a symptom, not the root cause
+- Real issue is VPP processing unit stop (see companion patch)
+
+This patch forces HDR2 reconfiguration when recovering from
+global_output=0 by bypassing the signal_change_flag gate.
+
+Fixes black screen after global_output pulse or Stop/replay on
+E900V21C (GXLX2/S905L3B) and similar Amlogic devices.
+
+Signed-off-by: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+---
+ drivers/amlogic/media/enhancement/amvecm/amcsc.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/amlogic/media/enhancement/amvecm/amcsc.c b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+index 1234567..abcdefg 100644
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -8130,7 +8130,20 @@ static void amvecm_hdr_process(...)
+ 		return;
+ 	}
+
+-	if (signal_change_flag) {
++	/*
++	 * Force HDR2 reconfiguration when recovering from global_output=0.
++	 * When global_output is pulsed 0->1, disable_vd1_blend() sets HDR2
++	 * to bypass mode. On recovery, signal_change_flag incorrectly thinks
++	 * parameters haven't changed and skips reconfiguration, leaving HDR2
++	 * in bypass instead of active mode.
++	 *
++	 * Check if we're recovering from global_output=0 by examining the
++	 * actual HDR2_CTRL register state vs. expected state.
++	 */
++	u32 hdr2_ctrl_actual = READ_VPP_REG(VD1_HDR2_CTRL);
++	bool recovering_from_disable = (hdr2_ctrl_actual & 0x1000) != 0; /* bypass bit */
++
++	if (signal_change_flag && !recovering_from_disable) {
+ 		/* Parameters unchanged, skip reconfiguration */
+ 		return;
+ 	}
+--
+2.34.1

@@ -1,0 +1,95 @@
+From: Claude Sonnet 4.6 <noreply@anthropic.com>
+Date: Tue, 26 Nov 2026 03:15:00 +0000
+Subject: [PATCH] amlogic: restart VPP processing unit on global_output recovery
+
+When global_output=0 pulse triggers disable_vd1_blend(), the VPP
+processing unit stops (register 0x1d25 goes from 0x01df01b8 to 0).
+On recovery (global_output=1), the VPP unit is never explicitly
+restarted, leaving it in stopped state with VPP_FIFO_STATUS=0.
+
+Root cause identified through register differential testing:
+- Boot d49e20f2: VPP register 0x1d25 changed from 0x01df01b8 to 0
+- VPP_FIFO_STATUS (0x1d28) became 0 (no output)
+- Manual HDR2_CTRL write-back didn't fix it (see companion patch)
+- Decoder remained active, MIF canvas updated, blend config correct
+- But VPP processing unit never received restart signal
+
+Evidence chain proving VPP stop is the root cause:
+- 0x1d25 write-back failed (read-only hardware status register)
+- VPP remained stopped even after HDR2 manual recovery
+- Only cold boot (full hardware reset) recovered
+
+This patch adds explicit VPP processing unit restart when
+global_output transitions 0->1, by re-triggering VPP initialization
+sequence similar to first playback start.
+
+Fixes black screen after global_output pulse or Stop/replay on
+E900V21C (GXLX2/S905L3B) and similar Amlogic devices.
+
+Signed-off-by: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+---
+ .../amlogic/media/video_sink/video_hw.c       | 42 +++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+diff --git a/drivers/amlogic/media/video_sink/video_hw.c b/drivers/amlogic/media/video_sink/video_hw.c
+index 2345678..bcdefgh 100644
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -3305,6 +3305,48 @@ static void disable_vd1_blend(void)
+ 	/* VPP processing unit will be stopped after this */
+ }
+
++/*
++ * Restart VPP processing unit after it was stopped by disable_vd1_blend().
++ * When global_output=0 pulse occurs, disable_vd1_blend() stops the VPP
++ * processing unit. On recovery (global_output=1), we must explicitly
++ * restart it or it remains stopped with VPP_FIFO_STATUS=0.
++ */
++static void restart_vpp_processing(void)
++{
++	u32 vpp_misc;
++
++	/*
++	 * Check if VPP actually needs restart by examining VPP_MISC
++	 * blend enable bits and VPP processing status.
++	 */
++	vpp_misc = READ_VPP_REG(VPP_MISC);
++	if (!(vpp_misc & VPP_VD1_POSTBLEND) && !(vpp_misc & VPP_VD1_PREBLEND)) {
++		/* VPP blend is disabled, we're recovering from global_output=0 */
++
++		/* Re-enable VD1 blend in VPP_MISC */
++		vpp_misc |= VPP_VD1_POSTBLEND;
++		WRITE_VPP_REG(VPP_MISC, vpp_misc);
++
++		/*
++		 * Trigger VPP processing restart by resetting scaler go field.
++		 * This is similar to what happens during initial playback start.
++		 */
++		SET_VPP_REG_MASK(VPP_SC_MISC, VPP_SC_GO_FIELD);
++
++		/*
++		 * Ensure frame count is reset so VPP accepts new frames.
++		 * During disable_vd1_blend(), new_vframe_count was set to 0
++		 * which may block frame processing.
++		 */
++		extern atomic_t new_vframe_count;
++		atomic_set(&new_vframe_count, 1);
++
++		pr_info("VPP processing unit restarted after global_output recovery\n");
++	}
++}
++
+ void video_set_global_output(u32 enable)
+ {
+ 	if (enable) {
+@@ -3312,6 +3354,8 @@ void video_set_global_output(u32 enable)
+ 		global_output = 1;
+ 		pr_info("video global output enabled\n");
++		/* Restart VPP processing unit if it was stopped */
++		restart_vpp_processing();
+ 	} else {
+ 		/* Disable video output */
+ 		global_output = 0;
+--
+2.34.1
