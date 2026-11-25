@@ -50,5 +50,16 @@ changed = copy.deepcopy(data)
 changed['state']['off'] = 0
 assert check(changed)['checks']['mode_status'] == 'FAIL'
 
+# Fresh completion events can deliver identical pixels: not moving-video proof.
+changed = copy.deepcopy(data)
+changed['image_after']['frames'] = copy.deepcopy(changed['image_before']['frames'])
+changed['image_after']['frames'][1]['rgb_sha256'] = changed['image_after']['frames'][0]['rgb_sha256']
+assert check(changed)['checks']['after_pixel_classification'] == 'UNKNOWN'
+changed['image_after']['frames'][1]['rgb_sha256'] = 'different'
+assert check(changed)['details']['after_pixel_classification'] == 'moving_colorbars'
+for frame in changed['image_after']['frames']:
+    frame.update(colorbar_reference=False, rgb_min=0, rgb_max=0)
+assert check(changed)['details']['after_pixel_classification'] == 'black_pair'
+
 print('PASS: real default-pulse data rejected as A1; legitimate delayed enable accepted; raw-page tampering, missing rows, overflow, short coverage, stale images and wrong boot rejected')
 print('No A1 hardware trial has been executed; this tool never grants final VALID status.')

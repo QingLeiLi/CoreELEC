@@ -116,6 +116,11 @@ def check(data, manifest=None, image_dir=None):
         (not before or (after[0].get('completion_count', 0) > before[-1].get('completion_count', 0) and
          after[0].get('frame_timestamp', 0) > before[-1].get('frame_timestamp', 0))),
         {'status': ats, 'frames': len(after)})
+    moving_bars = len(after) == 2 and all(f.get('colorbar_reference') for f in after) and after[0].get('rgb_sha256') != after[1].get('rgb_sha256')
+    black_pair = len(after) == 2 and all(f.get('rgb_min') == 0 and f.get('rgb_max') == 0 for f in after)
+    put('after_pixel_classification', True if moving_bars or black_pair else None,
+        'moving_colorbars' if moving_bars else 'black_pair' if black_pair else
+        'Unclassified/stationary output; packet freshness alone does not establish moving video')
     if image_dir is None:
         put('image_files', None, 'Supply --image-dir to verify original packet contents and PNGs')
     else:

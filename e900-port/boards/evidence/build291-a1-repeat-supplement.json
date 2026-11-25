@@ -1,0 +1,434 @@
+{
+  "phase": "after",
+  "point": "legacy_ENCP_loopback",
+  "frames": [
+    {
+      "version": 1,
+      "header_bytes": 80,
+      "width": 640,
+      "height": 360,
+      "format_convert": 2,
+      "active_row_bytes": 1920,
+      "source_stride": 1920,
+      "frame_index": 3,
+      "bitdepth": 8,
+      "flags": 3,
+      "frame_timestamp": 4294989917,
+      "sample_jiffies": 4294989923,
+      "completion_count": 11276,
+      "payload_bytes": 691200,
+      "packet_sha256": "d0bacd123f6f633211bdd9a09a6f03cf8c7cf93a2c8d10555a0d5f712a74a66c",
+      "payload_sha256": "0f4ea20e7715ae10a0b817f3f4b9d941d3f6b8dfa0342737c389c9883bc036ba",
+      "unique_triplets": 124,
+      "dominant_triplets": [
+        {
+          "bytes": [
+            128,
+            128,
+            235
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            235,
+            128,
+            128
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            128,
+            235,
+            128
+          ],
+          "pixels": 7354
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            128
+          ],
+          "pixels": 7296
+        },
+        {
+          "bytes": [
+            16,
+            219,
+            138
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            138,
+            16,
+            219
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            219,
+            138,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            154,
+            188,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            16,
+            154,
+            188
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            188,
+            16,
+            154
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            214,
+            78,
+            230
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            230,
+            214,
+            78
+          ],
+          "pixels": 7180
+        }
+      ],
+      "interpretation": "Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output.",
+      "packet": "/storage/e900-experiments/A1-20261125T152958Z/supplement-images/after_0.e9cap",
+      "png": "/storage/e900-experiments/A1-20261125T152958Z/supplement-images/after_0.png",
+      "rgb_sha256": "a55b816676e8fa18e46a66d5faa13f74ad2ce029cd43ec9507e726ce994268ab",
+      "rgb_min": 0,
+      "rgb_max": 255,
+      "colorbar_reference": true,
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 25.89525032043457,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 743,
+                "minutes": 5,
+                "seconds": 10
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 26.980167388916016,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 762,
+                "minutes": 5,
+                "seconds": 23
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "version": 1,
+      "header_bytes": 80,
+      "width": 640,
+      "height": 360,
+      "format_convert": 2,
+      "active_row_bytes": 1920,
+      "source_stride": 1920,
+      "frame_index": 3,
+      "bitdepth": 8,
+      "flags": 3,
+      "frame_timestamp": 4294993388,
+      "sample_jiffies": 4294993394,
+      "completion_count": 11832,
+      "payload_bytes": 691200,
+      "packet_sha256": "f102ea7420cf905b274c255f530c5a623f8f1eb706c65b58464c82890650dff6",
+      "payload_sha256": "0f4ea20e7715ae10a0b817f3f4b9d941d3f6b8dfa0342737c389c9883bc036ba",
+      "unique_triplets": 124,
+      "dominant_triplets": [
+        {
+          "bytes": [
+            128,
+            128,
+            235
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            235,
+            128,
+            128
+          ],
+          "pixels": 7412
+        },
+        {
+          "bytes": [
+            128,
+            235,
+            128
+          ],
+          "pixels": 7354
+        },
+        {
+          "bytes": [
+            128,
+            128,
+            128
+          ],
+          "pixels": 7296
+        },
+        {
+          "bytes": [
+            16,
+            219,
+            138
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            138,
+            16,
+            219
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            219,
+            138,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            154,
+            188,
+            16
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            16,
+            154,
+            188
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            188,
+            16,
+            154
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            214,
+            78,
+            230
+          ],
+          "pixels": 7180
+        },
+        {
+          "bytes": [
+            230,
+            214,
+            78
+          ],
+          "pixels": 7180
+        }
+      ],
+      "interpretation": "Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output.",
+      "packet": "/storage/e900-experiments/A1-20261125T152958Z/supplement-images/after_1.e9cap",
+      "png": "/storage/e900-experiments/A1-20261125T152958Z/supplement-images/after_1.png",
+      "rgb_sha256": "a55b816676e8fa18e46a66d5faa13f74ad2ce029cd43ec9507e726ce994268ab",
+      "rgb_min": 0,
+      "rgb_max": 255,
+      "colorbar_reference": true,
+      "gui_before": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 27.063583374023438,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 763,
+                "minutes": 5,
+                "seconds": 24
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      },
+      "gui_after": {
+        "status": "ok",
+        "result": [
+          {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+              {
+                "playerid": 1,
+                "playertype": "internal",
+                "type": "video"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "jsonrpc": "2.0",
+            "result": {
+              "percentage": 27.914833068847656,
+              "speed": 1,
+              "time": {
+                "hours": 0,
+                "milliseconds": 978,
+                "minutes": 5,
+                "seconds": 34
+              }
+            }
+          },
+          {
+            "id": 3,
+            "jsonrpc": "2.0",
+            "result": {
+              "currentcontrol": {
+                "label": ""
+              },
+              "currentwindow": {
+                "id": 12005,
+                "label": "Fullscreen video"
+              },
+              "fullscreen": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "clock_recovery": false,
+  "physical_hdmi_observed": false,
+  "decoding": "BT601_limited_YUV444_reverse64; requires current-session route calibration",
+  "status": "fresh_completed_pair"
+}
