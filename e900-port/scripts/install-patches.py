@@ -129,7 +129,7 @@ def invalidated_packages(previous, state):
     new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
     changed_sources = {name for name in old_sources.keys() | new_sources.keys()
                        if old_sources.get(name) != new_sources.get(name)}
-    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools", "megatools"}:
+    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools", "megatools", "rtmpdump"}:
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
     old_install = {entry["package"]: entry for entry in previous.get("package_install_fixes", [])}
@@ -310,6 +310,32 @@ def u_boot_tools_download_fix(repo):
     return relative, content, metadata
 
 
+def rtmpdump_download_fix(repo):
+    relative = "packages/multimedia/rtmpdump/package.mk"
+    original = (repo / relative).read_text()
+    digest = "c68e05989a93c002e3ba8df3baef0021c17099aa2123a9c096a5cc8e029caf95"
+    upstream = "http://repo.or.cz/rtmpdump.git/snapshot/${PKG_VERSION}.tar.gz"
+    mirror = "https://sources.coreelec.org/rtmpdump/${PKG_NAME}-${PKG_VERSION}.tar.gz"
+    source_name = 'PKG_SOURCE_NAME="${PKG_NAME}-${PKG_VERSION}.tar.gz"'
+    if ('PKG_VERSION="f1b83c10d8beb43fcc70a6e88cf4325499f25857"' not in original or
+            f'PKG_SHA256="{digest}"' not in original):
+        raise RuntimeError("Unexpected rtmpdump version or checksum; refusing source URL override")
+    urls = re.findall(r'^PKG_URL="([^"]*)"$', original, re.M)
+    if len(urls) != 1 or urls[0] not in {upstream, mirror}:
+        raise RuntimeError("Unexpected rtmpdump URL; refusing to overwrite local changes")
+    names = re.findall(r'^PKG_SOURCE_NAME=.*$', original, re.M)
+    if names and names != [source_name]:
+        raise RuntimeError("Unexpected rtmpdump source filename")
+    replacement = f'PKG_URL="{mirror}"'
+    if not names:
+        replacement += "\n" + source_name
+    content = re.sub(r'^PKG_URL="[^"]*"$', lambda _: replacement, original, flags=re.M)
+    metadata = dict(package="rtmpdump", version="f1b83c10d8beb43fcc70a6e88cf4325499f25857",
+                    archive_sha256=digest, url=mirror, destination=relative,
+                    package_file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def megatools_download_fix(repo):
     relative = "packages/tools/megatools/package.mk"
     original = (repo / relative).read_text()
@@ -387,7 +413,8 @@ def install(repo, profile):
     media_path, media_content, media_metadata = media_module_install_fix(repo)
     source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
                     wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
-                    u_boot_tools_download_fix(repo), megatools_download_fix(repo)]
+                    u_boot_tools_download_fix(repo), megatools_download_fix(repo),
+                    rtmpdump_download_fix(repo)]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"
