@@ -1,20 +1,23 @@
 diff --git a/drivers/amlogic/media/video_sink/video_hw.c b/drivers/amlogic/media/video_sink/video_hw.c
-index 123456789abc..abcdef012345 100644
+index ba06e5797fda..5913bfa5d518 100644
 --- a/drivers/amlogic/media/video_sink/video_hw.c
 +++ b/drivers/amlogic/media/video_sink/video_hw.c
-@@ -4921,6 +4921,15 @@ void vpp_blend_update(
+@@ -3305,6 +3305,7 @@ static void disable_vd1_blend(struct video_layer_s *layer)
+ 		layer->vf_ext = NULL;
+ 	}
+ 	layer->new_vframe_count = 0;
++	pr_debug("VIDEO: VD1 blend disabled\n");
+ }
+ 
+ static void disable_vd2_blend(struct video_layer_s *layer)
+@@ -4923,6 +4924,10 @@ void vpp_blend_update(
  			vpu_delay_work_flag |=
  				VPU_VIDEO_LAYER1_CHANGED;
  			force_flush = true;
-+			/*
-+			 * Restart VPP processing after recovering from global_output=0.
-+			 * disable_vd1_blend() set new_vframe_count to 0, causing VPP to stop.
-+			 * Reset frame count to allow VPP to resume processing frames.
-+			 */
 +			if (vd_layer[0].new_vframe_count == 0) {
 +				vd_layer[0].new_vframe_count = 1;
-+				pr_info("VIDEO: VPP processing restarted (new_vframe_count reset)\n");
++				pr_info("VIDEO: VPP processing restarted\n");
 +			}
- 		}
- 		spin_unlock_irqrestore(&video_onoff_lock, flags);
- 	} else if (vd_layer[0].enabled) {
+ 		} else if (vd_layer[0].onoff_state ==
+ 			VIDEO_ENABLE_STATE_OFF_REQ) {
+ 			vpp_misc_set &= ~(VPP_VD1_PREBLEND |
