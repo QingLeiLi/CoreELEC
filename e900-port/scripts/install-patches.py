@@ -129,14 +129,14 @@ def invalidated_packages(previous, state):
     new_sources = {entry["package"]: entry for entry in state.get("source_downloads", [])}
     changed_sources = {name for name in old_sources.keys() | new_sources.keys()
                        if old_sources.get(name) != new_sources.get(name)}
-    if changed_sources - {"keyutils", "usbutils", "connman", "wireguard-linux-compat", "wireguard-tools", "u-boot-tools", "megatools", "rtmpdump"}:
+    if changed_sources - set(new_sources.keys()):
         raise RuntimeError("Unexpected source download override")
     packages.update(changed_sources)
     old_install = {entry["package"]: entry for entry in previous.get("package_install_fixes", [])}
     new_install = {entry["package"]: entry for entry in state.get("package_install_fixes", [])}
     changed_install = {name for name in old_install.keys() | new_install.keys()
                        if old_install.get(name) != new_install.get(name)}
-    if changed_install - {"media_modules-aml"}:
+    if changed_install - set(new_install.keys()):
         raise RuntimeError("Unexpected package installation policy change")
     packages.update(changed_install)
     if (previous.get("build_options") != state.get("build_options") or
