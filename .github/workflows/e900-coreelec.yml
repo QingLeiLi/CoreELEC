@@ -123,8 +123,9 @@ jobs:
               rm -f "$stamp_sha" "${pkg}.url"
             fi
           done < <(find "$E900_WORK_ROOT/downloads" -maxdepth 3 -name "*.sha256" 2>/dev/null)
-          # Remove unstamped files — these are failed downloads saved before the
-          # compile-success guard was added; re-downloading them is correct.
+          # Remove archive files that have no stamp — these are failed downloads
+          # (get_archive only writes the stamp on success; die() leaves the file).
+          # Only match known source archive extensions to avoid touching metadata.
           while IFS= read -r pkg; do
             if [[ ! -f "${pkg}.sha256" ]]; then
               echo "Cache integrity: removing unstamped $(basename "$pkg")"
@@ -132,7 +133,9 @@ jobs:
               removed=$((removed + 1))
             fi
           done < <(find "$E900_WORK_ROOT/downloads" -maxdepth 3 -type f \
-                     ! -name "*.sha256" ! -name "*.url" ! -name "*.e900-*" 2>/dev/null)
+                     \( -name "*.tar.gz" -o -name "*.tar.xz" -o -name "*.tar.bz2" \
+                        -o -name "*.tar.zst" -o -name "*.tar.lz4" -o -name "*.zip" \
+                        -o -name "*.7z" -o -name "*.tgz" \) 2>/dev/null)
           echo "Cache validation: removed $removed file(s)"
 
       - name: Restore compiler object cache
