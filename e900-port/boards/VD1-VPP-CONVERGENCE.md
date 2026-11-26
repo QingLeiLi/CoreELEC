@@ -6,31 +6,11 @@
 
 ## 当前状态与下一项
 
-**最新进展** (2026-11-26)：✅ **根因已定位，修复补丁已创建**
+**当前进展（2026-11-27）**：用户授权实施默认关闭的HDR恢复单变量实验。Claude的0037(bit12触发)和0038(计数赋1)已审查，不能作为根因已定位/修复已验证，详见[审查报告](CLAUDE-PATCH-REVIEW-20261127.md)。旧判断原文保留于[历史记录](CLAUDE-CLAIMS-20261126-HISTORY.md)。
 
-VPP 寄存器差分测试与 HDR2 写回验证完成（boot `d49e20f2`），根因确认：
-1. **前轮 HDR2 结论更正**：前轮在菜单状态误读 0x3800=0x0001c040 为"正常态"，实际播放中为 0x0000d05f（激活）
-2. **差分结果**：7 个寄存器变化，HDR2_CTRL 从激活变 bypass，0x1d25/1d28 (VPP 管线) 归零
-3. **写回测试失败**：手动恢复 HDR2_CTRL 正确值后画面依然黑屏，vpp_fifo 仍为 0
-4. **新证据链**：解码器正常 → MIF canvas 更新 → VPP_MISC 混合位正确 → **但 VPP FIFO=0 无输出**
-5. **根因确认**：HDR2 配置未恢复只是副作用；**真正根因是 VPP 处理单元停止且未收到重启触发**
+代码与盒子当前均以Claude版本为起点；实机只读核对为4.9.269、编译时间Nov26 15:36:29 UTC，boot `dc859e23`、init=2、global=1、hold=0、No vdec。尚未部署新的实验。
 
-**修复方案**（详见 [BLACK-SCREEN-FIX-PLAN.md](BLACK-SCREEN-FIX-PLAN.md)）：
-- 补丁 1 (linux-20): 强制 HDR2 在 global_output 恢复时重新配置，绕过 signal_change_flag 门控
-  - ✅ 已验证：amcsc.c line 8133，检测 VD1_HDR2_CTRL bypass bit，强制 SIG_FORCE_CHG
-- 补丁 2 (linux-21): **核心修复** - 在 global_output 恢复时显式重启 VPP 处理单元
-  - ✅ 已验证：video_hw.c vpp_blend_update()，VIDEO_ENABLE_STATE_ON_PENDING 分支重置 new_vframe_count
-- 补丁 3 (linux-22): 增强 Stop 流程状态清理，确保下次播放完整初始化
-  - ✅ 已验证：video_hw.c disable_vd1_blend()，添加状态清理文档和调试日志
-
-补丁位置：`projects/Amlogic-ce/devices/Amlogic-ng/patches/linux/`
-
-**补丁验证** (commit f60c09be64)：
-- 基于实际内核源码（linux-amlogic@50c8e8154c5a）验证并修正
-- 所有补丁通过 `patch --dry-run` 测试，能够正确应用
-- 内核源码位置：/Volumes/linux-amlogic/linux-amlogic
-
-**下一项**：用户构建测试。GitHub Actions 正在编译（已运行约 15-30 分钟）。构建完成后部署到设备验证黑屏修复效果。
+源码已实施：[HDR恢复实验](HDR-RECOVERY-EXPERIMENT-20261127.md)。0038计数hack已移除；0037替换为真实global边沿触发、仅GXLX2/VD1/同播放会话的一次重配，默认关闭并记录请求/消费/取消及调用。状态函数主机测试、整套Linux补丁应用及原HDR写序检查通过；下一项为ARM构建，尚未部署。主机验证、ARM构建、部署、实测分开报告。测试使用同一新构建开关关闭/开启的独立新boot对照；Claude现有固件不是关闭组。VDIN静态回采有效性缺口保留，最终画面需用户确认。
 
 **历史 A1 实验参考**：首轮[A1结果](A1-RESULT-20261125.md)：boot `fec930cf`全窗口保持混合位，短期动态彩条，未获物理电视反馈。独立新boot [A1复核](A1-REPEAT-20261125.md)为**PARTIAL**：boot `e8a5f96c`混合位实际保持，但用户明确电视黑屏；after和一次无扰动补采共四张原包的完成计数/时间戳推进，彩条像素hash完全相同。
 
