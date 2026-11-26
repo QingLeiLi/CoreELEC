@@ -2,11 +2,12 @@ diff --git a/drivers/amlogic/media/enhancement/amvecm/amcsc.c b/drivers/amlogic/
 index bc9ac7441262..08d3fb4e2d67 100644
 --- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
 +++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
-@@ -8130,6 +8130,9 @@ static int vpp_matrix_update(
+@@ -8130,6 +8130,10 @@ static int vpp_matrix_update(
  		csc_en & 0x10)
  		return 1;
  
-+	if (READ_VPP_REG(VD1_HDR2_CTRL) & 0x1000)
++	if ((cur_csc_type[vd_path] != 0xffff) &&
++	    (READ_VPP_REG(VD1_HDR2_CTRL) & 0x1000))
 +		signal_change_flag |= SIG_FORCE_CHG;
 +
  	if (((!signal_change_flag) && (force_csc_type == 0xff))
