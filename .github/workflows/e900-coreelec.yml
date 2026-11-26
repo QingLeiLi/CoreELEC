@@ -237,7 +237,7 @@ jobs:
           key: ${{ steps.compiler-cache.outputs.cache-primary-key }}
 
       - name: Save source download cache
-        if: always() && !cancelled() && steps.downloads.outputs.cache-primary-key != ''
+        if: steps.compile.outcome == 'success' && steps.downloads.outputs.cache-primary-key != ''
         timeout-minutes: 10
         continue-on-error: true
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
