@@ -102,6 +102,39 @@ jobs:
           restore-keys: |
             e900-downloads-${{ hashFiles('e900-port/pins.json') }}-
 
+      - name: Validate cached download integrity
+        if: steps.downloads.outputs.cache-matched-key != ''
+        shell: bash
+        run: |
+          set +e
+          removed=0
+          # Remove any file whose sha256 stamp doesn't match actual content (bit-rot or partial write).
+          while IFS= read -r stamp_sha; do
+            pkg="${stamp_sha%.sha256}"
+            if [[ -f "$pkg" ]]; then
+              expected=$(cat "$stamp_sha" 2>/dev/null)
+              actual=$(sha256sum "$pkg" | cut -d' ' -f1)
+              if [[ "$expected" != "$actual" ]]; then
+                echo "Cache integrity: removing mismatched $(basename "$pkg")"
+                rm -f "$pkg" "$stamp_sha" "${pkg}.url"
+                removed=$((removed + 1))
+              fi
+            else
+              rm -f "$stamp_sha" "${pkg}.url"
+            fi
+          done < <(find "$E900_WORK_ROOT/downloads" -maxdepth 3 -name "*.sha256" 2>/dev/null)
+          # Remove unstamped files — these are failed downloads saved before the
+          # compile-success guard was added; re-downloading them is correct.
+          while IFS= read -r pkg; do
+            if [[ ! -f "${pkg}.sha256" ]]; then
+              echo "Cache integrity: removing unstamped $(basename "$pkg")"
+              rm -f "$pkg"
+              removed=$((removed + 1))
+            fi
+          done < <(find "$E900_WORK_ROOT/downloads" -maxdepth 3 -type f \
+                     ! -name "*.sha256" ! -name "*.url" ! -name "*.e900-*" 2>/dev/null)
+          echo "Cache validation: removed $removed file(s)"
+
       - name: Restore compiler object cache
         id: compiler-cache
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
