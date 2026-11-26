@@ -312,6 +312,8 @@ def u_boot_tools_download_fix(repo):
 
 def rtmpdump_download_fix(repo):
     relative = "packages/multimedia/rtmpdump/package.mk"
+    if not (repo / relative).exists():
+        return None
     original = (repo / relative).read_text()
     digest = "c68e05989a93c002e3ba8df3baef0021c17099aa2123a9c096a5cc8e029caf95"
     upstream = "http://repo.or.cz/rtmpdump.git/snapshot/${PKG_VERSION}.tar.gz"
@@ -411,10 +413,10 @@ def install(repo, profile):
     validate_packages(repo)
     host_path, host_content, host_metadata = host_codegen_fix(repo)
     media_path, media_content, media_metadata = media_module_install_fix(repo)
-    source_fixes = [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
+    source_fixes = [f for f in [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
                     wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
                     u_boot_tools_download_fix(repo), megatools_download_fix(repo),
-                    rtmpdump_download_fix(repo)]
+                    rtmpdump_download_fix(repo)] if f is not None]
     options = PORT / "boards/usb-build.options"
     option_content = options.read_text() if profile == "decoder" else None
     option_destination = repo / ".coreelec/options"
