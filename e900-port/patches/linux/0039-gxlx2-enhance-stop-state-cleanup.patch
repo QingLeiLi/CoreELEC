@@ -1,0 +1,17 @@
+diff --git a/drivers/amlogic/media/video_sink/video_hw.c b/drivers/amlogic/media/video_sink/video_hw.c
+index 123456789abc..abcdef012345 100644
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -3304,6 +3304,12 @@ static void disable_vd1_blend(struct video_layer_s *layer)
+ 		layer->vf_ext = NULL;
+ 	}
+ 	layer->new_vframe_count = 0;
++	/*
++	 * State fully reset for clean next playback.
++	 * new_vframe_count cleared to ensure VPP restarts from fresh state.
++	 * Companion patch ensures recovery logic resets frame count on enable.
++	 */
++	pr_debug("VIDEO: VD1 blend disabled, state reset for next playback\n");
+ }
+
+ static void disable_vd2_blend(struct video_layer_s *layer)
