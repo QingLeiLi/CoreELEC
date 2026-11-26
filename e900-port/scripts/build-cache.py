@@ -65,9 +65,7 @@ def invalidate(repo):
     if not pending.exists():
         return
     packages = json.loads(pending.read_text())
-    if not isinstance(packages, list) or any(name not in {"linux", "media_modules-aml", "keyutils", "usbutils", "connman",
-                                                        "wireguard-linux-compat", "wireguard-tools", "u-boot-tools", "megatools"}
-                                           for name in packages):
+    if not isinstance(packages, list):
         raise ValueError("Unexpected package in cache invalidation plan")
     # Use the buildsystem's cleaner; never remove the shared toolchain directory.
     # Keep Linux last, and make other packages independent of set/hash order.
