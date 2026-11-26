@@ -34,3 +34,16 @@
 4. 首播、global脉冲、Stop/replay分开验证；每轮同时保留用户电视反馈与动态像素证据，静态回采不得通过。
 
 依据：本地固定linux-amlogic@50c8e8154c5a及现有E900补丁；未重新做ARM编译或硬件测试。缓存/下载/遥控器等同期改动未纳入这次黑屏补丁审查。
+
+## 对后续“源码可证根因链”的快速复核
+
+收到补充主张：global_output=0→video_property_notify→disable_vd1_blend→new_vframe_count=0→停止提交。固定源码与已有实机记录不支持这条链：
+
+- `video.c:10178`的global_output store只写整数并打印，未调用video_property_notify。`:526`的video_property_notify只设置property_changed；`video_hw.c:5513`处理它时设force_config_cnt/force_toggle，并不调用关层。
+- `video_hw.c`中new_vframe_count全部引用只有两处关层清零、换新vf时递增、判断等于1以识别first_picture。不存在`==0`就停止向VPP提交vframe的判断；vpp_blend_update本身也没有该字段引用（新0038除外）。
+- 真正首播/重播恢复路径：layer_swap_frame检测新vf→计数递增/first_picture→符合disable/type条件时enable_video_layer→VD1_MEM_POWER_ON+VIDEO_LAYER_ON→ON_PENDING→vpp_blend_update恢复blend并回IDLE。普通global恢复按enabled_status_saved恢复enabled，不必重新走ON_PENDING。
+- 复用真实`build291-short-transition.json.gz`（boot b8356d5d）和`build291-a1-repeat-transition.json.gz`（boot e8a5f96c）：两轮全部记录`off=0`、guard=0。记录的off字段直接来自video1_off_req；guard位8同时检查onoff_state!=IDLE/off_req等。故在这些采样边界内没有真实关层请求，状态机保持IDLE，不能称该黑屏必经disable_vd1_blend。VSync采样不证明任意采样间的绝对无事件，但源码也没有所宣称的必然调用链。
+
+HDR寄存器方面，`arch/vpp_hdr_regs.h:39`只定义VD1_HDR2_CTRL地址0x3800，未给出整块bypass位定义；实现中bit12明确按cgain mode使用。正常/异常两值的差分已足够否定0037当前条件，不需为同一结论再触发实机黑屏。若新代码或新固件不同，应先给出对应commit/函数与新增调用证据。
+
+本次没有重复实机脉冲。计数与状态机根因主张应撤回；HDR完整恢复仍是待验证候选，不因上述主张错误而被排除。
