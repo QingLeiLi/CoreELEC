@@ -1,0 +1,125 @@
+{
+  "boot_id": "6df8d570-94f0-4635-afdc-814a9180628d",
+  "file": "/storage/videos/Test-H264-720p-20min.mp4",
+  "visual_contrast": {
+    "first": "reference_normal_user_confirmed",
+    "replay": "normal",
+    "reported_current_picture": "normal"
+  },
+  "replay_coverage": {
+    "complete": true,
+    "missing": [],
+    "display_epoch": 7,
+    "registration_epoch": 7,
+    "disposition": {
+      "dcu_skipped": [],
+      "pps_unsupported": false,
+      "pps_skipped": [],
+      "csc_returns": [
+        2,
+        6,
+        7
+      ],
+      "hdr_requested": false,
+      "hdr_flush_disabled": false
+    },
+    "scope": "Selected software boundaries and guarded reads, not pixel proof"
+  },
+  "transition_overflow": 0,
+  "outcome_readbacks_comparable": true,
+  "endpoint_status": {
+    "reference": {
+      "host_time_ns": 1795811629943552003,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    },
+    "replay_startup": {
+      "host_time_ns": 1795811647443468678,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    },
+    "confirmed_outcome": {
+      "host_time_ns": 1795811670384702689,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    }
+  },
+  "kernel_trial": {
+    "source_sha256": "8c87b17cead380b6cb23d1a334ec8d5372a3c8d1824d6a259666d2200f01fac8",
+    "trial_sha256": "dfd02d69e907a87c396d007b394efbc9428bd69e8444215490be990db3078f94",
+    "changes": [
+      {
+        "offset": "0x9ca1a4",
+        "old": "0x54003269",
+        "new": "0x14000193",
+        "target": "0x9ca7f0",
+        "purpose": "vpp_matrix_update: run legacy hdr_support_process"
+      },
+      {
+        "offset": "0x9ca2e0",
+        "old": "0x54002249",
+        "new": "0x14000112",
+        "target": "0x9ca728",
+        "purpose": "vpp_matrix_update: use legacy source/policy branch"
+      },
+      {
+        "offset": "0x9ca3bc",
+        "old": "0x54002229",
+        "new": "0x14000111",
+        "target": "0x9ca800",
+        "purpose": "vpp_matrix_update: use legacy HDMI metadata callback"
+      },
+      {
+        "offset": "0x9ca420",
+        "old": "0x54003a08",
+        "new": "0xd503201f",
+        "target": "0x9ca424",
+        "purpose": "vpp_matrix_update: use inlined video_process instead of video_post_process"
+      },
+      {
+        "offset": "0x9c8d40",
+        "old": "0x5400084d",
+        "new": "0x14000042",
+        "target": "0x9c8e48",
+        "purpose": "bypass_hdr_process: use legacy matrix/LUT branch, no HDR2 shortcut"
+      }
+    ],
+    "scope": "SDR CSC legacy route experiment on this GXLX2 box only; other format helpers not exhaustively changed",
+    "generic_soc_guard": false,
+    "hardware_tested": false,
+    "source_candidate": "e900-port/candidates/0045-gxlx2-legacy-sdr-csc-route.patch",
+    "linux_source_pin": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41"
+  },
+  "counts": {
+    "first": 3067,
+    "reference": 280,
+    "transition": 14778,
+    "outcome": 168
+  },
+  "flush_flag_final": 0,
+  "result": "user confirmed first and default Stop/replay normal",
+  "last_device_state": "normal muted replay, no further media actions",
+  "limitations": [
+    "Five unconditional selector changes apply only to this fixed GXLX2 binary trial.",
+    "One successful software-reboot first/Stop/replay; not repeated cold-boot or all-format acceptance.",
+    "Format-specific HDR/HLG helpers remain unaudited."
+  ]
+}

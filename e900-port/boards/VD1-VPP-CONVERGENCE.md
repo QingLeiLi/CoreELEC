@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**低成本legacy实机通过（2026-11-28，当前结果）**：用户要求最小成本试验，固定Build293仅改五处分支生成293L，不全编译。新boot6df8d570，用户确认首播与默认Stop/replay均正常；未屏蔽HDR，flush=0。3067/280/14778/168行齐全无溢出；Stop实际走legacy矩阵/LUT控制，无HDR2请求/区域软件写入，CTRL保持d05f，FIFO变化。与默认A黑屏、Stop禁HDR的B正常一致，支持所测SDR legacy路由；不是全HDR或重复验收。五处源等价候选0045不进入默认构建，原293可回退。下一步正式源码化和格式能力审查；本轮不再播放。详见[legacy实测](BUILD293-LEGACY-CSC-TRIAL-20261128.md)。
+
+
 **HDR白盒写序收敛（2026-11-28）**：用户要求优先白盒、暂不加实验入口。本地执行固定源码CTRL RMW，精确复现d05f→1c040；这是bypass主动配置，不是随机损坏/软件RMW错值。差异bits0/1/2/3/4/12/16，bit13无变化；LUT payload不上传，但enable改变仍可参与故障。A独有79地址=VD1 39+OSD 39+wrap1，clock gate与矩阵也在候选范围。legacy_vpp与G12 HDR选择存在软件能力分类不一致，硬件适用性仍待证。测试通过，无设备动作/新内核补丁。详见[白盒写序](BUILD293-HDR-WHITEBOX-WRITES-20261128.md)。
 
 

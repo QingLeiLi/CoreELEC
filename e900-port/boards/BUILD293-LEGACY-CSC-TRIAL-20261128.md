@@ -23,3 +23,14 @@ USB FAT余72.4MiB。`/storage/e900-legacy293/previous/`保存旧启动脚本，`
 新boot `6df8d570-94f0-4635-afdc-814a9180628d`，BOOT_IMAGE=e900-Image293L；init等待1，disable_flush_flag=0；收到netconsole READY后释放初始化。只首播一次，目录`/storage/e900-legacy293/paired-01`；后续等待用户确认正常，正常才按默认参数reference→transition，不使用Stop HDR guard。若首播黑或采集不全就停，不自动重复。
 
 本轮在写本文时尚未得到首播画面反馈。实际legacy写者/避免HDR2应从新时间线验证，不能仅凭静态分支修改就说已在硬件生效。
+
+
+## 实测结果：首播、默认重播均正常
+
+用户分别确认首播正常和默认Stop/replay正常。first/reference/transition/outcome为3067/280/14778/168行，无溢出，首播与重播观测齐全，outcome配对/播放器身份核验通过。disable_flush_flag最后实读0，未使用Stop guard，HDR恢复/hold/GEN3/OSD实验均关闭。
+
+完整transition无HDR请求/提交/disabled事件，无0x3800–38ff选定软件写入；Stop实际出现legacy的1a90–1a99、1a9d–1a9f、1d91/1d92/1da5以及1d5f控制写入，不能把成功解释成Stop未执行清理。CTRL参考/转换/正常稳态均d05f，所采HDR输入矩阵保持0，FIFO有0/401effe及启动1effe；正常目视来自用户反馈，不以FIFO自动归类。
+
+此结果支持**所测SDR场景下legacy CSC路由有效**，与默认A黑屏、全局Stop HDR抑制B正常构成三组方向一致的证据。不等于已经定位单一控制位，也未完成反复重播、输出关闭/恢复、其他码流、HDR/HLG、菜单颜色及真正冷启动验收。当前源候选0045仍不进入默认构建；下一步可将五处选择转成受GXLX2限制的正式源码修复候选，补其它格式能力审查，避免宣称全HDR支持。
+
+证据：[摘要与二进制provenance](evidence/build293/legacy-csc-01/summary.json)，相同目录含四段原始时间线与RPC结果。设备保持静音正常重播，未追加Stop/Open/重启。
