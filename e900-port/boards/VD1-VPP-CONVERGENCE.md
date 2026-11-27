@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**剩余G12调用核实（2026-11-28）**：确认HLG自动匹配后`video_process→hlg_process`内部CPU>=G12分支再次调用VD1 HLG_SDR/OSD HDR_BYPASS，真实index137–140与CTRL index146=e05f匹配。不同于Stop bypass的1c040，不混同单bit原因。HDR10/hdr10p/HLG→HDR/SDR→HDR四个helper也有源码可达G12入口，未假称本轮执行。完整栈真实谓词和原包核验通过，无设备动作。下一项可在用户授权下仅额外切换HDR10/HLG两个helper做低成本实验，不能据黑屏断言SoC无HDR能力。详见[函数级审计](HDR-G12-HELPER-AUDIT-20261128.md)。
+
+
 **HDR10/HLG实测（2026-11-28，当前结果）**：293L上两者HEVC Main10解码、PQ/HLG识别成立，默认hdr_mode0均偏灰（HLG更灰），HDR→SDR未通过；接收端EDID无HDR能力，未验证直通。用户授权只改当前HLG hdr_mode0→2后黑屏；4499条无溢出，PROC_MATCH=5，真实VD1 HLG_SDR+OSD HDR_BYPASS及HDR2写者命中，对应尚未转换的hlg_process内部G12分支。不能据此判芯片无HDR硬件。黑屏后仅只读，设备保持hdr_mode2/flush0，无重播/恢复。下一步若继续先核对格式helper，不能简单默认mode2。见[格式结果与原包](HDR-FORMAT-VALIDATION-20261128.md)。
 
 
