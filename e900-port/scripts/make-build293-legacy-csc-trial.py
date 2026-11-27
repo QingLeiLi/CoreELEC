@@ -47,7 +47,7 @@ def prepare(source,out):
     (out/'provenance.json').write_text(json.dumps(dict(source_sha256=PIN,trial_sha256=hashlib.sha256(changed).hexdigest(),changes=rows,
         scope='SDR CSC legacy route experiment on this GXLX2 box only; other format helpers not exhaustively changed',
         generic_soc_guard=False,hardware_tested=False),indent=2)+'\n')
-    print('Prepared 5-branch / 20-byte-slot trial; original Image unchanged')
+    print(f'Prepared {len(CHANGES)}-branch / {len(CHANGES)*4}-byte-slot trial; original Image unchanged')
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path);p.add_argument('output',type=Path)

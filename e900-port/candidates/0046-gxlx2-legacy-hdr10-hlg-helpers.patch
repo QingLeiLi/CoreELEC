@@ -1,0 +1,27 @@
+Subject: [EXPERIMENT] source counterpart of two additional 293H helper selectors
+
+Not installed. Requires HDR10/HLG visual, color and regression validation.
+Does not change all tone-map/histogram/CUVA helpers.
+
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -5078,7 +5078,8 @@
+ 	};
+ 	int i, j;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
++	    !is_meson_gxlx2_cpu()) {
+ 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
+ 		eo_clip_proc(master_info, 0);
+ 		hdr_func(OSD1_HDR, HDR_BYPASS | hdr_ex, vinfo, NULL);
+@@ -5379,7 +5380,8 @@
+ 	};
+ 	int i, j;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
++	    !is_meson_gxlx2_cpu()) {
+ 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
+ 		if (vd_path == VD1_PATH)
+ 			hdr_func(VD1_HDR, HLG_SDR | hdr_ex, vinfo, &m);
