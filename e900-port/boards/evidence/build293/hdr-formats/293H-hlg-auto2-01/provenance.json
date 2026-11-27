@@ -1,0 +1,59 @@
+{
+  "source_sha256": "8c87b17cead380b6cb23d1a334ec8d5372a3c8d1824d6a259666d2200f01fac8",
+  "trial_sha256": "9a2f77e3e31fc8e3d6d9f27e3af93415f9a8145f50272335bcd893d9f6f52a34",
+  "changes": [
+    {
+      "offset": "0x9ca1a4",
+      "old": "0x54003269",
+      "new": "0x14000193",
+      "target": "0x9ca7f0",
+      "purpose": "vpp_matrix_update: run legacy hdr_support_process"
+    },
+    {
+      "offset": "0x9ca2e0",
+      "old": "0x54002249",
+      "new": "0x14000112",
+      "target": "0x9ca728",
+      "purpose": "vpp_matrix_update: use legacy source/policy branch"
+    },
+    {
+      "offset": "0x9ca3bc",
+      "old": "0x54002229",
+      "new": "0x14000111",
+      "target": "0x9ca800",
+      "purpose": "vpp_matrix_update: use legacy HDMI metadata callback"
+    },
+    {
+      "offset": "0x9ca420",
+      "old": "0x54003a08",
+      "new": "0xd503201f",
+      "target": "0x9ca424",
+      "purpose": "vpp_matrix_update: use inlined video_process instead of video_post_process"
+    },
+    {
+      "offset": "0x9c8d40",
+      "old": "0x5400084d",
+      "new": "0x14000042",
+      "target": "0x9c8e48",
+      "purpose": "bypass_hdr_process: use legacy matrix/LUT branch, no HDR2 shortcut"
+    },
+    {
+      "offset": "0x9c9ad4",
+      "old": "0x5400102c",
+      "new": "0xd503201f",
+      "target": "0x9c9ad8",
+      "purpose": "hdr_process.isra.0: legacy HDR10->SDR helper"
+    },
+    {
+      "offset": "0x9c958c",
+      "old": "0x54000f8c",
+      "new": "0xd503201f",
+      "target": "0x9c9590",
+      "purpose": "hlg_process.constprop.0: legacy HLG->SDR helper"
+    }
+  ],
+  "scope": "GXLX2-only binary experiment: five SDR selectors plus HDR10/HLG helper entry; no claim all HDR paths are legacy or valid",
+  "generic_soc_guard": false,
+  "hardware_tested": false,
+  "supersedes": "293L for temporary HDR10/HLG tests; original source-built 293 retained"
+}

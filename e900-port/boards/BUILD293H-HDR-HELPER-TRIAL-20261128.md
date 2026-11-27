@@ -24,3 +24,16 @@ HLG先从新软件启动（非断电冷启动）开始：init等待、网络READ
 新boot `d6929b25-28a5-4768-91b1-0edcdac3dcf5`，BOOT_IMAGE=e900-Image293H，init1、hdr_mode0、flush0起步。旧接收进程已退出，重新启动UDP6667接收至本地trial-hdr293/293H-netconsole.log并确认唯一READY后释放初始化。播放前仅设置hdr_mode2，Open HLG一次，运行目录/storage/e900-hdr293/293H-hlg-auto2-01。实读cur_signal_type=0x35091209、hlg_process_mode=5、HEVC帧数推进/错误0。首播原包导出及物理画面反馈尚待完成；此处不因参数或解码正常判转换通过。FAT余44.7MiB，293与293L保留，未写eMMC。
 
 首播采集结束：65536条后overflow=1，缺受保护显示读回，结果INCOMPLETE；解码1243帧、错误0、disable0。不能用溢出窗口证明全部写者缺失或全链路通过。没有重试、没有重播，等待本次HLG画面/颜色反馈。后续分析需优先留存已记录前缀并解决高频legacy写入的观测量问题，不自动补播。
+
+
+## 视觉与原始前缀结果
+
+用户确认HLG彩条仍偏灰，主观比上次有所改善。**归类为能出图，颜色仍未通过**，不能把轻微改善当作正确HDR→SDR。黑屏的293L mode2组与可见293H组为不同boot，保持此限制。
+
+只读归档实读hdr_mode2、hdr/hlg_process_mode5,0、csc_en7、HLG信号、flush0、解码推进无错误、HDMI SDR。65536条溢出前缀没有HDR请求/提交，也没有0x3800–38ff软件word；出现legacy矩阵/LUT写入，支持两处helper路径已改变，不能扩大为未记录后续全程无写者。
+
+前三个高频地址1add=18673次、1ade=18673次、1adb=15100次，合计52446条，占缓冲主体。后续采集需先解决高频LUT写入的有界记录方式或更短的固定窗口，而不是加大后仍等待缺失MIF读回。溢出不能用来排除剩余写者，也不能从重复word直接判软件每帧重刷所有LUT（需区分单次大量payload与多事务）。
+
+下一步离线核对legacy EOTF/OETF enable、矩阵路由、调用重复来源，保留原LUT内容作为参考；不直接用range/saturation调整替代适配。HDR10在293H尚未实测，不能继承HLG结果。
+
+原始前缀、参数、decoder/HDMI状态和镜像provenance见[evidence/build293/hdr-formats/293H-hlg-auto2-01/summary.json](evidence/build293/hdr-formats/293H-hlg-auto2-01/summary.json)。视觉反馈后只有只读操作，未重播/重启/改参数。

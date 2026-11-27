@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**293H HLG仍偏灰（2026-11-28，当前结果）**：两额外helper分支切换后，用户确认可见彩条但仍偏灰、主观稍改善。mode2/csc_en7，HDR2请求和区域word在已保存前缀均0，legacy矩阵/LUT写者出现，支持路径切换但颜色未通过。65536条overflow1，三legacy LUT端口52446条为主体，不能当完整窗口。只读归档完成，未再操作播放/参数；HDR10在293H未测。下一步先查legacy LUT使能/矩阵路由和配置调用来源，解决有界观测，不调饱和度掩盖结果。见[293H结果](BUILD293H-HDR-HELPER-TRIAL-20261128.md)。
+
+
 **293H两个格式helper实验（2026-11-28，进行中）**：用户授权继续，在293L五处选择外仅新增HDR10/HLG各一处NOP走legacy入口，源候选0046未安装。原hash/opcode与ARM64反汇编核对、重复生成与错误源拒绝通过。USB新bootd6929b25，原293/293L回退保留，余44.7MiB；新日志READY后释放init，首播前hdr_mode2，Open HLG一次。cur_signal_type为HLG、mode5、解码推进错误0；画面及实际写者结果未判定。下一步仅等用户反馈并读原包，不自动重播。详见[293H实验](BUILD293H-HDR-HELPER-TRIAL-20261128.md)。
 
 

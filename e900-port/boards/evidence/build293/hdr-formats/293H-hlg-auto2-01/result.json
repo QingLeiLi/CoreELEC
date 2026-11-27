@@ -1,0 +1,132 @@
+{
+  "status": "INCOMPLETE",
+  "action": "first",
+  "boot_id": "d6929b25-28a5-4768-91b1-0edcdac3dcf5",
+  "rpc": [
+    {
+      "method": "Application.SetVolume",
+      "params": {
+        "volume": 0
+      },
+      "send_boottime_ns": 84858404413,
+      "sent": true,
+      "response": {
+        "id": 71,
+        "jsonrpc": "2.0",
+        "result": 0
+      },
+      "return_boottime_ns": 84871657746
+    },
+    {
+      "method": "Player.Open",
+      "params": {
+        "item": {
+          "file": "/storage/videos/Test-HLG-HEVC-720p-20min.mp4"
+        }
+      },
+      "send_boottime_ns": 84892333830,
+      "sent": true,
+      "response": {
+        "id": 71,
+        "jsonrpc": "2.0",
+        "result": "OK"
+      },
+      "return_boottime_ns": 84930747330
+    }
+  ],
+  "file": "/storage/videos/Test-HLG-HEVC-720p-20min.mp4",
+  "before": {
+    "host_time_ns": 1795813266872936799,
+    "boot_id": "d6929b25-28a5-4768-91b1-0edcdac3dcf5",
+    "decoder": "No vdec.",
+    "mode": "1080p60hz",
+    "global": "1",
+    "disable": "1",
+    "hold": "0",
+    "hdr_experiment": "N",
+    "checked_policy": {
+      "amvideo.gxlx2_g12_mif": "N",
+      "amvideo.gxlx2_gen3_clear_high": "N",
+      "fb.gxlx2_osd_blender_only": "N",
+      "amvideo.gxlx2_pixel_scan": {
+        "status": "0",
+        "owned": "0"
+      },
+      "amvideo.gxlx2_edge_scan": {
+        "status": "0",
+        "owned": null
+      },
+      "amvideo.gxlx2_debug_events": "0",
+      "am_vecm.gxlx2_debug_events": "0",
+      "rdma.gxlx2_debug_events": "0",
+      "rdma.gxlx2_gen3_rmw_events": "0",
+      "rdma_mgr.gxlx2_debug_events": "0",
+      "rdma_mgr.gxlx2_gen3_rmw_events": "0",
+      "fb.gxlx2_debug_events": "0",
+      "register_ops.gxlx2_debug_events": "0",
+      "register_ops.gxlx2_gen3_rmw_events": "0",
+      "di.gxlx2_debug_events": "0",
+      "vpu.gxlx2_debug_events": "0"
+    },
+    "playback_api": 2
+  },
+  "runner_sha256": "79899147fdc9941e1f0c6e64dcbc5dfacd58c24306b8ae633b8dcb5e13780e5c",
+  "kernel_version": "#1 SMP PREEMPT Fri Nov 27 18:25:11 UTC 2026",
+  "timeout_seconds": 6,
+  "error": "Recorder overflow",
+  "primary_error": "RuntimeError('Recorder changed during live read')",
+  "state": {
+    "generation": 1,
+    "status": 2,
+    "count": 65536,
+    "capacity": 65536,
+    "overflow": 1,
+    "phase": 1
+  },
+  "coverage": {
+    "1": {
+      "complete": false,
+      "missing": [
+        "read_0x1a50",
+        "read_0x1d26",
+        "read_0x1d28",
+        "read_0x3800",
+        "read_0x1a6d",
+        "read_0x1aa7",
+        "read_0x1a63",
+        "read_0x1d5f"
+      ],
+      "display_epoch": 3,
+      "registration_epoch": 3,
+      "disposition": {
+        "dcu_skipped": [],
+        "pps_unsupported": false,
+        "pps_skipped": [],
+        "csc_returns": [
+          2,
+          6,
+          7
+        ],
+        "hdr_requested": false,
+        "hdr_flush_disabled": false
+      },
+      "scope": "Selected software boundaries and guarded reads, not pixel proof"
+    },
+    "3": {
+      "complete": false,
+      "missing": [
+        "provider_registration"
+      ]
+    }
+  },
+  "after": {
+    "host_time_ns": 1795813309684231028,
+    "boot_id": "d6929b25-28a5-4768-91b1-0edcdac3dcf5",
+    "decoder": "vdec channel 0 statistics:\n  device name : amvdec_h265\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 5\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 1243\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000",
+    "mode": "1080p60hz",
+    "global": "1",
+    "disable": "0",
+    "hold": "0",
+    "hdr_experiment": "N"
+  }
+}

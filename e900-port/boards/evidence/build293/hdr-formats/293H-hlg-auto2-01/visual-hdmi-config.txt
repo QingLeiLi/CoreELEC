@@ -1,0 +1,18 @@
+cur_VIC: 16
+cur_video_param->VIC=16
+VIC: 16 1920x1080p60hz
+Colour depth: 12-bit
+Colourspace: YUV444
+Colour range: default
+EOTF: SDR
+YCC colour range: limited
+Colourimetry: BT.709
+PLL clock: 0xc00002b9, Vid clock div 0x000a78f0
+audio config: on
+audio on/off: on
+audio source: SPDIF
+audio type: L-PCM
+audio channel num: 2 channels
+audio sample rate: 44.1kHz
+audio sample size: 16bit
+3D config: off

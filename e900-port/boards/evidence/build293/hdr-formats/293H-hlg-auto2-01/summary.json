@@ -1,0 +1,29 @@
+{
+  "boot": "d6929b25-28a5-4768-91b1-0edcdac3dcf5",
+  "kernel": "293H",
+  "hdr_mode": 2,
+  "hlg_process_mode": 5,
+  "csc_en": 7,
+  "visual_feedback": "bars visible, still gray; subjectively a little better than previous",
+  "status": "partial_color_not_passed",
+  "capture": {
+    "rows": 65536,
+    "overflow": 1,
+    "scope": "frozen prefix only, not complete playback"
+  },
+  "prefix_hdr_calls": 0,
+  "prefix_hdr_bank_words": 0,
+  "prefix_top_write_counts": {
+    "0x1add": 18673,
+    "0x1ade": 18673,
+    "0x1adb": 15100,
+    "0x1a3a": 732,
+    "0x1a01": 732,
+    "0x1da5": 370,
+    "0x1a98": 366,
+    "0x1a99": 366,
+    "0x1a91": 366,
+    "0x1a92": 366
+  },
+  "last_device_state": "HLG visible but gray, muted, hdr_mode2/flush0; no further playback/parameter changes"
+}

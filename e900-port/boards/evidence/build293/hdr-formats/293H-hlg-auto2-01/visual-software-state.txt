@@ -1,0 +1,12 @@
+hdr_mode
+2
+hdr_process_mode
+5,0
+hlg_process_mode
+5,0
+cur_signal_type
+889786889,4294967295
+disable_flush_flag
+0
+csc_en
+7
