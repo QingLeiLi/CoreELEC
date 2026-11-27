@@ -13,6 +13,8 @@ from types import SimpleNamespace
 P=Path(__file__).resolve().parents[1]
 M=runpy.run_path(str(P/'scripts/e900-playback-session.py'))
 A=M['AUDIT']
+REGS=M['REQUIRED_READBACKS']
+SAMPLES=(0x1d28,0x1d28)+tuple(r for r in REGS if r!=0x1d28)
 B=P/'boards/evidence/build292'
 first=json.loads((B/'paired-01/first.json').read_text())
 replay=json.loads((B/'paired-01/replay.json').read_text())
@@ -33,7 +35,7 @@ def covered(phase):
     rows=[row(0,phase,1,8)]
     for code in (3,11,12,13,14,8,9,18):
         rows.append(row(len(rows),phase,code,value=7 if code==18 else 0,handle=1 if code in (8,9) else 0))
-    for reg in (0x1a50,0x1d26,0x1d28,0x3800):
+    for reg in REGS:
         rows.append(row(len(rows),phase,reg,source=5,kind=7))
     return rows
 
@@ -87,20 +89,22 @@ with tempfile.TemporaryDirectory() as directory:
     docs={}
     for generation,(name,phase) in enumerate([('first',1),('reference',1),('transition',2)],1):
         folder=root/name;folder.mkdir()
-        rs=covered(1) if name=='first' else [row(0,1,0,1,kind=1),row(1,1,0x1d28,3,source=5,kind=7),row(2,1,0x1d28,4,source=5,kind=7)]+[row(3+i,1,reg,source=5,kind=7) for i,reg in enumerate((0x1a50,0x1d26,0x3800))]
+        rs=covered(1) if name=='first' else [row(0,1,0,1,kind=1),row(1,1,0x1d28,3,source=5,kind=7),row(2,1,0x1d28,4,source=5,kind=7)]+[row(3+i,1,reg,source=5,kind=7) for i,reg in enumerate(tuple(r for r in REGS if r!=0x1d28))]
         if name=='first':rs.insert(0,row(0,1,0,1,kind=1))
         if name=='transition':
-            rs=[row(0,2,0,2,kind=1)]+[row(i+1,2,reg,value=3 if reg==0x1d28 else 0,source=5,kind=7) for i,reg in enumerate((0x1d28,0x1d28,0x1a50,0x1d26,0x3800))]+[row(6,2,1,1),row(7,2,2,1),row(8,3,0,3,kind=1)]+covered(3)
+            rs=[row(0,2,0,2,kind=1)]+[row(i+1,2,reg,value=3 if reg==0x1d28 else 0,source=5,kind=7) for i,reg in enumerate(SAMPLES)]+[row(6,2,1,1),row(7,2,2,1),row(8,2,0x3800,0x1c040,source=4,kind=4),row(9,3,0,3,kind=1)]+covered(3)
         for i,r in enumerate(rs):
             r['index']=i;r['stamp']=generation*100+i;r['generation']=generation
-            if name=='transition' and r['phase']==3:r['session']=10
+            if name=='transition' and r['phase']==3:
+                r['session']=10
+                if r['source']==5 and r['reg']==0x3800:r['value']=0x1c040
         st=dict(generation=generation,status=2,count=len(rs),capacity=65536,overflow=0,phase=3 if name=='transition' else 1)
         text='\n'.join(' '.join(str(r[k]) if i<2 else format(r[k],'x') for i,k in enumerate(A['FIELDS'])) for r in rs)
         doc=dict(boot_id='boot',state=st,pages=[text],records=rs,after=dict(disable='0',global_output='1',decoder='ammvdec_h264',**{'global':'1'}));docs[name]=doc
         (folder/('stop.json' if name=='transition' else 'first.json')).write_text(json.dumps(doc))
         (folder/('stop.owner.json' if name=='transition' else 'first.owner.json')).write_text(json.dumps(dict(boot_id='boot',generation=generation)))
         (folder/'manifest.json').write_text(json.dumps(dict(boot_id='boot',collector_sha256='a'*64)))
-        result=dict(boot_id='boot',before=dict(checked_policy={'test':'0'}),state=st,runner_sha256='b'*64,status='COVERED_REQUIRES_VISUAL',file='test',confirmed_normal=name=='reference',pre_stop_reference={'rows':6,'context':{'disable':'0','global':'1','decoder':'ammvdec_h264'}},stop_boundary=dict(context={'decoder':'No vdec.','disable':'1'}))
+        result=dict(boot_id='boot',before=dict(checked_policy={'test':'0'},playback_api=2),state=st,runner_sha256='b'*64,status='COVERED_REQUIRES_VISUAL',file='test',confirmed_normal=name=='reference',pre_stop_reference={'rows':1+len(SAMPLES),'context':{'disable':'0','global':'1','decoder':'ammvdec_h264'}},stop_boundary=dict(context={'decoder':'No vdec.','disable':'1'}))
         result['rpc']=([{'method':'Player.Stop','sent':True}] if name=='transition' else [])+([{'method':'Player.Open','sent':True,'params':{'item':{'file':'test'}}}] if name in ('first','transition') else [])
         (folder/'result.json').write_text(json.dumps(result))
     assert M['compare_session'](root)['classification']=='REPLAY_OUTCOME_PENDING'
@@ -132,7 +136,7 @@ with tempfile.TemporaryDirectory() as directory:
     original_transition=copy.deepcopy(docs['transition'])
     original_transition_result=(root/'transition/result.json').read_text()
     out=root/'outcome';out.mkdir()
-    rs=[row(0,3,0,3,kind=1)]+[row(i+1,3,reg,value=0,source=5,kind=7,session=10) for i,reg in enumerate((0x1d28,0x1d28,0x1a50,0x1d26,0x3800))]
+    rs=[row(0,3,0,3,kind=1)]+[row(i+1,3,reg,value=0,source=5,kind=7,session=10) for i,reg in enumerate(SAMPLES)]
     for i,r in enumerate(rs):r['generation']=4;r['stamp']=400+i
     st=dict(generation=4,status=2,count=len(rs),capacity=65536,overflow=0,phase=3)
     outcome_doc=dict(boot_id='boot',state=st,records=rs,after={'disable':'0','global':'1','decoder':'ammvdec_h264'})
@@ -141,7 +145,7 @@ with tempfile.TemporaryDirectory() as directory:
     (out/'first.json').rename(out/'replay.json')
     (out/'replay.owner.json').write_text(json.dumps({'boot_id':'boot','generation':4}))
     (out/'manifest.json').write_text(json.dumps({'boot_id':'boot','collector_sha256':'a'*64}))
-    outcome_result=dict(boot_id='boot',state=st,runner_sha256='b'*64,status='COVERED_REQUIRES_VISUAL',file='test',before={'checked_policy':{'test':'0'}},reported_outcome='black',player_identity_verified=True)
+    outcome_result=dict(boot_id='boot',state=st,runner_sha256='b'*64,status='COVERED_REQUIRES_VISUAL',file='test',before={'checked_policy':{'test':'0'},'playback_api':2},reported_outcome='black',player_identity_verified=True,pairing_verified=True)
     (out/'result.json').write_text(json.dumps(outcome_result))
     no_replay=json.loads(original_transition_result)
     no_replay['rpc'][-1]['sent']=False
@@ -153,6 +157,9 @@ with tempfile.TemporaryDirectory() as directory:
     comparison=M['compare_session'](root)
     assert comparison['classification']=='REVIEW_REQUIRED'
     assert comparison['visual_contrast']['replay']=='black'
+    traced=next(p for p in comparison['transition_readback_provenance'] if p['read']['phase']==3 and p['read']['reg']==0x3800)
+    assert traced['prior_selected_writes'][-1]['phase']==2 and traced['matches_last_selected_write']
+    assert 'not a lost-write assertion' in traced['limitation']
     assert any(f['code_or_register']=='0x1d28' for f in comparison['normal_reference_vs_confirmed_outcome']['findings'])
     partial=copy.deepcopy(original_transition)
     partial['records']=[r for r in partial['records'] if not (r['source']==1 and r['kind']==2 and r['reg']==11)]
@@ -168,6 +175,12 @@ with tempfile.TemporaryDirectory() as directory:
     outcome_result['player_identity_verified']=False
     (out/'result.json').write_text(json.dumps(outcome_result))
     assert M['compare_session'](root)['normal_reference_vs_confirmed_outcome'] is None
+    outcome_result['reported_outcome']='normal'
+    (out/'result.json').write_text(json.dumps(outcome_result))
+    ambiguous=M['compare_session'](root)
+    assert ambiguous['classification']=='PARTIAL_REPLAY_CAPTURE'
+    assert ambiguous['visual_contrast']['replay']=='unverified'
+    assert ambiguous['visual_contrast']['reported_current_picture']=='normal'
     outcome_result.update(player_identity_verified=True,reported_outcome='normal')
     (out/'result.json').write_text(json.dumps(outcome_result))
     assert M['compare_session'](root)['classification']=='FAULT_NOT_REPRODUCED'
@@ -220,7 +233,7 @@ with tempfile.TemporaryDirectory() as directory:
                 execute(SimpleNamespace(run=root,action='transition',file='test',timeout=.01,confirmed_normal=False))
         except RuntimeError:pass
         else:raise AssertionError('Timeout reported success')
-        assert requests==['Player.GetItem','Application.SetVolume','Player.Stop']
+        assert requests==['Player.GetItem','Player.Stop']
         assert json.loads((root/'transition/result.json').read_text())['status']=='INCOMPLETE'
         requests.clear()
         g['validate_live_baseline']=old['validate_live_baseline']
@@ -351,7 +364,8 @@ for text in ('generation=1 status=2 count=10 capacity=65536 overflow=0 phase=3',
 
 # Execute outcome and transition code with no hardware access. Outcome accepts
 # zero FIFO as observed failure and issues only GetItem, never Open/Stop/Volume.
-for action in ('outcome','transition'):
+for scenario in ('outcome','unpaired_outcome','unpaired_type_outcome','transition'):
+    action='outcome' if scenario.startswith('unpaired') else scenario
     with tempfile.TemporaryDirectory() as directory:
         root=Path(directory);(root/'reference').mkdir()
         (root/'reference/result.json').write_text(json.dumps(dict(status='COVERED_REQUIRES_VISUAL',boot_id='boot',file='test',confirmed_normal=True)))
@@ -363,7 +377,7 @@ for action in ('outcome','transition'):
             return {'item':{'file':'test'}} if method=='Player.GetItem' else 'OK'
         def fake_arm(folder,phase):
             (folder/(phase+'.owner.json')).write_text(json.dumps({'boot_id':'boot','generation':1}))
-        rs=[row(i,3,reg,value=0,source=5,kind=7) for i,reg in enumerate((0x1d28,0x1d28,0x1a50,0x1d26,0x3800))]
+        rs=[row(i,3,reg,value=0,source=5,kind=7) for i,reg in enumerate(SAMPLES)]
         def fake_freeze(folder,phase,hdmi=False):
             (folder/(phase+'.json')).write_text(json.dumps({'state':{'overflow':0},'records':rs,'after':context}))
         class FakeTrace:
@@ -373,7 +387,7 @@ for action in ('outcome','transition'):
         try:
             g.update(preflight=lambda **_:context,rpc=fake_rpc,wait_for=lambda *_args,**_kwargs:None,
                      LiveRows=FakeTrace,validate_live_baseline=lambda *_:None,
-                     compare_session=lambda _:{'boot_id':'boot','file':'test'},
+                     compare_session=(lambda _:(_ for _ in ()).throw((TypeError if scenario=='unpaired_type_outcome' else ValueError)('prior export broken'))) if scenario.startswith('unpaired') else (lambda _:{'boot_id':'boot','file':'test'}),
                      AUDIT=dict(A,arm=fake_arm,freeze=fake_freeze,snapshot=lambda:context,write=lambda *_:None))
             try:
                 with mock.patch.object(g['subprocess'],'run'),contextlib.redirect_stdout(io.StringIO()):
@@ -384,8 +398,9 @@ for action in ('outcome','transition'):
             if action=='outcome':
                 assert requests==['Player.GetItem']
                 assert result['reported_outcome']=='black' and result['status']=='COVERED_REQUIRES_VISUAL'
+                assert result['pairing_verified']==(not scenario.startswith('unpaired'))
             else:
-                assert requests==['Player.GetItem','Application.SetVolume','Player.Stop']
+                assert requests==['Player.GetItem','Player.Stop']
                 assert result['status']=='INCOMPLETE'
         finally:g.update(old)
 print('PASS: invalid baseline blocks Stop; missing replay calls remain analyzable; confirmed black/zero FIFO snapshots perform no media mutation; frozen recorder blocks replay')
@@ -393,7 +408,7 @@ print('PASS: invalid baseline blocks Stop; missing replay calls remain analyzabl
 # Normal/black grouping is user-reported: FIFO zero must never exclude a
 # normal counterexample or be silently reclassified as a fault.
 ctx={'disable':'0','global':'1','decoder':'ammvdec_h264'}
-recent=[row(i,2,reg,value=5 if reg==0x1d28 else 0,source=5,kind=7) for i,reg in enumerate((0x1a50,0x1d26,0x3800,0x1d28,0x1d28))]
+recent=[row(i,2,reg,value=5 if reg==0x1d28 else 0,source=5,kind=7) for i,reg in enumerate(tuple(r for r in REGS if r!=0x1d28)+(0x1d28,0x1d28))]
 assert M['reference_ready'](recent,ctx)
 recent += [row(len(recent)+i,2,0x1d28,value=0,source=5,kind=7) for i in range(2)]
 assert M['reference_ready'](recent,ctx)
@@ -405,7 +420,7 @@ class Param:
     def __init__(self,*parts):self.name='/'.join(map(str,parts))
     def is_file(self):return True
     def read_text(self):
-        return {'gxlx2_playback_live_api':'1','gxlx2_hw_init_status':'2','gxlx2_stage_samples':'0','enable':'1,0'}[self.name.rsplit('/',1)[-1]]
+        return {'gxlx2_playback_live_api':'2','gxlx2_hw_init_status':'2','gxlx2_stage_samples':'0','enable':'1,0'}[self.name.rsplit('/',1)[-1]]
 g=M['preflight'].__globals__
 with mock.patch.dict(g,Path=Param,checked_policy=lambda:{'test':'0'}),mock.patch.dict(A,
         read=lambda _:'generation=3 status=2 count=10 capacity=65536 overflow=0 phase=3',
@@ -415,3 +430,18 @@ with mock.patch.dict(g,Path=Param,checked_policy=lambda:{'test':'0'}),mock.patch
     else:raise AssertionError('Unhealthy global output permitted a fault-triggering action')
     assert M['preflight'](observation=True)['global']=='0'
 print('PASS: normal/black sampling uses identical value-neutral criteria; read-only outcome admits failed global restore without allowing a new playback trial')
+
+# Advertised old API must fail before media actions; a sparse old read set
+# cannot silently stand in for the newly required GEN2/GEN3/matrix scope.
+sparse=[r for r in recent if r['reg'] not in (0x1a6d,0x1aa7,0x1a63,0x1d5f)]
+assert not M['readbacks_available'](sparse)
+class OldParam(Param):
+    def read_text(self):
+        if self.name.endswith('gxlx2_playback_live_api'):return '1'
+        return super().read_text()
+g=M['preflight'].__globals__
+with mock.patch.dict(g,Path=OldParam):
+    try:M['preflight']()
+    except RuntimeError as error:assert 'v2' in str(error)
+    else:raise AssertionError('Old API accepted without four required readbacks')
+print('PASS: Stop-phase write provenance survives replay; broken earlier exports do not suppress unpaired read-only outcome; old API/sparse coverage rejected')

@@ -78,13 +78,15 @@ static void e900_debug_event(const char *s,u32 a,u32 b,u32 c,u32 d){(void)s;(voi
 static bool e900_playback_direct_selected(u32 reg){(void)reg;return false;}
 static bool playback_available;static unsigned playback_taken,hdr_reads_recorded,quiet_layout_mask;
 static bool e900_playback_active(void){return playback_available;}
+static bool e900_playback_batch_valid(u32 batch){return e900_playback_active()&&batch==1;}
+static u32 e900_playback_begin(u32 source,u32 handle,u32 trigger,u32 total){assert(source==5&&total==27);(void)handle;(void)trigger;return playback_available?1:0;}
 static bool e900_playback_sample_available(void){return playback_available;}
 static bool e900_playback_sample_take(void){playback_taken++;return true;}
 static u32 e900_hdr_recovery_video_session(void){return 0;}
 static void e900_playback_note(u32 source,u32 kind,u32 session,u32 batch,u32 handle,u32 reg,u32 value,u32 aux){
  (void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)value;(void)aux;
  if(reg==0x3800)hdr_reads_recorded++;
- if(source==5&&kind==7){
+ if(source==5&&kind==7){assert(batch==1);
   if(reg==0x1a6d)quiet_layout_mask|=1;
   if(reg==0x1aa7)quiet_layout_mask|=2;
   if(reg==0x1a63)quiet_layout_mask|=4;

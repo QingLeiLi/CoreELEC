@@ -232,6 +232,27 @@ def event_detail(row):
     return result
 
 
+def readback_provenance(rows):
+    writes = collections.defaultdict(list)
+    result = []
+    for row in rows:
+        if row['kind'] == 4:
+            writes[row['reg']].append(row)
+        elif row['kind'] == 7:
+            candidates = writes[row['reg']][-4:]
+            result.append({'read': row, 'prior_selected_writes': candidates,
+                           'matches_last_selected_write': None if not candidates else candidates[-1]['value'] == row['value'],
+                           'limitation': 'Preparation/dispatch precedes hardware latch; mismatch is not a lost-write assertion.'})
+    return result
+
+def blend_state(row):
+    """Decode only the bit packing defined by 0038, not hardware enable bits."""
+    value = row['value']
+    return dict(row, enabled=value & 1, global_output=(value >> 1) & 1,
+                onoff_raw=(value >> 2) & 7, disable_raw=(value >> 5) & 3,
+                switch_vf=(value >> 7) & 1, new_vframe_count=row['aux'])
+
+
 def localization(first, replay):
     """Align event classes/ordinals; expose unresolved asynchronous writes."""
     def indexed(rows):
@@ -262,6 +283,20 @@ def localization(first, replay):
         # Provider event IDs, frame indices/PTS and new-frame counts legitimately
         # differ. Counts/ordering are retained; do not turn those into failures.
         if mode == 'call':
+            if reg == 5:
+                def path(records):
+                    result=[]
+                    for r in records:
+                        if not result or r['value']!=result[-1]['value']:
+                            result.append(blend_state(r))
+                    return result
+                a_path,b_path=path(a),path(b)
+                if [r['value'] for r in a_path] != [r['value'] for r in b_path]:
+                    item.update(classification='SOFTWARE_STATE_PATH_DIFFERENCE',
+                                evidence={'first':a_path,'replay':b_path},
+                                limitation='Software request/state paths, not latched hardware or pixel proof. Repeated frame-count-only notes are collapsed here; raw records remain available.')
+                    findings.append(item)
+                continue
             signatures = lambda rows: [(r['value'], r['aux']) for r in rows]
             if reg in (1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18) and signatures(a) != signatures(b):
                 i = next((i for i in range(min(len(a), len(b)))
@@ -276,20 +311,8 @@ def localization(first, replay):
                             evidence={'first': a[i], 'replay': b[i]},
                             limitation='Ordinal samples are not synchronized scanlines; dynamic status and frame addresses may differ normally.')
                 findings.append(item)
-    def provenance(rows):
-        writes = collections.defaultdict(list)
-        result = []
-        for row in rows:
-            if row['kind'] == 4:
-                writes[row['reg']].append(row)
-            elif row['kind'] == 7:
-                candidates = writes[row['reg']][-4:]
-                result.append({'read': row, 'prior_selected_writes': candidates,
-                               'matches_last_selected_write': None if not candidates else candidates[-1]['value'] == row['value'],
-                               'limitation': 'Preparation/dispatch precedes hardware latch; mismatch is not a lost-write assertion.'})
-        return result
     return {'status': 'CANDIDATES_REQUIRE_AUDIT', 'findings': findings,
-            'readback_provenance': {'first': provenance(first), 'replay': provenance(replay)},
+            'readback_provenance': {'first': readback_provenance(first), 'replay': readback_provenance(replay)},
             'alignment': 'Same source event/register occurrence; raw index and kernel stamps retained. No claim of earliest physical pixel failure.',
             'coverage': {name: {'provider': any(r['source']==1 and r['reg']==1 for r in rows),
                                'hdr_request': any(r['source']==1 and r['reg']==8 for r in rows),

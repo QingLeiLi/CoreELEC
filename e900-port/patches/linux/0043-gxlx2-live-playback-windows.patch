@@ -11,26 +11,52 @@ Subject: [DIAGNOSTIC] live append-only playback windows without verbose ring log
  #define E900_PLAYBACK_PAGE 8
  struct e900_playback_row {
  	u64 stamp;
-@@ -14,6 +14,9 @@
+@@ -14,10 +14,14 @@
  static struct e900_playback_row e900_playback_rows[E900_PLAYBACK_CAP];
  static DEFINE_SPINLOCK(e900_playback_lock);
  static unsigned int e900_playback_status, e900_playback_generation;
 +/* Append-only rows may be read while recording; versioned userspace contract. */
-+static unsigned int e900_playback_live_api = 1;
++static unsigned int e900_playback_live_api = 2;
 +module_param_named(gxlx2_playback_live_api, e900_playback_live_api, uint, 0400);
  static unsigned int e900_playback_count, e900_playback_overflow;
  static unsigned int e900_playback_page, e900_playback_phase;
  static u32 e900_playback_session, e900_playback_batch;
-@@ -240,6 +243,8 @@
+ static u32 e900_playback_batch_floor;
++static u32 e900_playback_read_phase_floor;
+ static unsigned int e900_playback_samples;
+ static u32 e900_playback_normal_pending[RDMA_NUM];
+ 
+@@ -57,6 +61,10 @@
+ 	spin_lock_irqsave(&e900_playback_lock, flags);
+ 	if (batch && batch <= e900_playback_batch_floor)
+ 		goto out;
++	/* Read samples cannot cross a phase marker. Ordinary/OSD RDMA
++	 * batches CAN cross it: their delayed hardware effects are evidence. */
++	if (source == 5 && (!batch || batch <= e900_playback_read_phase_floor))
++		goto out;
+ 	if (source == 1 && session)
+ 		e900_playback_session = session;
+ 	e900_playback_add(source, kind, session, batch, handle, reg, value, aux);
+@@ -198,6 +206,7 @@
+ 		e900_playback_count = e900_playback_overflow = 0;
+ 		e900_playback_page = e900_playback_samples = 0;
+ 		e900_playback_batch_floor = e900_playback_batch;
++		e900_playback_read_phase_floor = e900_playback_batch;
+ 		memset(e900_playback_normal_pending, 0,
+ 		       sizeof(e900_playback_normal_pending));
+ 		e900_playback_status = 1;
+@@ -240,6 +249,10 @@
  	if (!is_meson_gxlx2_cpu())
  		return -ENODEV;
  	spin_lock_irqsave(&e900_playback_lock, flags);
-+	if (e900_playback_phase != phase)
++	if (e900_playback_phase != phase) {
 +		e900_playback_samples = 0;
++		e900_playback_read_phase_floor = e900_playback_batch;
++	}
  	e900_playback_phase = phase;
  	e900_playback_add(1, 1, 0, 0, 0, 0, phase, 0);
  	spin_unlock_irqrestore(&e900_playback_lock, flags);
-@@ -260,10 +265,8 @@
+@@ -260,10 +273,8 @@
  
  	(void)kp;
  	spin_lock_irqsave(&e900_playback_lock, flags);
@@ -45,21 +71,98 @@ Subject: [DIAGNOSTIC] live append-only playback windows without verbose ring log
  		goto out;
 --- a/drivers/amlogic/media/video_sink/video_hw.c
 +++ b/drivers/amlogic/media/video_sink/video_hw.c
-@@ -251,6 +251,23 @@
- 				e900_hdr_recovery_video_session(), 0, 0,
+@@ -177,6 +177,7 @@
+ 	struct vframe_s *vf = layer->dispbuf;
+ 	unsigned int epoch, gen, canvas, fmt, misc, fifo;
+ 	unsigned int off = cur_dev->vpp_off;
++	u32 read_batch;
+ 	bool legacy_sample = e900_stage_take(&gxlx2_stage_samples);
+ 
+ 	if (!legacy_sample && !e900_playback_sample_available())
+@@ -202,6 +203,13 @@
+ 	}
+ 	if (!legacy_sample && !e900_playback_sample_take())
+ 		return;
++	/* Allocate an owner token BEFORE MMIO. A sampler that finishes after
++	 * freeze/re-arm cannot inject its old reads into the new generation.
++	 * source5/prepare identifies a software sample, not a hardware table.
++	 */
++	read_batch = e900_playback_begin(E900_PB_SAFE_READ, vf->pts, vf->index, 27);
++	if (!legacy_sample && !read_batch)
++		return;
+ 	/* READ_VCBUS_REG is live hardware; VSYNC_RD is the RDMA-aware view.
+ 	 * Current vsync's submissions may not have latched: compare a sequence,
+ 	 * never classify a single shadow/live difference as a hardware failure.
+@@ -211,27 +219,29 @@
+ 	fmt = READ_VCBUS_REG(mif->viu_vd_fmt_ctrl);
+ 	misc = READ_VCBUS_REG(VPP_MISC);
+ 	fifo = READ_VCBUS_REG(VPP_FIFO_STATUS);
+-	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-		e900_hdr_recovery_video_session(), 0, 0,
+-		mif->vd_if0_gen_reg, gen, epoch);
+-	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-		e900_hdr_recovery_video_session(), 0, 0,
+-		mif->vd_if0_canvas0, canvas, epoch);
+-	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-		e900_hdr_recovery_video_session(), 0, 0,
+-		mif->viu_vd_fmt_ctrl, fmt, epoch);
+-	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-		e900_hdr_recovery_video_session(), 0, 0,
+-		VPP_MISC, misc, epoch);
+-	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-		e900_hdr_recovery_video_session(), 0, 0,
+-		VPP_FIFO_STATUS, fifo, epoch);
++	if (read_batch) {
++		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++			e900_hdr_recovery_video_session(), read_batch, 0,
++			mif->vd_if0_gen_reg, gen, epoch);
++		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++			e900_hdr_recovery_video_session(), read_batch, 0,
++			mif->vd_if0_canvas0, canvas, epoch);
++		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++			e900_hdr_recovery_video_session(), read_batch, 0,
++			mif->viu_vd_fmt_ctrl, fmt, epoch);
++		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++			e900_hdr_recovery_video_session(), read_batch, 0,
++			VPP_MISC, misc, epoch);
++		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++			e900_hdr_recovery_video_session(), read_batch, 0,
++			VPP_FIFO_STATUS, fifo, epoch);
++	}
+ 	/* Fixed VD1 HDR2 control bank used by this GXLX2 pipeline. Raw
+ 	 * configuration only: no bypass interpretation or pixel-valid claim.
+ 	 * The surrounding existing active/legacy/bus guard excludes real Stop.
+ 	 * Never add this read to the opt-out legacy stage sampler alone.
+ 	 */
+-	if (e900_playback_active()) {
++	if (e900_playback_batch_valid(read_batch)) {
+ 		/* Reuse the fixed safe layout/PPS addresses already in mode2's
+ 		 * register-only observations. No selector or LUT ports are read.
+ 		 */
+@@ -244,13 +254,30 @@
+ 		u32 hdr_ctrl = READ_VCBUS_REG(0x3800);
+ 
+ 		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-			e900_hdr_recovery_video_session(), 0, 0,
++			e900_hdr_recovery_video_session(), read_batch, 0,
+ 			0x3800, hdr_ctrl, epoch);
+ 		for (i = 0; i < ARRAY_SIZE(layout_pps); i++)
+ 			e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+-				e900_hdr_recovery_video_session(), 0, 0,
++				e900_hdr_recovery_video_session(), read_batch, 0,
  				layout_pps[i], READ_VCBUS_REG(layout_pps[i]), epoch);
  	}
 +	/* Preserve the existing legacy layout/matrix readbacks in the quiet
 +	 * ring as well. These addresses were already read below under these
 +	 * same active-frame/bus/bank guards; no selector/LUT ports are added.
 +	 */
-+	if (e900_playback_active()) {
++	if (e900_playback_batch_valid(read_batch)) {
 +		static const u32 quiet_layout[] = {0x1a6d, 0x1aa7, 0x1a63, 0x1d5f};
 +		unsigned int i;
 +
 +		for (i = 0; i < ARRAY_SIZE(quiet_layout); i++)
 +			e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
-+				e900_hdr_recovery_video_session(), 0, 0,
++				e900_hdr_recovery_video_session(), read_batch, 0,
 +				quiet_layout[i], READ_VCBUS_REG(quiet_layout[i]), epoch);
 +	}
 +	/* Ring-only sampling must not format/emit the verbose stage snapshot.

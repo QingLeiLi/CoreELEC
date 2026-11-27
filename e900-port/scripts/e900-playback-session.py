@@ -15,6 +15,8 @@ import time
 AUDIT = runpy.run_path(str(Path(__file__).with_name('e900-playback-audit.py')))
 # Pinned vframe_receiver.h: PROVIDER_UNREG=1, PROVIDER_REG=8.
 UNREG, REG = 1, 8
+LIVE_API_VERSION = 2
+REQUIRED_READBACKS = (0x1a50, 0x1d26, 0x1d28, 0x3800, 0x1a6d, 0x1aa7, 0x1a63, 0x1d5f)
 
 
 def create(path, value):
@@ -68,7 +70,7 @@ def display_coverage(rows):
         if any(r['value'] not in known for r in calls(rows, code)):
             missing.append('unknown_return_reason_'+str(code))
     reads = {r['reg'] for r in rows if r['source'] == 5 and r['kind'] == 7}
-    missing += ['read_'+hex(reg) for reg in (0x1a50, 0x1d26, 0x1d28, 0x3800) if reg not in reads]
+    missing += ['read_'+hex(reg) for reg in REQUIRED_READBACKS if reg not in reads]
     return {'complete': not missing, 'missing': missing,
             'display_epoch': epoch, 'registration_epoch': provider['session'],
             'disposition': {'dcu_skipped': [r['value'] for r in calls(rows,16)],
@@ -99,7 +101,7 @@ def readbacks_available(rows):
     reads=[r for r in reads if r['session']==epoch]
     fifo=[r for r in reads if r['reg']==0x1d28]
     return (len(fifo)>=2
-            and all(any(r['reg']==reg for r in reads) for reg in (0x1a50,0x1d26,0x3800)))
+            and all(any(r['reg']==reg for r in reads) for reg in REQUIRED_READBACKS))
 
 
 def reference_ready(rows, context):
@@ -256,8 +258,8 @@ def checked_policy(reader=None):
 
 def preflight(observation=False):
     api = Path('/sys/module/rdma_mgr/parameters/gxlx2_playback_live_api')
-    if not api.is_file() or api.read_text().strip() != '1':
-        raise RuntimeError('Requires 0043 live API; no media action performed')
+    if not api.is_file() or api.read_text().strip() != str(LIVE_API_VERSION):
+        raise RuntimeError('Requires updated 0043 live API v2 (27 readbacks); no media action performed')
     status = AUDIT['state'](AUDIT['read']('scan'))
     if status['status'] == 1 or status['capacity'] < 65536:
         raise RuntimeError('Busy recorder or insufficient supported capacity')
@@ -272,6 +274,7 @@ def preflight(observation=False):
     if Path('/sys/module/rdma/parameters/enable').read_text().strip() != '1,0':
         raise RuntimeError('RDMA policy differs from reference')
     c['checked_policy'] = checked_policy()
+    c['playback_api'] = LIVE_API_VERSION
     return c
 
 
@@ -293,9 +296,16 @@ def execute(args):
             if context['decoder'] != 'No vdec.':
                 raise RuntimeError('First playback requires no existing decoder')
         elif args.action == 'outcome':
-            previous = compare_session(args.run)
-            if previous['boot_id'] != context['boot_id'] or previous['file'] != args.file:
-                raise RuntimeError('Outcome belongs to another boot/file')
+            try:
+                previous = compare_session(args.run)
+                if previous['boot_id'] != context['boot_id'] or previous['file'] != args.file:
+                    raise ValueError('Outcome belongs to another boot/file')
+                report['pairing_verified'] = True
+            except Exception as error:
+                # Broken prior exports cannot suppress a read-only snapshot of
+                # the current reported failure. Keep it explicitly unpaired.
+                report['pairing_verified'] = False
+                report['pairing_error'] = str(error)
             # This is an observation, never a new playback action. Identity
             # failure is retained as missing context, not repaired by replaying.
             try:
@@ -317,7 +327,9 @@ def execute(args):
             active = rpc('Player.GetItem', {'playerid': 1, 'properties': ['file']}, report['rpc'])
             if active.get('item', {}).get('file') != args.file or context['disable'] != '0':
                 raise RuntimeError('Baseline player/file/layer changed')
-        if args.action != 'outcome':
+        # Establish volume once before first playback; measurement phases must
+        # not issue an extra application/UI mutation between the comparisons.
+        if args.action == 'first':
             rpc('Application.SetVolume', {'volume': 0}, report['rpc'])
         with (folder/'before.dmesg').open('w') as stream:
             subprocess.run(['dmesg'], stdout=stream, check=True)
@@ -411,6 +423,8 @@ def load_windows(run, names):
         if any(x['boot_id'] != boot for x in (result, doc, owner, manifest)):
             raise ValueError('Foreign boot in session')
         baseline = name in ('first','reference')
+        if result.get('before',{}).get('playback_api')!=LIVE_API_VERSION:
+            raise ValueError('Missing/mismatched recorded playback API contract')
         if doc['state']['status'] != 2 or (baseline and (result['status'] != 'COVERED_REQUIRES_VISUAL' or doc['state']['overflow'])):
             raise ValueError('Invalid normal baseline or unfrozen phase: '+name)
         if owner['generation'] != doc['state']['generation'] or result.get('state') != doc['state']:
@@ -497,25 +511,32 @@ def compare_session(run):
     classification='REPLAY_OUTCOME_PENDING'
     outcome=results.get('outcome')
     outcome_comparable = False
+    identity_verified = False
     if outcome:
         if outcome.get('reported_outcome') not in ('black','normal'):
             raise ValueError('Missing explicit replay visual outcome')
-        outcome_comparable = bool(outcome.get('player_identity_verified')) and readbacks_available(
+        identity_verified = bool(outcome.get('pairing_verified')) and bool(outcome.get('player_identity_verified'))
+        outcome_comparable = identity_verified and readbacks_available(
             docs['outcome']['records'])
         partial = (not coverage['complete'] or not outcome_comparable
                    or results['transition']['status']!='COVERED_REQUIRES_VISUAL'
                    or outcome['status']!='COVERED_REQUIRES_VISUAL'
                    or docs['transition']['state']['overflow'] or docs['outcome']['state']['overflow'])
-        if outcome['reported_outcome']=='normal':classification='FAULT_NOT_REPRODUCED'
+        if outcome['reported_outcome']=='normal' and identity_verified:classification='FAULT_NOT_REPRODUCED'
         else:classification='PARTIAL_REPLAY_CAPTURE' if partial else 'REVIEW_REQUIRED'
     reference=docs['reference']
     live=lambda rs:[r for r in rs if r['source']==5 and r['kind']==7]
     after=docs.get('outcome')
     return {'classification':classification,'boot_id':results['first']['boot_id'],'file':results['first']['file'],
             'visual_contrast':{'first':'reference_normal_user_confirmed',
-                               'replay':outcome.get('reported_outcome') if outcome else 'not_reported'},
+                               'replay':outcome.get('reported_outcome') if identity_verified else 'unverified' if outcome else 'not_reported',
+                               'reported_current_picture':outcome.get('reported_outcome') if outcome else None},
             'replay_coverage':coverage,'transition_overflow':docs['transition']['state']['overflow'],
             'localization':AUDIT['localization'](docs['first']['records'],replay),
+            'transition_readback_provenance':AUDIT['readback_provenance'](rows),
+            'stop_lifecycle':[AUDIT['event_detail'](r) for r in rows[:split] if r['source']==1 and r['kind']==2],
+            'software_state_timeline':{name:[AUDIT['blend_state'](r) for r in selected if r['source']==1 and r['kind']==2 and r['reg']==5]
+                                       for name,selected in (('first',docs['first']['records']),('stop',rows[:split]),('replay',replay))},
             'normal_reference_vs_confirmed_outcome':AUDIT['localization'](live(reference['records']),live(after['records'])) if after and outcome_comparable else None,
             'outcome_readbacks_comparable':outcome_comparable,
             'normal_reference_vs_replay_startup':AUDIT['localization'](live(reference['records']),live(replay)),

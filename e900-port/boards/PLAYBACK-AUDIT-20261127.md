@@ -4,7 +4,7 @@
 
 Build292证明旧的“decoder出现后等120ms”会漏显示初始化，三段分别冻结会漏Stop异步清理。**下一轮使用`e900-playback-session.py`；下文旧命令仅保留为历史有界窗口接口，不再将其结果当完整转换。** 旧compare现在明确输出`INCOMPLETE_TRANSITION`。
 
-需要新0043内核：只读`gxlx2_playback_live_api=1`，65536条有界append-only记录（约3MiB静态内存），同锁下导出8条前缀，活动期也可读取；用户态核对generation、行号、溢出。切换phase重置16组安全读预算，不重置generation/提交批次，Stop→replay不冻结、不重新arm。ring-only路径采完固定寄存器即返回，避免逐帧pr_info；原显式legacy快照仍保留。首帧事件改为每个软件生命周期session首次非fake toggle，不再依赖上游first_picture重配置策略；它是软件显示调用边界，不是硬件出图证明。静默ring另保留原日志已读的GEN2(1a6d)、GEN3(1aa7)、MIF FIFO配置(1a63)、legacy matrix(1d5f)，每组固定27项；沿用相同活动态保护，无逐帧打印，不读任意地址或selector/LUT端口。显示策略/HDR处理未改。
+需要新0043内核：只读`gxlx2_playback_live_api=2`，65536条有界append-only记录（约3MiB静态内存），同锁下导出8条前缀，活动期也可读取；用户态核对generation、行号、溢出及八项核心读回（含GEN2/GEN3/FIFO配置/matrix）；旧API1在媒体动作前拒绝。切换phase重置16组安全读预算，不重置generation/提交批次，Stop→replay不冻结、不重新arm。读回在MMIO前领取归属token，旧代/旧phase的迟到读回丢弃；普通/OSD RDMA跨phase批次仍保留，因为它们可能解释Stop提交在重播时才生效。source5 kind3表示软件采样开始，batch为token、handle为原始vf PTS、value为原始vf index、aux为27，不代表硬件表或像素完成。ring-only路径采完固定寄存器即返回，避免逐帧pr_info；原显式legacy快照仍保留。首帧事件改为每个软件生命周期session首次非fake toggle，不再依赖上游first_picture重配置策略；它是软件显示调用边界，不是硬件出图证明。静默ring另保留原日志已读的GEN2(1a6d)、GEN3(1aa7)、MIF FIFO配置(1a63)、legacy matrix(1d5f)，每组固定27项；沿用相同活动态保护，无逐帧打印，不读任意地址或selector/LUT端口。显示策略/HDR处理未改。
 
 新工具先检查版本、容量、init完成、hold0/HDR实验N/RDMA1,0/global1及旧verbose探针关闭。旧固件缺接口会在媒体动作前失败，不尝试猜测兼容。还检查G12 MIF/GEN3/OSD实验关闭、pixel/edge探针退出及verbose事件预算为0，保存所检查策略；不自动替用户清理开关。
 
@@ -25,9 +25,9 @@ python3 "$TOOLS/e900-playback-session.py" compare --run "$RUN" > "$RUN/compariso
 
 正常/黑屏分组只取用户反馈，绝不由FIFO数值决定。正常参考另存原页，需用户明确确认、同boot/文件、活动层/H264及同一当前epoch中至少两组FIFO和MIF/misc/HDR读回，零值完整保留。发送Stop前先核验正常原页/版本/epoch/当前冻结代次，再在连续转换窗口内采Stop前读回，记录其边界；检查失败就不发Stop。
 
-outcome只查询当前player身份、采受保护读回及软件状态，不执行Open、Stop、SetVolume或重启。正常与黑屏使用相同结构性采样条件，不筛掉FIFO=0；global_output=0等故障状态也可进入只读观察，无法安全读回时保留用户反馈和软件状态并标partial。它与启动窗口是两个不同时间段，不伪称覆盖人工回复间隙。
+outcome只查询当前player身份、采受保护读回及软件状态，不执行Open、Stop、SetVolume或重启。正常与黑屏使用相同结构性采样条件，不筛掉FIFO=0；global_output=0等故障状态也可进入只读观察，无法安全读回时保留用户反馈和软件状态并标partial。音量仅在first前设置一次；reference不发送播放器修改请求，transition只做目标Stop/Open，不夹带重复音量设置。它与启动窗口是两个不同时间段，不伪称覆盖人工回复间隙。即使此前导出损坏/校验失败，outcome也会保存当前只读采样并注明pairing_verified=false与错误；未配对数据不参与正式对照，不触发补播。当前身份无法确认时保留原始画面反馈，不能据此宣布本轮未复现。
 
-compare对正常基线严格校验，对结构完整但缺初始化调用的故障轨迹保留为PARTIAL_REPLAY_CAPTURE并列missing/原始时间线，不能因为异常路径没成功就拒绝分析。没有用户重播反馈时输出REPLAY_OUTCOME_PENDING；用户报告正常则本轮FAULT_NOT_REPRODUCED，不宣称问题修复。报告分列正常参考对Stop前、重播启动、确认结果后的三组读回，不把启动瞬间当作黑屏稳态。
+compare对正常基线严格校验，对结构完整但缺初始化调用的故障轨迹保留为PARTIAL_REPLAY_CAPTURE并列missing/原始时间线，不能因为异常路径没成功就拒绝分析。没有用户重播反馈时输出REPLAY_OUTCOME_PENDING；用户报告正常则本轮FAULT_NOT_REPRODUCED，不宣称问题修复。报告分列正常参考对Stop前、重播启动、确认结果后的三组读回，不把启动瞬间当作黑屏稳态。transition_readback_provenance按完整Stop→replay时间线追溯每次读回前的软件写意图，不能截掉Stop阶段；software_state_timeline解码enabled/global/onoff/disable/switch及new_vframe_count，状态路径差异单列，单纯帧计数不同不判故障。
 
 Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应；使用5秒总deadline与累计64KiB接收上限，不会被通知消息续期。连续转换的phase3端点另采受保护HDMI状态，真正Stop不读TX配置。比较器要求首播→参考→转换的generation连续、kernel stamp不倒序、同一执行器/采集器版本与所检查策略，正常参考属于首播显示epoch而重播进入新epoch（session不是provider身份）；同时输出正常参考对重播的实际读回差异。Stop边界或录制器异常时只导出、不发起重播。重播已经发出后的超时只标记异常覆盖缺口，不丢弃故障证据；只有有序且确实发送的Stop/Open请求、phase3 marker均存在，才允许标为重播对照，避免把Stop-only黑屏误报为重播故障。
 

@@ -86,3 +86,18 @@ assert not f['coverage']['first']['hdr_submitted']
 assert f['readback_provenance']['replay'][0]['matches_last_selected_write'] is None
 assert f['status']=='CANDIDATES_REQUIRE_AUDIT'
 print('PASS: stage-local differences map to named registers/functions without promoting missing coverage or dynamic state to root cause')
+
+# Software on/off/global/disable differences must not be silently ignored
+# together with naturally varying new-frame counts.
+a=[row(0,1,5,3,2),row(1,1,5,3,2)]
+b=[row(0,3,5,2,2)]
+for r in a+b:r['source']=1
+a[0]['aux']=1;a[1]['aux']=2;b[0]['aux']=0
+finding=next(f for f in M['localization'](a,b)['findings'] if f['code_or_register']=='0x5')
+assert finding['classification']=='SOFTWARE_STATE_PATH_DIFFERENCE'
+assert finding['evidence']['first'][0]['enabled']==1
+assert finding['evidence']['replay'][0]['enabled']==0
+b[0]['value']=3;b[0]['aux']=999
+assert not any(f['code_or_register']=='0x5' for f in M['localization'](a,b)['findings'])
+assert M['blend_state'](b[0])['new_vframe_count']==999
+print('PASS: on/off software-state path differences reported; frame-count-only variation retained without a false state fault')

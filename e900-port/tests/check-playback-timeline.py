@@ -79,7 +79,7 @@ static bool e900_playback_selected(u32 reg) {
 main = r'''
 int main(void) {
     char data[4096];
-    u32 old, batch, next;
+    u32 old, old_read, batch, next;
     unsigned i;
     assert(e900_playback_phase_set("1", NULL) == 0);
     assert(e900_playback_scan_set("1", NULL) == 0);
@@ -92,10 +92,12 @@ int main(void) {
     e900_playback_note(2, 4, 0, batch, 1, 0x3802, 0x55, 1);
     e900_playback_note(2, 5, 0, batch, 1, 0, 1, 2);
     assert(e900_playback_count == 6);
-    assert(e900_playback_live_api == 1);
+    assert(e900_playback_live_api == 2);
     assert(e900_playback_data_get(data, NULL) > 0); /* live read, no freeze */
     assert(e900_playback_status == 1 && e900_playback_count == 6);
     assert(e900_playback_rows[2].session == 7 && e900_playback_rows[2].phase == 1);
+    old_read=e900_playback_begin(5,90000,42,27);
+    assert(old_read>batch);
     assert(e900_playback_scan_set("0", NULL) == 0);
     assert(e900_playback_data_get(data, NULL) > 0);
     assert(strstr(data, "3800 d05f 0") != NULL);
@@ -105,6 +107,8 @@ int main(void) {
     assert(e900_playback_rows[0].phase == 2 && e900_playback_count == 1);
     e900_playback_note(2, 4, 0, old, 1, 0x3800, 0, 0);
     assert(e900_playback_count == 1); /* stale batch never enters new generation */
+    e900_playback_note(5,7,7,old_read,0,0x3800,0xd05f,0);
+    assert(e900_playback_count==1); /* delayed old MMIO sample also drops */
     next = e900_playback_begin(3, 2, 0, 500); /* mutable OSD window */
     assert(next > old);
     e900_playback_note(3, 4, 0, next, 2, 0x1a10, 1, 1);
@@ -130,6 +134,21 @@ int main(void) {
     assert(e900_playback_samples == 0 && e900_playback_generation == old);
     assert(e900_playback_phase_set("3", NULL) == 0);
     assert(e900_playback_scan_set("1", NULL) == 0);
+    {
+        unsigned before;
+        u32 queued, reading;
+        assert(e900_playback_phase_set("2", NULL)==0);
+        queued=e900_playback_begin(2,1,1,1);
+        reading=e900_playback_begin(5,90000,42,27);
+        assert(e900_playback_phase_set("3", NULL)==0);
+        before=e900_playback_count;
+        e900_playback_note(5,7,7,reading,0,0x3800,0xd05f,0);
+        assert(e900_playback_count==before); /* old phase sampler dropped */
+        e900_playback_note(2,4,7,queued,1,0x3800,0x1c040,0);
+        assert(e900_playback_count==before+1); /* queued Stop write preserved */
+        assert(e900_playback_scan_set("0", NULL)==0);
+        assert(e900_playback_scan_set("1", NULL)==0);
+    }
     for (i = 0; i < E900_PLAYBACK_CAP; i++)
         e900_playback_note(1, 2, 7, 0, 0, 5, i, 0);
     assert(e900_playback_status == 2 && e900_playback_overflow == 1);
