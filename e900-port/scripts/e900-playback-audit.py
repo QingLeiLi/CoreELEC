@@ -113,7 +113,8 @@ def hdmi_snapshot(context, getter=None):
     try:
         result['values']['hpd_state'] = getter('hpd_state')
         if (result['values']['hpd_state'] != '1' or context.get('global') != '1' or
-            context.get('disable') != '0' or 'ammvdec_h264' not in context.get('decoder', '') or
+            context.get('disable') != '0' or
+            not any(codec in context.get('decoder', '') for codec in ('ammvdec_h264','ammvdec_h265','amvdec_h265')) or
             context.get('mode') in (None, '', 'null', 'invalid')):
             result['status'] = 'skipped_inactive'; return result
         # show_config reads TX AVI/input configuration and PLL registers;

@@ -518,3 +518,17 @@ with tempfile.TemporaryDirectory() as directory:
 print('PASS: HDR Stop guard refuses foreign state; async Stop timeout restores switch and forbids replay')
 
 clock_patch.stop()
+
+# HEVC format trials use the same active-layer/readback criteria; codec name
+# is not a proxy for HDR recognition or successful tone mapping.
+hevc_rows=[row(i,1,reg,source=5,kind=7) for i,reg in enumerate(SAMPLES)]
+assert M['reference_ready'](hevc_rows,{'disable':'0','global':'1','decoder':'ammvdec_h265'})
+assert M['reference_ready'](hevc_rows,{'disable':'0','global':'1','decoder':'amvdec_h265'})
+assert not M['reference_ready'](hevc_rows,{'disable':'1','global':'1','decoder':'ammvdec_h265'})
+assert not M['reference_ready'](hevc_rows,{'disable':'0','global':'1','decoder':'No vdec.'})
+getters=[]
+def hevc_hdmi(name):
+    getters.append(name);return '1' if name=='hpd_state' else '0'
+assert A['hdmi_snapshot']({'disable':'0','global':'1','decoder':'ammvdec_h265','mode':'1080p60hz'},hevc_hdmi)['status']=='collected_status_only'
+assert getters==['hpd_state','config','avmute']
+print('PASS: HEVC uses the same guarded readback/TX readiness; stopped HEVC is rejected')

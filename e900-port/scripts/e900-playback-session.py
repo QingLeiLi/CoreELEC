@@ -108,7 +108,8 @@ def reference_ready(rows, context):
     # These are preconditions for deliberately stopping the known test video,
     # never preconditions for observing a failure after it has happened.
     return (context.get('disable')=='0' and context.get('global')=='1'
-            and isinstance(context.get('decoder'),str) and 'ammvdec_h264' in context['decoder']
+            and isinstance(context.get('decoder'),str)
+            and any(codec in context['decoder'] for codec in ('ammvdec_h264','ammvdec_h265','amvdec_h265'))
             and readbacks_available(rows))
 
 
