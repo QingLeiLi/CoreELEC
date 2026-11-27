@@ -18,11 +18,11 @@ python3 "$TOOLS/e900-playback-session.py" transition --run "$RUN"
 python3 "$TOOLS/e900-playback-session.py" compare --run "$RUN" > "$RUN/comparison.json"
 ```
 
-首播/重播窗口判据：同一最新provider会话中的首帧、DCU/PPS调用及已知返回、CSC返回原因、活动态固定读回，且disable=0，条件持续300ms；只有实际发起VD1 HDR请求时才要求配对提交。unsupported/null-input/no-signal-change等已知返回单独记入disposition，不当作缺日志，也不当作配置成功；并非解码帧计数。缺hook、未知返回原因、未配对请求/返回、超时、错代或溢出均记`INCOMPLETE`，不自动补播、不自动重试、不宣布硬件损坏。该判据刻意保守：合法路径若没有这些事件，也需要审查原记录后修正覆盖模型，不绕过门槛。
+首播/重播窗口判据：最新provider注册之后、当前软件生命周期epoch中的首帧、DCU/PPS调用及已知返回、CSC返回原因、活动态固定读回，且disable=0，条件持续300ms；只有实际发起VD1 HDR请求时才要求配对提交。unsupported/null-input/no-signal-change等已知返回单独记入disposition，不当作缺日志，也不当作配置成功；并非解码帧计数。缺hook、未知返回原因、未配对请求/返回、超时、错代或溢出均记`INCOMPLETE`，不自动补播、不自动重试、不宣布硬件损坏。该判据刻意保守：合法路径若没有这些事件，也需要审查原记录后修正覆盖模型，不绕过门槛。
 
 正常参考另存原页，需用户明确确认、同boot/文件、活动层，至少两次非零FIFO与MIF/misc/HDR读回。FIFO非零本身不是画面证据；零值与用户画面冲突时停止，不继续制造故障。
 
-Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应。比较器要求首播→参考→转换的generation连续、kernel stamp不倒序、同一执行器/采集器版本与所检查策略，正常参考属于首播会话而重播属于新会话；同时输出正常参考对重播的实际读回差异。超时则只导出原记录，绝不执行重播。
+Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应；使用5秒总deadline与累计64KiB接收上限，不会被通知消息续期。连续转换的phase3端点另采受保护HDMI状态，真正Stop不读TX配置。比较器要求首播→参考→转换的generation连续、kernel stamp不倒序、同一执行器/采集器版本与所检查策略，正常参考属于首播显示epoch而重播进入新epoch（session不是provider身份）；同时输出正常参考对重播的实际读回差异。超时则只导出原记录，绝不执行重播。
 
 容量扩大仍不保证任意时长完整，6秒默认timeout也不是覆盖保证。达到上限仍明确溢出冻结，不能用重新arm拼接。主机测试覆盖真实Build292反例、实时前缀、同代阶段切换、Stop超时禁止重播、静默ring路径及补丁应用；完整ARM构建、新hook实机可达性、观察开销与实际画面尚待验证。
 

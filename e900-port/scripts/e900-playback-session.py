@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Explicit first/reference/Stop-replay experiments; fail closed on missing coverage."""
 import argparse
+import codecs
 import fcntl
 import hashlib
 import json
@@ -29,7 +30,12 @@ def display_coverage(rows):
     if not registrations:
         return {'complete': False, 'missing': ['provider_registration']}
     provider = registrations[-1]
-    rows = [r for r in rows if r['index'] >= provider['index'] and r['session'] == provider['session']]
+    rows = [r for r in rows if r['index'] >= provider['index']]
+    # This counter is a software lifecycle epoch, not provider identity:
+    # _video_set_disable(nonzero), reset and unregister also increment it.
+    boundaries = [r for r in rows if r['source']==1 and r['kind']==2 and r['reg'] in (1,2,3)]
+    epoch = boundaries[-1]['session']
+    rows = [r for r in rows if r['session'] == epoch]
     required = {3: 'first_frame', 11: 'dcu_entry', 13: 'pps_entry', 18: 'csc_return'}
     missing = [name for code, name in required.items() if not calls(rows, code)]
     # An observed no-op return is coverage, not proof of configuration success.
@@ -58,12 +64,13 @@ def display_coverage(rows):
                 missing.append('unmatched_hdr_submission')
     if hdr_pending:
         missing.append('unreturned_hdr_request')
-    for code, known in ((16, (1,)), (17, (1,2)), (18, tuple(range(1,8)))):
+    for code, known in ((15, (0,)), (16, (1,)), (17, (1,2)), (18, tuple(range(1,8)))):
         if any(r['value'] not in known for r in calls(rows, code)):
             missing.append('unknown_return_reason_'+str(code))
     reads = {r['reg'] for r in rows if r['source'] == 5 and r['kind'] == 7}
     missing += ['read_'+hex(reg) for reg in (0x1a50, 0x1d26, 0x1d28, 0x3800) if reg not in reads]
     return {'complete': not missing, 'missing': missing,
+            'display_epoch': epoch, 'registration_epoch': provider['session'],
             'disposition': {'dcu_skipped': [r['value'] for r in calls(rows,16)],
                             'pps_unsupported': bool(calls(rows,15)),
                             'pps_skipped': [r['value'] for r in calls(rows,17)],
@@ -84,6 +91,14 @@ def reference_ready(rows, context):
     return (context.get('disable') == '0' and context.get('global') == '1'
             and sum(r['reg']==0x1d28 and r['value']!=0 for r in reads)>=2
             and all(any(r['reg']==reg for r in reads) for reg in (0x1a50,0x1d26,0x3800)))
+
+
+def transition_hdmi(doc):
+    # A continuous transition is exported through the old "stop" owner, whose
+    # freeze() deliberately skips TX reads. Only its phase-3 endpoint is replay.
+    if not any(r['source']==1 and r['kind']==1 and r['phase']==3 for r in doc['records']):
+        return {'status': 'skipped_real_stop'}
+    return AUDIT['hdmi_snapshot'](doc['after'])
 
 
 class LiveRows:
@@ -127,16 +142,29 @@ class LiveRows:
 def rpc(method, params, log):
     item = {'method': method, 'params': params, 'send_boottime_ns': time.clock_gettime_ns(time.CLOCK_BOOTTIME)}
     log.append(item)
+    deadline = time.monotonic()+5
     try:
         with socket.create_connection(('127.0.0.1', 9090), 3) as conn:
-            conn.settimeout(5)
+            remaining = deadline-time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('RPC deadline exceeded before send')
+            conn.settimeout(remaining)
             conn.sendall(json.dumps({'jsonrpc': '2.0', 'id': 71, 'method': method, 'params': params}).encode())
             buf = ''
-            while len(buf) < 65536:
+            received = 0
+            decoder = codecs.getincrementaldecoder('utf-8')()
+            while received < 65536:
+                remaining = deadline-time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError('RPC total deadline exceeded')
+                conn.settimeout(remaining)
                 chunk = conn.recv(8192)
                 if not chunk:
                     raise RuntimeError('Incomplete RPC response')
-                buf += chunk.decode()
+                received += len(chunk)
+                if received > 65536:
+                    raise RuntimeError('RPC total response limit exceeded')
+                buf += decoder.decode(chunk)
                 while buf.strip():
                     try:
                         value, end = json.JSONDecoder().raw_decode(buf.lstrip())
@@ -148,6 +176,8 @@ def rpc(method, params, log):
                     item['response'] = value
                     if 'error' in value:
                         raise RuntimeError(str(value['error']))
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError('RPC reply arrived after total deadline')
                     return value['result']
         raise RuntimeError('RPC response too large')
     except Exception as error:
@@ -161,7 +191,10 @@ def wait_for(trace, predicate, timeout, stable=0):
     deadline, since = time.monotonic()+timeout, None
     while time.monotonic() < deadline:
         rows = trace.poll()
-        if predicate(rows, AUDIT['snapshot']()):
+        ready = predicate(rows, AUDIT['snapshot']())
+        if time.monotonic() >= deadline:
+            break
+        if ready:
             since = since if since is not None else time.monotonic()
             if time.monotonic()-since >= stable:
                 return
@@ -284,6 +317,8 @@ def execute(args):
                 AUDIT['freeze'](folder, phase, hdmi=(args.action!='transition'))
                 doc = json.loads((folder/(phase+'.json')).read_text())
                 report['state'] = doc['state']
+                if args.action == 'transition':
+                    report['hdmi'] = transition_hdmi(doc)
                 report['coverage'] = {str(p): display_coverage([r for r in doc['records'] if r['phase']==p]) for p in (1,3)}
                 if doc['state']['overflow']:
                     report.update(status='INCOMPLETE', error='Recorder overflow')
@@ -364,12 +399,12 @@ def compare_session(run):
     reference = docs['reference']
     if not reference_ready(reference['records'], reference['after']):
         raise ValueError('Missing independent guarded reference samples')
-    baseline_session = [r for r in calls(docs['first']['records'],1) if r['value']==REG][-1]['session']
+    baseline_session = display_coverage(docs['first']['records'])['display_epoch']
     if any(r['session']!=baseline_session for r in reference['records'] if r['source']==5 and r['kind']==7):
-        raise ValueError('Normal reference belongs to another playback session')
-    replay_session = [r for r in calls(rows[split:],1) if r['value']==REG][-1]['session']
+        raise ValueError('Normal reference belongs to another display epoch')
+    replay_session = display_coverage(rows[split:])['display_epoch']
     if replay_session == baseline_session:
-        raise ValueError('Replay did not enter a new provider session')
+        raise ValueError('Replay did not enter a new display epoch')
     if len({r['file'] for r in results.values()}) != 1:
         raise ValueError('File changed')
     # Continuous transition proves the recorder had no freeze/re-arm gap;
@@ -377,6 +412,9 @@ def compare_session(run):
     return {'classification': 'REVIEW_REQUIRED', 'boot_id': boot,
             'localization': AUDIT['localization'](docs['first']['records'], rows[split:]),
             'reference_records': docs['reference']['records'],
+            'endpoint_status': {'first': docs['first'].get('hdmi', {'status':'not_collected'}),
+                                'reference': reference.get('hdmi', {'status':'not_collected'}),
+                                'replay': results['transition'].get('hdmi', {'status':'not_collected'})},
             'normal_reference_readback_comparison': AUDIT['localization'](
                 [r for r in reference['records'] if r['source']==5],
                 [r for r in rows[split:] if r['source']==5]),

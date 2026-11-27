@@ -202,3 +202,66 @@ for bad in ('gxlx2_gen3_clear_high','gxlx2_osd_blender_only','gxlx2_debug_events
     except RuntimeError:pass
     else:raise AssertionError('Leftover experiment/logging state accepted')
 print('PASS: display experiment and verbose-channel preflight checks reject leftover state')
+
+# session is a lifecycle epoch: disable-for-next may advance it without a new
+# provider registration. Complete records in that new epoch must remain usable.
+epoch_rows=copy.deepcopy(covered(1))
+for r in epoch_rows[1:]:r['session']=9
+epoch_rows.insert(1,row(1,1,2,2,session=9))
+for i,r in enumerate(epoch_rows):r['index']=i
+coverage=M['display_coverage'](epoch_rows)
+assert coverage['complete'] and coverage['registration_epoch']==8 and coverage['display_epoch']==9
+epoch_rows.append(row(len(epoch_rows),1,2,1,session=10))
+assert not M['display_coverage'](epoch_rows)['complete']
+
+# Exercise actual RPC parsing without network: persistent notifications cannot
+# extend the total deadline or evade the aggregate byte bound; split UTF-8 is
+# valid input, and a late matching reply is still a timeout.
+class Clock:
+    CLOCK_BOOTTIME=7
+    def __init__(self):self.now=0
+    def monotonic(self):return self.now
+    def clock_gettime_ns(self,_):return int(self.now*1e9)
+    def sleep(self,n):self.now+=n
+class Connection:
+    def __init__(self,clock,chunks,step=0):self.clock=clock;self.chunks=iter(chunks);self.step=step;self.reads=0
+    def __enter__(self):return self
+    def __exit__(self,*_):pass
+    def settimeout(self,n):assert n>0
+    def sendall(self,_):pass
+    def recv(self,_):self.reads+=1;self.clock.now+=self.step;return next(self.chunks,b'')
+g=M['rpc'].__globals__
+notification=b'{"jsonrpc":"2.0","method":"notice"}'
+for step,count in ((1,100),(0,10000)):
+    clock=Clock();conn=Connection(clock,[notification]*count,step)
+    with mock.patch.dict(g,time=clock),mock.patch.object(g['socket'],'create_connection',return_value=conn):
+        try:M['rpc']('test',{},[])
+        except (TimeoutError,RuntimeError):pass
+        else:raise AssertionError('Notification stream evaded RPC bounds')
+    assert conn.reads<count
+clock=Clock();reply=json.dumps({'id':71,'result':{'text':'中文'}},ensure_ascii=False).encode()
+conn=Connection(clock,[bytes([b]) for b in reply])
+with mock.patch.dict(g,time=clock),mock.patch.object(g['socket'],'create_connection',return_value=conn):
+    assert M['rpc']('test',{},[])=={'text':'中文'}
+clock=Clock();conn=Connection(clock,[b'{"id":71,"result":"OK"}'],6)
+with mock.patch.dict(g,time=clock),mock.patch.object(g['socket'],'create_connection',return_value=conn):
+    try:M['rpc']('test',{},[])
+    except TimeoutError:pass
+    else:raise AssertionError('Late matching response accepted')
+clock=Clock()
+def slow_poll():clock.now+=2;return []
+with mock.patch.dict(g,time=clock),mock.patch.dict(A,snapshot=lambda:{}):
+    try:M['wait_for'](SimpleNamespace(poll=slow_poll),lambda *_:True,1)
+    except RuntimeError:pass
+    else:raise AssertionError('Late predicate accepted after timeout')
+print('PASS: lifecycle epoch changes, bounded notification streams, split UTF-8, late replies and slow polling deadlines')
+
+# Continuous transitions use the stop owner; nevertheless a replay endpoint
+# needs guarded TX status. Real Stop must not read any TX registers.
+calls_tx=[]
+with mock.patch.dict(A,hdmi_snapshot=lambda c:calls_tx.append(c) or {'status':'test_guarded'}):
+    assert M['transition_hdmi']({'records':[]})['status']=='skipped_real_stop'
+    assert not calls_tx
+    d={'records':[row(0,3,0,3,kind=1)],'after':{'disable':'0'}}
+    assert M['transition_hdmi'](d)['status']=='test_guarded' and calls_tx==[d['after']]
+print('PASS: continuous replay endpoint invokes existing guarded HDMI collector; Stop endpoint performs no TX read')
