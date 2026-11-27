@@ -45,10 +45,23 @@ Subject: [DIAGNOSTIC] live append-only playback windows without verbose ring log
  		goto out;
 --- a/drivers/amlogic/media/video_sink/video_hw.c
 +++ b/drivers/amlogic/media/video_sink/video_hw.c
-@@ -251,6 +251,10 @@
+@@ -251,6 +251,23 @@
  				e900_hdr_recovery_video_session(), 0, 0,
  				layout_pps[i], READ_VCBUS_REG(layout_pps[i]), epoch);
  	}
++	/* Preserve the existing legacy layout/matrix readbacks in the quiet
++	 * ring as well. These addresses were already read below under these
++	 * same active-frame/bus/bank guards; no selector/LUT ports are added.
++	 */
++	if (e900_playback_active()) {
++		static const u32 quiet_layout[] = {0x1a6d, 0x1aa7, 0x1a63, 0x1d5f};
++		unsigned int i;
++
++		for (i = 0; i < ARRAY_SIZE(quiet_layout); i++)
++			e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++				e900_hdr_recovery_video_session(), 0, 0,
++				quiet_layout[i], READ_VCBUS_REG(quiet_layout[i]), epoch);
++	}
 +	/* Ring-only sampling must not format/emit the verbose stage snapshot.
 +	 * Explicit legacy sampling retains the existing diagnostic output. */
 +	if (!legacy_sample)

@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**对照目标审查修复（2026-11-28，当前执行入口）**：固定同boot/同视频、用户确认正常→Stop/replay→用户确认结果。新增outcome只读采样，将确认结果后的稳态与启动窗口分开；正常原页在Stop前校验，并在同代连续窗口内记录Stop前参考；异常重播缺调用/溢出保留partial和missing供定位，不能因故障路径未成功而拒绝分析。两组采样条件一致、保留零值，不用FIFO数值决定正常/黑屏；录制冻结/满额禁止新媒体动作，核对实际Stop/Open发送避免Stop-only误判。0043另补quiet遗漏的GEN2/GEN3/MIF FIFO/matrix四项已有安全读回（固定27项），需构建最新版本。对应反例与真实C hook测试通过，未操作盒子。下一步只做新构建实测，不写修复寄存器、不新增猜测隔离。见[新版步骤](PLAYBACK-AUDIT-20261127.md)与[目标审查](PLAYBACK-CAPTURE-REVIEW-20261128.md)。
+
 **后续采集审查（2026-11-28，已修）**：对`17e7e7285d`复核发现session实为禁用/reset也可推进的生命周期epoch，已拆开注册epoch/显示epoch，避免齐全记录被旧provider过滤器误删；RPC加入总deadline、累计字节上限和增量UTF-8，慢轮询不能绕过超时；连续Stop owner导出后仅phase3补采受保护HDMI端点。相应反例主机测试通过，0043内核未变，未连接或操作盒子。详见[审查记录](PLAYBACK-CAPTURE-REVIEW-20261128.md)。ARM/实机仍待验证。
 
 **采集器二次审查（2026-11-28，已修）**：审查`1ec2c80db9`发现强制HDR/PPS真实配置会误拒合法显式返回、比较器可接受同boot混用阶段、preflight遗漏实验残留。现将“观察到跳过”与“缺事件”分开；加连续generation/时序/工具hash/策略/播放会话关联，正常参考与重播读回单独比较，并拒绝遗留GEN3/OSD/G12-MIF实验、活动pixel/edge与verbose通道。反例主机测试通过。本次仅用户态及文档修订，0043内核补丁未变，未操作盒子；ARM/实机仍待完成。见[二次审查](PLAYBACK-CAPTURE-REVIEW-20261128.md)。

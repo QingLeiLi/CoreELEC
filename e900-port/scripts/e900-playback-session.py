@@ -86,11 +86,28 @@ def stopped(rows, context):
             and any(r['value'] == 1 for r in calls(rows, 2)))
 
 
-def reference_ready(rows, context):
+def readbacks_available(rows):
+    # Group labels come from the user, never FIFO magnitude. Identical
+    # structural gates retain zero-valued normal and black counterexamples.
     reads = [r for r in rows if r['source'] == 5 and r['kind'] == 7]
-    return (context.get('disable') == '0' and context.get('global') == '1'
-            and sum(r['reg']==0x1d28 and r['value']!=0 for r in reads)>=2
+    if not reads:
+        return False
+    epoch = reads[-1]['session']
+    boundaries=[r for r in rows if r['source']==1 and r['kind']==2 and r['reg'] in (1,2,3)]
+    if boundaries and boundaries[-1]['session']!=epoch:
+        return False
+    reads=[r for r in reads if r['session']==epoch]
+    fifo=[r for r in reads if r['reg']==0x1d28]
+    return (len(fifo)>=2
             and all(any(r['reg']==reg for r in reads) for reg in (0x1a50,0x1d26,0x3800)))
+
+
+def reference_ready(rows, context):
+    # These are preconditions for deliberately stopping the known test video,
+    # never preconditions for observing a failure after it has happened.
+    return (context.get('disable')=='0' and context.get('global')=='1'
+            and isinstance(context.get('decoder'),str) and 'ammvdec_h264' in context['decoder']
+            and readbacks_available(rows))
 
 
 def transition_hdmi(doc):
@@ -108,6 +125,12 @@ class LiveRows:
         self.read = reader or AUDIT['read']
         self.write = writer or AUDIT['write']
         self.rows = []
+
+    def require_phase(self, phase):
+        current = AUDIT['state'](self.read('scan'))
+        if (current['generation']!=self.generation or current['status']!=1 or current['overflow']
+                or current['phase']!=phase or current['count']>=current['capacity']):
+            raise RuntimeError('Recorder no longer owns the active phase; no media action permitted')
 
     def poll(self):
         before = AUDIT['state'](self.read('scan'))
@@ -150,6 +173,7 @@ def rpc(method, params, log):
                 raise TimeoutError('RPC deadline exceeded before send')
             conn.settimeout(remaining)
             conn.sendall(json.dumps({'jsonrpc': '2.0', 'id': 71, 'method': method, 'params': params}).encode())
+            item['sent'] = True
             buf = ''
             received = 0
             decoder = codecs.getincrementaldecoder('utf-8')()
@@ -230,7 +254,7 @@ def checked_policy(reader=None):
     return values
 
 
-def preflight():
+def preflight(observation=False):
     api = Path('/sys/module/rdma_mgr/parameters/gxlx2_playback_live_api')
     if not api.is_file() or api.read_text().strip() != '1':
         raise RuntimeError('Requires 0043 live API; no media action performed')
@@ -238,7 +262,8 @@ def preflight():
     if status['status'] == 1 or status['capacity'] < 65536:
         raise RuntimeError('Busy recorder or insufficient supported capacity')
     c = AUDIT['snapshot']()
-    if c.get('hdr_experiment') not in ('N', '0') or c.get('hold') != '0' or c.get('global') != '1':
+    if (c.get('hdr_experiment') not in ('N', '0') or c.get('hold') != '0'
+            or (not observation and c.get('global') != '1')):
         raise RuntimeError('Nondefault display policy; refusing experiment')
     if Path('/sys/module/amvideo/parameters/gxlx2_hw_init_status').read_text().strip() != '2':
         raise RuntimeError('Video init incomplete')
@@ -251,20 +276,34 @@ def preflight():
 
 
 def execute(args):
-    context = preflight()
+    context = preflight(observation=args.action=='outcome')
     args.run.mkdir(parents=True, exist_ok=True)
     folder = args.run/args.action
     folder.mkdir(exist_ok=False)
-    phase = 'stop' if args.action == 'transition' else 'first'
+    phase = 'stop' if args.action == 'transition' else 'replay' if args.action == 'outcome' else 'first'
     report = {'status': 'INCOMPLETE', 'action': args.action, 'boot_id': context['boot_id'],
               'rpc': [], 'file': args.file, 'before': context,
               'runner_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'kernel_version': platform.uname().version, 'timeout_seconds': args.timeout}
+    if args.action == 'outcome':
+        report['reported_outcome'] = args.reported_outcome
     armed = False
     try:
         if args.action == 'first':
             if context['decoder'] != 'No vdec.':
                 raise RuntimeError('First playback requires no existing decoder')
+        elif args.action == 'outcome':
+            previous = compare_session(args.run)
+            if previous['boot_id'] != context['boot_id'] or previous['file'] != args.file:
+                raise RuntimeError('Outcome belongs to another boot/file')
+            # This is an observation, never a new playback action. Identity
+            # failure is retained as missing context, not repaired by replaying.
+            try:
+                active = rpc('Player.GetItem', {'playerid':1,'properties':['file']}, report['rpc'])
+                report['player_identity_verified'] = active.get('item',{}).get('file') == args.file
+            except Exception as error:
+                report['player_identity_error'] = str(error)
+                report['player_identity_verified'] = False
         else:
             previous = json.loads((args.run/('reference' if args.action == 'transition' else 'first')/'result.json').read_text())
             if previous['status'] != 'COVERED_REQUIRES_VISUAL' or previous['boot_id'] != context['boot_id'] or previous['file'] != args.file:
@@ -273,10 +312,13 @@ def execute(args):
                 raise RuntimeError('Explicit normal visual confirmation required')
             if args.action == 'transition' and not previous.get('confirmed_normal'):
                 raise RuntimeError('No independent confirmed normal reference')
+            if args.action == 'transition':
+                validate_live_baseline(args.run,context,args.file)
             active = rpc('Player.GetItem', {'playerid': 1, 'properties': ['file']}, report['rpc'])
             if active.get('item', {}).get('file') != args.file or context['disable'] != '0':
                 raise RuntimeError('Baseline player/file/layer changed')
-        rpc('Application.SetVolume', {'volume': 0}, report['rpc'])
+        if args.action != 'outcome':
+            rpc('Application.SetVolume', {'volume': 0}, report['rpc'])
         with (folder/'before.dmesg').open('w') as stream:
             subprocess.run(['dmesg'], stdout=stream, check=True)
         AUDIT['arm'](folder, phase)
@@ -284,6 +326,7 @@ def execute(args):
         armed = True
         trace = LiveRows(owner['generation'])
         if args.action == 'first':
+            trace.require_phase(1)
             rpc('Player.Open', {'item': {'file': args.file}}, report['rpc'])
             wait_for(trace, lambda rows, c: display_coverage(rows)['complete'] and c['disable']=='0', args.timeout, stable=.3)
         elif args.action == 'reference':
@@ -291,13 +334,22 @@ def execute(args):
             # guarded reference before issuing any Stop. No playback action here.
             wait_for(trace, reference_ready, args.timeout)
             report['confirmed_normal'] = True
+        elif args.action == 'outcome':
+            wait_for(trace, lambda rows,c:readbacks_available(rows),args.timeout)
         else:
+            trace.require_phase(2)
+            # Recheck normal reads inside the same continuous window that will
+            # contain Stop. A formerly healthy sample is not a fresh baseline.
+            wait_for(trace, reference_ready,args.timeout)
+            report['pre_stop_reference']={'rows':len(trace.rows),'context':AUDIT['snapshot']()}
+            trace.require_phase(2)
             rpc('Player.Stop', {'playerid': 1}, report['rpc'])
             wait_for(trace, stopped, args.timeout, stable=.3)
             report['stop_boundary'] = {'rows': len(trace.rows), 'context': AUDIT['snapshot'](),
                 'scope': 'Provider/disable observed, No vdec and disable=1 stable 300ms; not proof every delayed work item completed'}
             # Same generation, no freeze/re-arm/export gap across Stop→replay.
             AUDIT['write']('phase', 3)
+            trace.require_phase(3)
             rpc('Player.Open', {'item': {'file': args.file}}, report['rpc'])
             wait_for(trace, lambda rows, c: display_coverage([r for r in rows if r['phase']==3])['complete'] and c['disable']=='0', args.timeout, stable=.3)
         report['status'] = 'COVERED_REQUIRES_VISUAL'
@@ -326,6 +378,9 @@ def execute(args):
                     required_phase = '3' if args.action == 'transition' else '1'
                     if not report['coverage'][required_phase]['complete']:
                         report.update(status='INCOMPLETE', error='Final frozen window lacks display coverage')
+                elif args.action == 'outcome':
+                    if not readbacks_available(doc['records']):
+                        report.update(status='INCOMPLETE',error='Outcome readbacks unavailable; keep reported picture and software state')
                 elif not reference_ready(doc['records'], doc['after']):
                     report.update(status='INCOMPLETE', error='Final frozen normal reference invalid')
             except Exception as error:
@@ -342,10 +397,11 @@ def execute(args):
         raise RuntimeError('Experiment incomplete; inspect saved result, do not continue')
 
 
-def compare_session(run):
-    results, docs = {}, {}
+def load_windows(run, names):
+    results, docs, manifests = {}, {}, {}
     boot = None
-    for name, phase in (('first', 'first'), ('reference', 'first'), ('transition', 'stop')):
+    for name in names:
+        phase = 'stop' if name == 'transition' else 'replay' if name == 'outcome' else 'first'
         folder = run/name
         result = json.loads((folder/'result.json').read_text())
         doc = json.loads((folder/(phase+'.json')).read_text())
@@ -354,86 +410,140 @@ def compare_session(run):
         boot = boot or result['boot_id']
         if any(x['boot_id'] != boot for x in (result, doc, owner, manifest)):
             raise ValueError('Foreign boot in session')
-        if result['status'] != 'COVERED_REQUIRES_VISUAL' or doc['state']['overflow'] or doc['state']['status'] != 2:
-            raise ValueError('Incomplete session phase: '+name)
-        if owner['generation'] != doc['state']['generation']:
-            raise ValueError('Replaced generation')
-        if result.get('state') != doc['state']:
-            raise ValueError('Result belongs to another frozen window')
-        expected_phase = 3 if name == 'transition' else 1
-        if doc['state']['phase'] != expected_phase:
-            raise ValueError('Wrong final phase')
+        baseline = name in ('first','reference')
+        if doc['state']['status'] != 2 or (baseline and (result['status'] != 'COVERED_REQUIRES_VISUAL' or doc['state']['overflow'])):
+            raise ValueError('Invalid normal baseline or unfrozen phase: '+name)
+        if owner['generation'] != doc['state']['generation'] or result.get('state') != doc['state']:
+            raise ValueError('Result/owner belongs to another frozen window')
         rows = AUDIT['decode'](doc['pages'], doc['state'])
         if rows != doc['records']:
             raise ValueError('Altered raw records')
-        if not rows or rows[0]['kind'] != 1 or rows[0]['phase'] != (2 if name=='transition' else 1):
+        initial = 2 if name=='transition' else 3 if name=='outcome' else 1
+        if not rows or rows[0]['source']!=1 or rows[0]['kind']!=1 or rows[0]['phase']!=initial:
             raise ValueError('Missing initial marker')
-        if name != 'transition' and any(r['phase'] != 1 for r in rows):
-            raise ValueError('Mixed baseline phases')
-        results[name], docs[name] = result, doc
-    hashes = {r.get('runner_sha256', '') for r in results.values()}
-    if len(hashes) != 1 or len(next(iter(hashes))) != 64:
-        raise ValueError('Missing/mixed executor versions')
-    policies = [r['before'].get('checked_policy') for r in results.values()]
-    if not policies[0] or any(policy != policies[0] for policy in policies):
+        if name!='transition' and (doc['state']['phase']!=initial or any(r['phase']!=initial for r in rows)):
+            raise ValueError('Mixed window phases')
+        results[name], docs[name], manifests[name] = result, doc, manifest
+    for source, field in ((results,'runner_sha256'),(manifests,'collector_sha256')):
+        hashes={r.get(field,'') for r in source.values()}
+        if len(hashes)!=1 or len(next(iter(hashes)))!=64:
+            raise ValueError('Missing/mixed tools: '+field)
+    policies=[r['before'].get('checked_policy') for r in results.values()]
+    if not policies[0] or any(policy!=policies[0] for policy in policies):
         raise ValueError('Missing/mixed experiment policy snapshots')
-    collectors = {json.loads((run/n/'manifest.json').read_text()).get('collector_sha256', '') for n in results}
-    if len(collectors) != 1 or len(next(iter(collectors))) != 64:
-        raise ValueError('Missing/mixed collector versions')
-    for left, right in (('first','reference'), ('reference','transition')):
+    if len({r['file'] for r in results.values()})!=1:
+        raise ValueError('File changed')
+    for left,right in zip(names,names[1:]):
         if (docs[right]['state']['generation']-docs[left]['state']['generation']) & 0xffffffff != 1:
             raise ValueError('Nonconsecutive experiment generations')
         if docs[right]['records'][0]['stamp'] < docs[left]['records'][-1]['stamp']:
             raise ValueError('Reordered/overlapping experiment windows')
-    rows = docs['transition']['records']
-    split = next((i for i,r in enumerate(rows) if r['source']==1 and r['kind']==1 and r['phase']==3), None)
-    if split is None or any(r['phase']!=2 for r in rows[:split]) or any(r['phase']!=3 for r in rows[split:]):
-        raise ValueError('Missing/reversed continuous phase boundary')
-    if not stopped(rows[:split], results['transition']['stop_boundary']['context']):
-        raise ValueError('Missing asynchronous Stop boundary')
-    for name, selected in [('first', docs['first']['records']), ('replay', rows[split:])]:
-        if not display_coverage(selected)['complete']:
-            raise ValueError('Missing display coverage: '+name)
-    if not results['reference'].get('confirmed_normal'):
-        raise ValueError('No normal reference confirmation')
-    reference = docs['reference']
-    if not reference_ready(reference['records'], reference['after']):
-        raise ValueError('Missing independent guarded reference samples')
-    baseline_session = display_coverage(docs['first']['records'])['display_epoch']
-    if any(r['session']!=baseline_session for r in reference['records'] if r['source']==5 and r['kind']==7):
+    return results,docs
+
+
+def validate_baseline(run):
+    results,docs=load_windows(run,('first','reference'))
+    if not any(r.get('method')=='Player.Open' and r.get('sent') and
+               r.get('params',{}).get('item',{}).get('file')==results['first']['file']
+               for r in results['first'].get('rpc',[])):
+        raise ValueError('First-play request/file not evidenced')
+    coverage=display_coverage(docs['first']['records'])
+    if not coverage['complete']:
+        raise ValueError('Missing first-play observation coverage')
+    ref=docs['reference']
+    if not results['reference'].get('confirmed_normal') or not reference_ready(ref['records'],ref['after']):
+        raise ValueError('No confirmed guarded normal reference')
+    if any(r['session']!=coverage['display_epoch'] for r in ref['records'] if r['source']==5 and r['kind']==7):
         raise ValueError('Normal reference belongs to another display epoch')
-    replay_session = display_coverage(rows[split:])['display_epoch']
-    if replay_session == baseline_session:
-        raise ValueError('Replay did not enter a new display epoch')
-    if len({r['file'] for r in results.values()}) != 1:
-        raise ValueError('File changed')
-    # Continuous transition proves the recorder had no freeze/re-arm gap;
-    # it cannot prove an unhooked hardware writer or pixel stage is healthy.
-    return {'classification': 'REVIEW_REQUIRED', 'boot_id': boot,
-            'localization': AUDIT['localization'](docs['first']['records'], rows[split:]),
-            'reference_records': docs['reference']['records'],
-            'endpoint_status': {'first': docs['first'].get('hdmi', {'status':'not_collected'}),
-                                'reference': reference.get('hdmi', {'status':'not_collected'}),
-                                'replay': results['transition'].get('hdmi', {'status':'not_collected'})},
-            'normal_reference_readback_comparison': AUDIT['localization'](
-                [r for r in reference['records'] if r['source']==5],
-                [r for r in rows[split:] if r['source']==5]),
-            'continuous_transition': rows,
-            'limitations': ['Visual replay outcome must be supplied separately.',
-                            'Coverage gates do not prove physical pixel output or complete delayed-work teardown.']}
+    return results,docs
+
+
+def validate_live_baseline(run,context,file):
+    results,docs=validate_baseline(run)
+    ref=results['reference']
+    if ref['boot_id']!=context['boot_id'] or ref['file']!=file or ref['before']['checked_policy']!=context['checked_policy']:
+        raise ValueError('Live baseline identity/policy changed before Stop')
+    if ref['runner_sha256']!=hashlib.sha256(Path(__file__).read_bytes()).hexdigest():
+        raise ValueError('Executor changed after reference')
+    if AUDIT['state'](AUDIT['read']('scan'))!=docs['reference']['state']:
+        raise ValueError('Recorder changed after normal reference; no Stop permitted')
+
+
+def compare_session(run):
+    validate_baseline(run)
+    names=['first','reference','transition']
+    if (run/'outcome/result.json').is_file():names.append('outcome')
+    results,docs=load_windows(run,names)
+    requests=results['transition'].get('rpc',[])
+    opens=[i for i,r in enumerate(requests) if r.get('method')=='Player.Open' and r.get('sent')
+           and r.get('params',{}).get('item',{}).get('file')==results['transition']['file']]
+    stops=[i for i,r in enumerate(requests) if r.get('method')=='Player.Stop' and r.get('sent')]
+    if len(opens)!=1 or len(stops)!=1 or stops[0]>=opens[0]:
+        raise ValueError('No single evidenced Stop/replay request pair; do not label a Stop-only black screen as replay')
+    rows=docs['transition']['records']
+    split=next((i for i,r in enumerate(rows) if r['source']==1 and r['kind']==1 and r['phase']==3),None)
+    if split is None or any(r['phase']!=2 for r in rows[:split]) or any(r['phase']!=3 for r in rows[split:]):
+        raise ValueError('No intact Stop-to-replay boundary; replay comparison unavailable')
+    if not stopped(rows[:split],results['transition'].get('stop_boundary',{}).get('context',{})):
+        raise ValueError('Missing asynchronous Stop boundary')
+    replay=rows[split:]
+    before=results['transition'].get('pre_stop_reference',{})
+    count=before.get('rows',0)
+    if not 0<count<=split or not reference_ready(rows[:count],before.get('context',{})):
+        raise ValueError('No fresh normal reference before Stop inside continuous window')
+    coverage=display_coverage(replay)
+    # Missing calls/reads may be the fault itself. Keep intact partial evidence
+    # and its absence list; never require the failing path to have succeeded.
+    classification='REPLAY_OUTCOME_PENDING'
+    outcome=results.get('outcome')
+    outcome_comparable = False
+    if outcome:
+        if outcome.get('reported_outcome') not in ('black','normal'):
+            raise ValueError('Missing explicit replay visual outcome')
+        outcome_comparable = bool(outcome.get('player_identity_verified')) and readbacks_available(
+            docs['outcome']['records'])
+        partial = (not coverage['complete'] or not outcome_comparable
+                   or results['transition']['status']!='COVERED_REQUIRES_VISUAL'
+                   or outcome['status']!='COVERED_REQUIRES_VISUAL'
+                   or docs['transition']['state']['overflow'] or docs['outcome']['state']['overflow'])
+        if outcome['reported_outcome']=='normal':classification='FAULT_NOT_REPRODUCED'
+        else:classification='PARTIAL_REPLAY_CAPTURE' if partial else 'REVIEW_REQUIRED'
+    reference=docs['reference']
+    live=lambda rs:[r for r in rs if r['source']==5 and r['kind']==7]
+    after=docs.get('outcome')
+    return {'classification':classification,'boot_id':results['first']['boot_id'],'file':results['first']['file'],
+            'visual_contrast':{'first':'reference_normal_user_confirmed',
+                               'replay':outcome.get('reported_outcome') if outcome else 'not_reported'},
+            'replay_coverage':coverage,'transition_overflow':docs['transition']['state']['overflow'],
+            'localization':AUDIT['localization'](docs['first']['records'],replay),
+            'normal_reference_vs_confirmed_outcome':AUDIT['localization'](live(reference['records']),live(after['records'])) if after and outcome_comparable else None,
+            'outcome_readbacks_comparable':outcome_comparable,
+            'normal_reference_vs_replay_startup':AUDIT['localization'](live(reference['records']),live(replay)),
+            'normal_reference_vs_pre_stop':AUDIT['localization'](live(reference['records']),live(rows[:count])),
+            'pre_stop_context':before.get('context'),
+            'outcome_context':outcome,'continuous_transition':rows,
+            'endpoint_status':{'reference':reference.get('hdmi',{'status':'not_collected'}),
+                               'replay_startup':results['transition'].get('hdmi',{'status':'not_collected'}),
+                               'confirmed_outcome':after.get('hdmi',{'status':'not_collected'}) if after else {'status':'not_collected'}},
+            'limitations':['Missing replay observations remain unknown, not proof hardware is healthy.',
+                           'Outcome readback is a separate window after visual confirmation; not a continuous trace of the human response gap.',
+                           'Selected software/configuration observations do not prove physical pixels or an earliest physical failure.']}
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action', choices=('first','reference','transition','compare'))
+    p.add_argument('action', choices=('first','reference','transition','outcome','compare'))
     p.add_argument('--run', required=True, type=Path)
     p.add_argument('--file', default='/storage/videos/Test-H264-720p-20min.mp4')
     p.add_argument('--timeout', type=float, default=6)
     p.add_argument('--confirmed-normal', action='store_true')
+    p.add_argument('--reported-outcome', choices=('black','normal'))
     a = p.parse_args()
     if a.action == 'compare':
         print(json.dumps(compare_session(a.run), indent=2))
         return
+    if a.action == 'outcome' and not a.reported_outcome:
+        p.error('outcome requires the user-reported picture: --reported-outcome black|normal')
     if not 0 < a.timeout <= 15:
         p.error('timeout must be >0 and <=15 seconds; never implies ring capacity is sufficient')
     with open('/run/e900-playback.lock','w') as lock:

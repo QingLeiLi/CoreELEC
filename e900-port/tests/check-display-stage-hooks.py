@@ -76,7 +76,7 @@ static unsigned cmpxchg(unsigned *p,unsigned old,unsigned value){unsigned seen=*
 static void e900_debug_event(const char *s,u32 a,u32 b,u32 c,u32 d){(void)s;(void)a;(void)b;(void)c;(void)d;}
 /* The standalone 0038 ring is exercised in check-playback-timeline.py. */
 static bool e900_playback_direct_selected(u32 reg){(void)reg;return false;}
-static bool playback_available;static unsigned playback_taken,hdr_reads_recorded;
+static bool playback_available;static unsigned playback_taken,hdr_reads_recorded,quiet_layout_mask;
 static bool e900_playback_active(void){return playback_available;}
 static bool e900_playback_sample_available(void){return playback_available;}
 static bool e900_playback_sample_take(void){playback_taken++;return true;}
@@ -84,6 +84,12 @@ static u32 e900_hdr_recovery_video_session(void){return 0;}
 static void e900_playback_note(u32 source,u32 kind,u32 session,u32 batch,u32 handle,u32 reg,u32 value,u32 aux){
  (void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)value;(void)aux;
  if(reg==0x3800)hdr_reads_recorded++;
+ if(source==5&&kind==7){
+  if(reg==0x1a6d)quiet_layout_mask|=1;
+  if(reg==0x1aa7)quiet_layout_mask|=2;
+  if(reg==0x1a63)quiet_layout_mask|=4;
+  if(reg==0x1d5f)quiet_layout_mask|=8;
+ }
 }
 /* GEN3 provenance itself executes in check-gen3-rmw-osd.py. */
 static void e900_gen3_rmw(u32 reg,int handle,int mode,u32 start,u32 len,u32 hardware,u32 base,u32 result,int source,void*caller){(void)reg;(void)handle;(void)mode;(void)start;(void)len;(void)hardware;(void)base;(void)result;(void)source;(void)caller;}
@@ -155,10 +161,10 @@ int main(void){
  assert(e900_stage_sample_ops.get(b,&p)>0&&!strcmp(b,"0"));
  assert(!e900_stage_sample_ops.set("8",&p));assert(!e900_stage_sample_ops.set("0",&p));
  e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(live_reads==16*8);
- assert(!hdr_reads_recorded);
+ assert(!hdr_reads_recorded&&!quiet_layout_mask);
  unsigned quiet_before=log_lines;playback_available=true;e900_stage_output(0);
  assert(log_lines==quiet_before);
- assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+23);
+ assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+27 && quiet_layout_mask==15);
  return 0;
 }
 '''

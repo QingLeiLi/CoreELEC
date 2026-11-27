@@ -185,6 +185,10 @@ def freeze(run, phase, hdmi=False):
 
 # Fixed source map: a changed value is a lead, never a root-cause verdict.
 REGISTER_MAP = {
+    0x1a6d: ('VD1_IF0_GEN_REG2', 'vd_set_dcu -> vd1_set_dcu', 'VD1 MIF configuration'),
+    0x1aa7: ('VD1_IF0_GEN_REG3', 'vd_set_dcu -> vd1_set_dcu', 'raw GEN3; not a standalone enable/fault verdict'),
+    0x1a63: ('VD1_IF0_LUMA_FIFO_SIZE', 'vd_set_dcu -> vd1_set_dcu', 'MIF FIFO configuration, not occupancy'),
+    0x1d5f: ('VPP_MATRIX_CTRL', 'set_vpp_matrix', 'legacy matrix control'),
     0x1a50: ('VD1_IF0_GEN_REG', 'vd_set_dcu -> vd1_set_dcu', 'VD1 MIF'),
     0x1a51: ('VD1_IF0_CANVAS0', 'set_layer_display_canvas', 'Canvas selection'),
     0x1a68: ('VIU_VD1_FMT_CTRL', 'vd_set_dcu -> vd1_set_dcu', 'formatter'),

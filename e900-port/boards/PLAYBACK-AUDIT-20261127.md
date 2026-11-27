@@ -4,7 +4,7 @@
 
 Build292证明旧的“decoder出现后等120ms”会漏显示初始化，三段分别冻结会漏Stop异步清理。**下一轮使用`e900-playback-session.py`；下文旧命令仅保留为历史有界窗口接口，不再将其结果当完整转换。** 旧compare现在明确输出`INCOMPLETE_TRANSITION`。
 
-需要新0043内核：只读`gxlx2_playback_live_api=1`，65536条有界append-only记录（约3MiB静态内存），同锁下导出8条前缀，活动期也可读取；用户态核对generation、行号、溢出。切换phase重置16组安全读预算，不重置generation/提交批次，Stop→replay不冻结、不重新arm。ring-only路径采完固定寄存器即返回，避免逐帧pr_info；原显式legacy快照仍保留。首帧事件改为每个软件生命周期session首次非fake toggle，不再依赖上游first_picture重配置策略；它是软件显示调用边界，不是硬件出图证明。没有改变显示策略、HDR处理、寄存器允许表或新增任意MMIO。
+需要新0043内核：只读`gxlx2_playback_live_api=1`，65536条有界append-only记录（约3MiB静态内存），同锁下导出8条前缀，活动期也可读取；用户态核对generation、行号、溢出。切换phase重置16组安全读预算，不重置generation/提交批次，Stop→replay不冻结、不重新arm。ring-only路径采完固定寄存器即返回，避免逐帧pr_info；原显式legacy快照仍保留。首帧事件改为每个软件生命周期session首次非fake toggle，不再依赖上游first_picture重配置策略；它是软件显示调用边界，不是硬件出图证明。静默ring另保留原日志已读的GEN2(1a6d)、GEN3(1aa7)、MIF FIFO配置(1a63)、legacy matrix(1d5f)，每组固定27项；沿用相同活动态保护，无逐帧打印，不读任意地址或selector/LUT端口。显示策略/HDR处理未改。
 
 新工具先检查版本、容量、init完成、hold0/HDR实验N/RDMA1,0/global1及旧verbose探针关闭。旧固件缺接口会在媒体动作前失败，不尝试猜测兼容。还检查G12 MIF/GEN3/OSD实验关闭、pixel/edge探针退出及verbose事件预算为0，保存所检查策略；不自动替用户清理开关。
 
@@ -15,18 +15,27 @@ python3 "$TOOLS/e900-playback-session.py" first --run "$RUN"
 python3 "$TOOLS/e900-playback-session.py" reference --run "$RUN" --confirmed-normal
 # 只有上述两步完成且仍获准观察，才执行一次Stop→重播。
 python3 "$TOOLS/e900-playback-session.py" transition --run "$RUN"
+# transition因缺调用/超时退出，也不要自动重播；若已经发出重播请求，
+# 等用户报告画面后只读采样。black或normal必须填用户实际反馈。
+python3 "$TOOLS/e900-playback-session.py" outcome --run "$RUN" --reported-outcome black
 python3 "$TOOLS/e900-playback-session.py" compare --run "$RUN" > "$RUN/comparison.json"
 ```
 
 首播/重播窗口判据：最新provider注册之后、当前软件生命周期epoch中的首帧、DCU/PPS调用及已知返回、CSC返回原因、活动态固定读回，且disable=0，条件持续300ms；只有实际发起VD1 HDR请求时才要求配对提交。unsupported/null-input/no-signal-change等已知返回单独记入disposition，不当作缺日志，也不当作配置成功；并非解码帧计数。缺hook、未知返回原因、未配对请求/返回、超时、错代或溢出均记`INCOMPLETE`，不自动补播、不自动重试、不宣布硬件损坏。该判据刻意保守：合法路径若没有这些事件，也需要审查原记录后修正覆盖模型，不绕过门槛。
 
-正常参考另存原页，需用户明确确认、同boot/文件、活动层，至少两次非零FIFO与MIF/misc/HDR读回。FIFO非零本身不是画面证据；零值与用户画面冲突时停止，不继续制造故障。
+正常/黑屏分组只取用户反馈，绝不由FIFO数值决定。正常参考另存原页，需用户明确确认、同boot/文件、活动层/H264及同一当前epoch中至少两组FIFO和MIF/misc/HDR读回，零值完整保留。发送Stop前先核验正常原页/版本/epoch/当前冻结代次，再在连续转换窗口内采Stop前读回，记录其边界；检查失败就不发Stop。
 
-Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应；使用5秒总deadline与累计64KiB接收上限，不会被通知消息续期。连续转换的phase3端点另采受保护HDMI状态，真正Stop不读TX配置。比较器要求首播→参考→转换的generation连续、kernel stamp不倒序、同一执行器/采集器版本与所检查策略，正常参考属于首播显示epoch而重播进入新epoch（session不是provider身份）；同时输出正常参考对重播的实际读回差异。超时则只导出原记录，绝不执行重播。
+outcome只查询当前player身份、采受保护读回及软件状态，不执行Open、Stop、SetVolume或重启。正常与黑屏使用相同结构性采样条件，不筛掉FIFO=0；global_output=0等故障状态也可进入只读观察，无法安全读回时保留用户反馈和软件状态并标partial。它与启动窗口是两个不同时间段，不伪称覆盖人工回复间隙。
+
+compare对正常基线严格校验，对结构完整但缺初始化调用的故障轨迹保留为PARTIAL_REPLAY_CAPTURE并列missing/原始时间线，不能因为异常路径没成功就拒绝分析。没有用户重播反馈时输出REPLAY_OUTCOME_PENDING；用户报告正常则本轮FAULT_NOT_REPRODUCED，不宣称问题修复。报告分列正常参考对Stop前、重播启动、确认结果后的三组读回，不把启动瞬间当作黑屏稳态。
+
+Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应；使用5秒总deadline与累计64KiB接收上限，不会被通知消息续期。连续转换的phase3端点另采受保护HDMI状态，真正Stop不读TX配置。比较器要求首播→参考→转换的generation连续、kernel stamp不倒序、同一执行器/采集器版本与所检查策略，正常参考属于首播显示epoch而重播进入新epoch（session不是provider身份）；同时输出正常参考对重播的实际读回差异。Stop边界或录制器异常时只导出、不发起重播。重播已经发出后的超时只标记异常覆盖缺口，不丢弃故障证据；只有有序且确实发送的Stop/Open请求、phase3 marker均存在，才允许标为重播对照，避免把Stop-only黑屏误报为重播故障。
 
 容量扩大仍不保证任意时长完整，6秒默认timeout也不是覆盖保证。达到上限仍明确溢出冻结，不能用重新arm拼接。主机测试覆盖真实Build292反例、实时前缀、同代阶段切换、Stop超时禁止重播、静默ring路径及补丁应用；完整ARM构建、新hook实机可达性、观察开销与实际画面尚待验证。
 
-本工具与新的0038观测补丁配套；旧Claude固件没有该接口。目标是保存同一boot三段原始时间线，区分生命周期、软件写意图、准备表、完成关联和受保护实际读回。它不会自动播放、Stop、重启、恢复时钟或改变显示策略。
+## 旧分段接口（历史/手工读取）
+
+下文e900-playback-audit.py与0038观测补丁配套；旧Claude固件没有该接口。目标是保存同一boot三段原始时间线，区分生命周期、软件写意图、准备表、完成关联和受保护实际读回。它不会自动播放、Stop、重启、恢复时钟或改变显示策略。
 
 ## 采集顺序
 
@@ -58,7 +67,7 @@ python3 e900-playback-audit.py compare --run "$RUN" > "$RUN/comparison.json"
 
 source：1生命周期，2普通RDMA，3 OSD独立RDMA，4关键地址直接写，5受保护实际读回。kind：1 marker，2 state，3 prepare，4 word，5 irq，6 cancel，7 read。具体事件code与固定地址允许表见0038头文件；没有hook的路径不在覆盖范围。
 
-比较器拒绝溢出、错boot、错代、缺行、原页与派生行不符、缺阶段marker及混合phase。每段只允许一次arm；freeze只操作自己的generation。输出永远是REVIEW_REQUIRED，不能仅凭相同最终写值宣布链路正常。阶段间存在人工观看间隔，**不声称连续记录了整个视频播放时段**；三个窗口内的实际媒体动作覆盖完整性还需RPC与生命周期边界验证。
+比较器拒绝溢出、错boot、错代、缺行、原页与派生行不符、缺阶段marker及混合phase。每段只允许一次arm；freeze只操作自己的generation。旧分段compare当前输出INCOMPLETE_TRANSITION；连续工具的pending/partial/画面反馈分类见顶部。不能仅凭相同最终写值宣布链路正常。阶段间存在人工观看间隔，**不声称连续记录了整个视频播放时段**；三个窗口内的实际媒体动作覆盖完整性还需RPC与生命周期边界验证。
 
 真实Stop只记录软件状态；硬件读回仅沿已有active/bus/legacy VD1保护。准备表或IRQ关联不等于每个写值落地，实际配置有值也不等于像素有效。OSD和直接写覆盖固定地址，不追全机MMIO。VDIN硬件完成槽到payload的关联缺口仍需后续核实；静态回采不能证明视频正常。
 
