@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**HDR白盒写序收敛（2026-11-28）**：用户要求优先白盒、暂不加实验入口。本地执行固定源码CTRL RMW，精确复现d05f→1c040；这是bypass主动配置，不是随机损坏/软件RMW错值。差异bits0/1/2/3/4/12/16，bit13无变化；LUT payload不上传，但enable改变仍可参与故障。A独有79地址=VD1 39+OSD 39+wrap1，clock gate与矩阵也在候选范围。legacy_vpp与G12 HDR选择存在软件能力分类不一致，硬件适用性仍待证。测试通过，无设备动作/新内核补丁。详见[白盒写序](BUILD293-HDR-WHITEBOX-WRITES-20261128.md)。
+
+
 **Stop HDR因果隔离B组（2026-11-28，当前结果）**：同Build293、新boot2dac9312，首播用户确认正常；仅Stop异步清理期间disable_flush_flag=1，Open之前恢复0。用户确认重播正常。6374/222/12329/280行无溢出；VD1/OSD HDR_DISABLED实际命中，整段无HDR bank软件写入，HDR CTRL保持d05f、矩阵0、FIFO恢复变化；最终flush0。默认A组重播黑屏且CTRL=1c040。支持触发范围收敛到Stop HDR家族事务，但全局开关同时拦VD1/OSD及相关入口，未定位单模块/单bit，单次非永久修复验收。下一步拆分VD1与OSD写者，先准备选择实验，默认关闭；本轮不继续操作播放。详见[B组结果](BUILD293-STOP-HDR-RESULT-20261128.md)。
 
 
