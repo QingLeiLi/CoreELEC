@@ -1,0 +1,127 @@
+{
+  "boot_id": "2dac9312-ae38-4a9d-a6a2-fbfaa0252f67",
+  "file": "/storage/videos/Test-H264-720p-20min.mp4",
+  "visual_contrast": {
+    "first": "reference_normal_user_confirmed",
+    "replay": "normal",
+    "reported_current_picture": "normal"
+  },
+  "replay_coverage": {
+    "complete": true,
+    "missing": [],
+    "display_epoch": 7,
+    "registration_epoch": 7,
+    "disposition": {
+      "dcu_skipped": [],
+      "pps_unsupported": false,
+      "pps_skipped": [],
+      "csc_returns": [
+        2,
+        6,
+        7
+      ],
+      "hdr_requested": false,
+      "hdr_flush_disabled": false
+    },
+    "scope": "Selected software boundaries and guarded reads, not pixel proof"
+  },
+  "transition_overflow": 0,
+  "outcome_readbacks_comparable": true,
+  "intervention": "suppress_hdr_family_flush_during_stop_only",
+  "intervention_events": [
+    {
+      "event": "stop_hdr_guard_set",
+      "value": "1",
+      "boottime_ns": 123974166932
+    },
+    {
+      "event": "stop_hdr_guard_restore",
+      "value": "0",
+      "boottime_ns": 124661025141
+    }
+  ],
+  "stop_hdr_guard_evidence": {
+    "disabled_calls": [
+      {
+        "index": 1077,
+        "generation": 3,
+        "stamp": 4294923370,
+        "source": 1,
+        "kind": 2,
+        "session": 5,
+        "phase": 2,
+        "batch": 0,
+        "handle": 1,
+        "reg": 10,
+        "value": 1,
+        "aux": 0
+      },
+      {
+        "index": 1078,
+        "generation": 3,
+        "stamp": 4294923370,
+        "source": 1,
+        "kind": 2,
+        "session": 5,
+        "phase": 2,
+        "batch": 0,
+        "handle": 3,
+        "reg": 10,
+        "value": 1,
+        "aux": 0
+      }
+    ],
+    "unblocked_requests": [],
+    "hdr_bank_writes": [],
+    "scope": "HDR family switch includes OSD/update entries; not VD1-only causal isolation"
+  },
+  "endpoint_status": {
+    "reference": {
+      "host_time_ns": 1795810632577896194,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    },
+    "replay_startup": {
+      "host_time_ns": 1795810647786938659,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    },
+    "confirmed_outcome": {
+      "host_time_ns": 1795810673277605838,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    }
+  },
+  "counts": {
+    "first": 6374,
+    "reference": 222,
+    "transition": 12329,
+    "outcome": 280
+  },
+  "hardware_result": "user confirmed normal first and normal replay after Stop-only HDR suppression",
+  "flush_flag_final": 0,
+  "last_device_state": "normal muted replay, no further media changes",
+  "limitations": [
+    "One control boot and one intervention boot; not repeated repair acceptance.",
+    "Global flush flag suppresses VD1/OSD and related HDR update entries; does not identify VD1 alone.",
+    "Software writes/IRQ and selected reads do not prove every hardware register or intermediate pixels."
+  ]
+}

@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**Stop HDR因果隔离B组（2026-11-28，当前结果）**：同Build293、新boot2dac9312，首播用户确认正常；仅Stop异步清理期间disable_flush_flag=1，Open之前恢复0。用户确认重播正常。6374/222/12329/280行无溢出；VD1/OSD HDR_DISABLED实际命中，整段无HDR bank软件写入，HDR CTRL保持d05f、矩阵0、FIFO恢复变化；最终flush0。默认A组重播黑屏且CTRL=1c040。支持触发范围收敛到Stop HDR家族事务，但全局开关同时拦VD1/OSD及相关入口，未定位单模块/单bit，单次非永久修复验收。下一步拆分VD1与OSD写者，先准备选择实验，默认关闭；本轮不继续操作播放。详见[B组结果](BUILD293-STOP-HDR-RESULT-20261128.md)。
+
+
 **Build293白盒跟进（2026-11-28）**：确认首播也未执行HDR事务；Stop fake FORCE_SIGNAL执行HDR_BYPASS，重播仅return2/7不代表重配。发现hold前信号缓存被消费，真实C前缀复现成立；但相同SDR metadata反例证明仅延后缓存不够。0044仅保存在candidates，不进入默认构建。下一项准备使用现有disable_flush_flag仅隔离Stop HDR家族事务的受控B组，需新正常基准、用户先许可；无需重编，尚未操作设备。范围/停止条件见[白盒与实验计划](BUILD293-CSC-WHITEBOX-20261128.md)。
 
 
