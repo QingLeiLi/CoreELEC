@@ -292,7 +292,7 @@ Subject: [EXPERIMENTAL] opt-in VD1 HDR reconfiguration on matched global-output 
 +void e900_hdr_recovery_cancel(void);
 +#else
 +static inline void e900_hdr_recovery_edge(bool old_output, bool new_output,
-+				bool active_frame, u32 session, int mode) { }
++				bool active_frame, u32 session, int mode) { (void)old_output; (void)new_output; (void)active_frame; (void)session; (void)mode; }
 +static inline void e900_hdr_recovery_cancel(void) { }
 +#endif
 +u32 e900_hdr_recovery_video_session(void);

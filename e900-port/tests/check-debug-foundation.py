@@ -55,7 +55,8 @@ with tempfile.TemporaryDirectory(prefix='e900-debug-check-') as temp:
 typedef uint32_t u32;
 #define noinline __attribute__((noinline))
 #define READ_ONCE(x) (x)
-#define IS_ENABLED(x) 0 /* exercise the no-RDMA progress fallback */
+#define IS_ENABLED(x) E900_TEST_ENABLED
+#define IS_REACHABLE(x) E900_TEST_ENABLED
 #define WRITE_ONCE(x,v) ((x)=(v))
 #define ATOMIC_INIT(x) {x}
 typedef struct {int v;} atomic_t;
@@ -115,8 +116,31 @@ static unsigned bit_writes;
 static void fixed_bits(unsigned reg,unsigned value,unsigned start,unsigned count){assert(reg==0x1aa7&&value==0&&start==12&&count==2);bit_writes++;}
 #define VSYNC_WR_MPEG_REG_BITS(r,v,s,n) fixed_bits(r,v,s,n)
 '''
-    c += macro + '\nE900_DEBUG_CHANNEL("test")\n' + output + experiment_prelude + experiment + r''' 
+    reachable = r'''
+#if E900_TEST_ENABLED
+static unsigned reachable_calls;
+void e900_rdma_progress(u32 v[4]){for(unsigned i=0;i<4;i++)v[i]=0;}
+void e900_csc_progress(u32 v[9]){for(unsigned i=0;i<9;i++)v[i]=0;}
+void e900_hdr_recovery_edge(bool old_output,bool new_output,bool active_frame,u32 session,int mode){(void)old_output;(void)new_output;(void)active_frame;(void)session;(void)mode;reachable_calls++;}
+void e900_hdr_recovery_cancel(void){reachable_calls++;}
+void e900_playback_note(u32 source,u32 kind,u32 session,u32 batch,u32 handle,u32 reg,u32 value,u32 aux){(void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)reg;(void)value;(void)aux;reachable_calls++;}
+u32 e900_playback_begin(u32 source,u32 handle,u32 trigger,u32 total){(void)source;(void)handle;(void)trigger;(void)total;reachable_calls++;return 0;}
+bool e900_playback_active(void){reachable_calls++;return false;}
+bool e900_playback_batch_valid(u32 batch){(void)batch;reachable_calls++;return false;}
+bool e900_playback_sample_available(void){reachable_calls++;return false;}
+bool e900_playback_sample_take(void){reachable_calls++;return false;}
+#endif
+'''
+    c += macro + reachable + '\nE900_DEBUG_CHANNEL("test")\n' + output + experiment_prelude + experiment + r'''
 int main(void){struct kernel_param p={&gxlx2_debug_events};struct vframe_s vf={0};
+ assert(!e900_playback_direct_selected(0));
+ e900_hdr_recovery_edge(true,false,true,1,2);e900_hdr_recovery_cancel();
+ e900_playback_note(1,2,3,4,5,6,7,8);assert(!e900_playback_begin(1,2,3,4));
+ assert(!e900_playback_active()&&!e900_playback_batch_valid(1));
+ assert(!e900_playback_sample_available()&&!e900_playback_sample_take());
+#if E900_TEST_ENABLED
+ assert(reachable_calls==8);
+#endif
  e900_debug_event("off",0,0,0,0);assert(lines==0);
  assert(e900_debug_ops.set("513",&p)==-ERANGE);assert(gxlx2_debug_events==0);
  assert(e900_debug_ops.set("-1",&p)<0);assert(gxlx2_debug_events==0);
@@ -137,8 +161,10 @@ int main(void){struct kernel_param p={&gxlx2_debug_events};struct vframe_s vf={0
  return 0;}
 '''
     src = t / 'test.c'; src.write_text(c)
-    subprocess.run([shutil.which('clang') or 'cc', '-std=gnu99', '-Wall', '-Wextra', '-Werror', str(src), '-o', str(t/'test')],check=True)
-    subprocess.run([str(t/'test')],check=True)
+    for enabled in (0, 1):
+        subprocess.run([shutil.which('clang') or 'cc', '-std=gnu99', '-Wall', '-Wextra', '-Werror', '-DE900_TEST_ENABLED='+str(enabled), str(src), '-o', str(t/'test')],check=True)
+        subprocess.run([str(t/'test')],check=True)
+        print(f'PASS: strict host compilation and execution, configuration enabled={enabled}')
     # Compare should retain new/missing fields and never classify absent data
     # or a rejected capture as a black pixel image.
     def doc(value, capture):

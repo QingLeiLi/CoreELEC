@@ -752,11 +752,11 @@ Subject: [DIAGNOSTIC] bounded first-play Stop replay timeline
 +bool e900_playback_sample_take(void);
 +#else
 +static inline void e900_playback_note(u32 source, u32 kind, u32 session,
-+			 u32 batch, u32 handle, u32 reg, u32 value, u32 aux) { }
++			 u32 batch, u32 handle, u32 reg, u32 value, u32 aux) { (void)source; (void)kind; (void)session; (void)batch; (void)handle; (void)reg; (void)value; (void)aux; }
 +static inline u32 e900_playback_begin(u32 source, u32 handle,
-+				      u32 trigger, u32 total) { return 0; }
++				      u32 trigger, u32 total) { (void)source; (void)handle; (void)trigger; (void)total; return 0; }
 +static inline bool e900_playback_active(void) { return false; }
-+static inline bool e900_playback_batch_valid(u32 batch) { return false; }
++static inline bool e900_playback_batch_valid(u32 batch) { (void)batch; return false; }
 +static inline bool e900_playback_sample_available(void) { return false; }
 +static inline bool e900_playback_sample_take(void) { return false; }
 +#endif
