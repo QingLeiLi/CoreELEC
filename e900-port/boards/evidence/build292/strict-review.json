@@ -1,0 +1,49 @@
+{
+  "classification": "REPRODUCED_BUT_TRANSITION_CAPTURE_INCOMPLETE",
+  "hardware_actions_during_review": false,
+  "phases": {
+    "first": {
+      "rows": 617,
+      "overflow": 0,
+      "events": {
+        "2": 1,
+        "4": 1,
+        "1": 1
+      },
+      "safe_read_rows": 0,
+      "disable_before": "1",
+      "disable_after": "0",
+      "host_snapshot_interval_seconds": 0.642570792,
+      "pending_batches": 2
+    },
+    "stop": {
+      "rows": 72,
+      "overflow": 0,
+      "events": {
+        "18": 2
+      },
+      "safe_read_rows": 69,
+      "disable_before": "0",
+      "disable_after": "0",
+      "host_snapshot_interval_seconds": 0.357995834,
+      "pending_batches": 0
+    },
+    "replay": {
+      "rows": 267,
+      "overflow": 0,
+      "events": {
+        "1": 1
+      },
+      "safe_read_rows": 0,
+      "disable_before": "1",
+      "disable_after": "1",
+      "host_snapshot_interval_seconds": 0.88552875,
+      "pending_batches": 2
+    }
+  },
+  "limits": [
+    "Host snapshot interval includes export time and is not the exact kernel armed duration.",
+    "Pending batches are freeze boundaries, not proof hardware stalled.",
+    "Source session inference is software attribution, not a hardware cookie."
+  ]
+}

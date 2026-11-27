@@ -255,6 +255,11 @@
     "First/replay freeze used decoder availability, not first displayed frame; no DCU/PPS/HDR initialization coverage in these windows.",
     "Normal reference readbacks belong to Stop-start active-frame interval; not a separately sampled confirmed normal steady window.",
     "Configuration differences are candidates, not proof of earliest pixel failure or causality.",
-    "No new VDIN pixel calibration or output capture was performed."
-  ]
+    "No new VDIN pixel calibration or output capture was performed.",
+    "Stop after-snapshot disable=0, replay before-snapshot disable=1: asynchronous cleanup crosses an unrecorded gap.",
+    "No independent normal steady-state snapshot was obtained before Stop.",
+    "Equal selected register values do not exclude MIF/PPS/blend or prove equal pixel throughput.",
+    "No-overflow validates storage capacity only; does not validate experiment phase coverage."
+  ],
+  "review_classification": "REPRODUCED_BUT_TRANSITION_CAPTURE_INCOMPLETE"
 }
