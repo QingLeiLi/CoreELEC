@@ -450,3 +450,71 @@ with mock.patch.dict(g,Path=OldParam):
     except RuntimeError as error:assert 'v2' in str(error)
     else:raise AssertionError('Old API accepted without four required readbacks')
 print('PASS: Stop-phase write provenance survives replay; broken earlier exports do not suppress unpaired read-only outcome; old API/sparse coverage rejected')
+
+# macOS host lacks Linux CLOCK_BOOTTIME; only the fixture clock ID is mapped.
+clock_patch=mock.patch.object(M['time'],'CLOCK_BOOTTIME',M['time'].CLOCK_MONOTONIC,create=True)
+clock_patch.start()
+# The existing HDR-family switch is owned only across asynchronous Stop.
+# Failed readback/restore must never authorize replay or overwrite foreign state.
+with tempfile.TemporaryDirectory() as directory:
+    parameter=Path(directory)/'disable_flush_flag';parameter.write_text('0\n')
+    events=[];guard=M['StopHDRGuard'](events,parameter)
+    guard.set();assert parameter.read_text().strip()=='1' and guard.active
+    guard.restore();assert parameter.read_text().strip()=='0' and not guard.active
+    assert [e['event'] for e in events]==['stop_hdr_guard_set','stop_hdr_guard_restore']
+    parameter.write_text('7\n')
+    try:guard.set()
+    except RuntimeError:pass
+    else:raise AssertionError('Nonzero external HDR switch accepted')
+    assert parameter.read_text().strip()=='7' and not guard.active
+    parameter.write_text('0\n');guard.set();parameter.write_text('7\n')
+    try:guard.restore()
+    except RuntimeError:pass
+    else:raise AssertionError('Foreign HDR state overwritten')
+    assert parameter.read_text().strip()=='7' and guard.active
+    parameter.write_text('1\n');guard.restore()
+# Exercise the real transition executor with an actual parameter fixture:
+# restoration must precede Player.Open, including Stop timeout failure cleanup.
+with tempfile.TemporaryDirectory() as directory:
+    root=Path(directory);(root/'reference').mkdir()
+    (root/'reference/result.json').write_text(json.dumps(dict(status='COVERED_REQUIRES_VISUAL',boot_id='boot',file='test',confirmed_normal=True)))
+    parameter=root/'disable_flush_flag';parameter.write_text('0\n')
+    g=M['execute'].__globals__;keys=('preflight','rpc','wait_for','LiveRows','AUDIT','validate_live_baseline','StopHDRGuard')
+    old={k:g[k] for k in keys};commands=[]
+    context=dict(boot_id='boot',disable='0',global_='1',decoder='ammvdec_h264')
+    def arm_guard(folder,phase):
+        (folder/(phase+'.owner.json')).write_text(json.dumps({'boot_id':'boot','generation':1}))
+    def guarded_rpc(method,params,log):
+        if method=='Player.Stop':assert parameter.read_text().strip()=='1'
+        if method=='Player.Open':assert parameter.read_text().strip()=='0'
+        commands.append(method);return {'item':{'file':'test'}}
+    def boundary_timeout(trace,predicate,*args,**kwargs):
+        if predicate is M['stopped']:raise RuntimeError('Stop boundary timeout')
+    try:
+        g.update(preflight=lambda **_:context,rpc=guarded_rpc,wait_for=boundary_timeout,
+                 LiveRows=lambda _:SimpleNamespace(rows=[],require_phase=lambda _:None),
+                 validate_live_baseline=lambda *_:None,
+                 StopHDRGuard=lambda events:old['StopHDRGuard'](events,parameter),
+                 AUDIT=dict(A,arm=arm_guard,snapshot=lambda:context,write=lambda *_:None,freeze=lambda *_a,**_k:None))
+        args=SimpleNamespace(action='transition',run=root,file='test',timeout=1,confirmed_normal=False,stop_hdr_flush_guard=True)
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(M['subprocess'],'run',return_value=SimpleNamespace(returncode=0)):
+            try:M['execute'](args)
+            except RuntimeError:pass
+            else:raise AssertionError('Stop timeout accepted')
+        assert commands==['Player.GetItem','Player.Stop']
+        assert parameter.read_text().strip()=='0'
+        r=json.loads((root/'transition/result.json').read_text())
+        assert r['intervention_events'][-1]['event']=='stop_hdr_guard_restore'
+        # Successful boundaries must restore BEFORE replay, not only finally.
+        import shutil
+        shutil.rmtree(root/'transition');commands.clear()
+        g['wait_for']=lambda *_a,**_k:None
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(M['subprocess'],'run',return_value=SimpleNamespace(returncode=0)):
+            try:M['execute'](args)
+            except RuntimeError:pass  # Fixture deliberately omits freeze payload.
+        assert commands==['Player.GetItem','Player.Stop','Player.Open']
+        assert parameter.read_text().strip()=='0'
+    finally:g.update(old)
+print('PASS: HDR Stop guard refuses foreign state; async Stop timeout restores switch and forbids replay')
+
+clock_patch.stop()

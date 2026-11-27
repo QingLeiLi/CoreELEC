@@ -280,6 +280,39 @@ def preflight(observation=False):
     return c
 
 
+class StopHDRGuard:
+    """Own the existing HDR-family flush switch only across asynchronous Stop."""
+    def __init__(self, report, parameter=None):
+        self.parameter = parameter or Path('/sys/module/am_vecm/parameters/disable_flush_flag')
+        self.report = report
+        self.active = False
+
+    def set(self):
+        if self.parameter.read_text().strip() != '0':
+            raise RuntimeError('HDR flush switch is not zero; no Stop permitted')
+        # Mark ownership before write: finally must restore even if readback fails.
+        self.active = True
+        self.parameter.write_text('1\n')
+        self.report.append({'event':'stop_hdr_guard_set','value':self.parameter.read_text().strip(),
+                            'boottime_ns':time.clock_gettime_ns(time.CLOCK_BOOTTIME)})
+        if self.report[-1]['value'] != '1':
+            raise RuntimeError('HDR Stop guard failed readback; no Stop permitted')
+
+    def restore(self):
+        if not self.active:
+            return
+        value = self.parameter.read_text().strip()
+        if value not in ('0','1'):
+            raise RuntimeError('HDR switch externally changed; refusing to overwrite')
+        self.parameter.write_text('0\n')
+        value = self.parameter.read_text().strip()
+        self.report.append({'event':'stop_hdr_guard_restore','value':value,
+                            'boottime_ns':time.clock_gettime_ns(time.CLOCK_BOOTTIME)})
+        if value != '0':
+            raise RuntimeError('HDR Stop guard restore failed; no replay permitted')
+        self.active = False
+
+
 def execute(args):
     context = preflight(observation=args.action=='outcome')
     args.run.mkdir(parents=True, exist_ok=True)
@@ -293,6 +326,13 @@ def execute(args):
     if args.action == 'outcome':
         report['reported_outcome'] = args.reported_outcome
     armed = False
+    stop_guard = None
+    if getattr(args, 'stop_hdr_flush_guard', False):
+        if args.action != 'transition':
+            raise ValueError('HDR Stop guard is valid only for transition')
+        report['intervention'] = 'suppress_hdr_family_flush_during_stop_only'
+        report['intervention_events'] = []
+        stop_guard = StopHDRGuard(report['intervention_events'])
     try:
         if args.action == 'first':
             if context['decoder'] != 'No vdec.':
@@ -357,11 +397,15 @@ def execute(args):
             wait_for(trace, reference_ready,args.timeout)
             report['pre_stop_reference']={'rows':len(trace.rows),'context':AUDIT['snapshot']()}
             trace.require_phase(2)
+            if stop_guard:
+                stop_guard.set()
             rpc('Player.Stop', {'playerid': 1}, report['rpc'])
             wait_for(trace, stopped, args.timeout, stable=.3)
             report['stop_boundary'] = {'rows': len(trace.rows), 'context': AUDIT['snapshot'](),
                 'scope': 'Provider/disable observed, No vdec and disable=1 stable 300ms; not proof every delayed work item completed'}
             # Same generation, no freeze/re-arm/export gap across Stop→replay.
+            if stop_guard:
+                stop_guard.restore()
             AUDIT['write']('phase', 3)
             trace.require_phase(3)
             rpc('Player.Open', {'item': {'file': args.file}}, report['rpc'])
@@ -371,6 +415,11 @@ def execute(args):
         report['error'] = str(error)
         report['primary_error'] = repr(error)
     finally:
+        if stop_guard:
+            try:
+                stop_guard.restore()
+            except Exception as error:
+                report.update(status='INCOMPLETE', cleanup_error=str(error))
         if not armed and (folder/(phase+'.owner.json')).exists():
             # arm() can fail after claiming a generation (e.g. snapshot I/O).
             # Let freeze() verify ownership; never touch an unowned recorder.
@@ -384,6 +433,14 @@ def execute(args):
                 AUDIT['freeze'](folder, phase, hdmi=(args.action!='transition'))
                 doc = json.loads((folder/(phase+'.json')).read_text())
                 report['state'] = doc['state']
+                if args.action == 'transition' and stop_guard:
+                    start = report.get('pre_stop_reference', {}).get('rows', len(doc['records']))
+                    stop_rows = [r for r in doc['records'][start:] if r['phase']==2]
+                    report['stop_hdr_guard_evidence'] = {
+                        'disabled_calls':[r for r in stop_rows if r['source']==1 and r['reg']==10 and r['kind']==2],
+                        'unblocked_requests':[r for r in stop_rows if r['source']==1 and r['reg'] in (8,9) and r['kind']==2],
+                        'hdr_bank_writes':[r for r in stop_rows if r['source'] in (2,3,4) and r['kind']==4 and 0x3800<=r['reg']<=0x38ff],
+                        'scope':'HDR family switch includes OSD/update entries; not VD1-only causal isolation'}
                 if args.action == 'transition':
                     report['hdmi'] = transition_hdmi(doc)
                 report['coverage'] = {str(p): display_coverage([r for r in doc['records'] if r['phase']==p]) for p in (1,3)}
@@ -540,6 +597,9 @@ def compare_session(run):
             'stop_lifecycle':[AUDIT['event_detail'](r) for r in rows[:split] if r['source']==1 and r['kind']==2],
             'software_state_timeline':{name:[AUDIT['blend_state'](r) for r in selected if r['source']==1 and r['kind']==2 and r['reg']==5]
                                        for name,selected in (('first',docs['first']['records']),('stop',rows[:split]),('replay',replay))},
+            'intervention': results['transition'].get('intervention', 'none'),
+            'intervention_events': results['transition'].get('intervention_events', []),
+            'stop_hdr_guard_evidence': results['transition'].get('stop_hdr_guard_evidence'),
             'normal_reference_vs_confirmed_outcome':AUDIT['localization'](live(reference['records']),live(after['records'])) if after and outcome_comparable else None,
             'outcome_readbacks_comparable':outcome_comparable,
             'normal_reference_vs_replay_startup':AUDIT['localization'](live(reference['records']),live(replay)),
@@ -561,8 +621,11 @@ def main():
     p.add_argument('--file', default='/storage/videos/Test-H264-720p-20min.mp4')
     p.add_argument('--timeout', type=float, default=6)
     p.add_argument('--confirmed-normal', action='store_true')
+    p.add_argument('--stop-hdr-flush-guard', action='store_true', help='Explicit experiment: suppress HDR-family flush only across Stop, restore before replay')
     p.add_argument('--reported-outcome', choices=('black','normal'))
     a = p.parse_args()
+    if a.stop_hdr_flush_guard and a.action != 'transition':
+        p.error('--stop-hdr-flush-guard is valid only for transition')
     if a.action == 'compare':
         print(json.dumps(compare_session(a.run), indent=2))
         return
