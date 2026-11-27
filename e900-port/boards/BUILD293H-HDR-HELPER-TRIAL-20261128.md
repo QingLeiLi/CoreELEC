@@ -22,3 +22,5 @@ HLG先从新软件启动（非断电冷启动）开始：init等待、网络READ
 已上传独立28MiB内核与脚本，部署后将检查BOOT_IMAGE、new boot_id、余量、init和开关。首播与物理结果待记录。本地原包`../trial-hdr293/legacy-hdr-kernel`。
 
 新boot `d6929b25-28a5-4768-91b1-0edcdac3dcf5`，BOOT_IMAGE=e900-Image293H，init1、hdr_mode0、flush0起步。旧接收进程已退出，重新启动UDP6667接收至本地trial-hdr293/293H-netconsole.log并确认唯一READY后释放初始化。播放前仅设置hdr_mode2，Open HLG一次，运行目录/storage/e900-hdr293/293H-hlg-auto2-01。实读cur_signal_type=0x35091209、hlg_process_mode=5、HEVC帧数推进/错误0。首播原包导出及物理画面反馈尚待完成；此处不因参数或解码正常判转换通过。FAT余44.7MiB，293与293L保留，未写eMMC。
+
+首播采集结束：65536条后overflow=1，缺受保护显示读回，结果INCOMPLETE；解码1243帧、错误0、disable0。不能用溢出窗口证明全部写者缺失或全链路通过。没有重试、没有重播，等待本次HLG画面/颜色反馈。后续分析需优先留存已记录前缀并解决高频legacy写入的观测量问题，不自动补播。
