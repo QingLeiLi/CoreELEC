@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**HDR10/HLG实测（2026-11-28，当前结果）**：293L上两者HEVC Main10解码、PQ/HLG识别成立，默认hdr_mode0均偏灰（HLG更灰），HDR→SDR未通过；接收端EDID无HDR能力，未验证直通。用户授权只改当前HLG hdr_mode0→2后黑屏；4499条无溢出，PROC_MATCH=5，真实VD1 HLG_SDR+OSD HDR_BYPASS及HDR2写者命中，对应尚未转换的hlg_process内部G12分支。不能据此判芯片无HDR硬件。黑屏后仅只读，设备保持hdr_mode2/flush0，无重播/恢复。下一步若继续先核对格式helper，不能简单默认mode2。见[格式结果与原包](HDR-FORMAT-VALIDATION-20261128.md)。
+
+
 **legacy CSC正式源码候选（2026-11-28，当前步骤）**：将293L通过的五处选择原样源码化为默认decoder补丁`0044-gxlx2-legacy-sdr-csc-routing.patch`，仅限GXLX2，未安装cache-deferral候选。五个实际谓词host测试确认其它CPU ID0..127不变；全部helper/write body不变，完整补丁应用、HDR/debug/init/采集/缓存回归通过。HDR10/HLG/SDR→HDR专用helper仍有独立G12分支，已列表，不宣称全HDR修复。下一项源码ARM构建decoder/image，source_trace关、VDIN沿用开启；本轮未触发构建或操作设备。详见[正式修复与格式边界](LEGACY-CSC-FIX-20261128.md)。
 
 

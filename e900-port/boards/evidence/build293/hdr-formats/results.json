@@ -1,0 +1,46 @@
+{
+  "kernel": "Build293L five-selector binary trial",
+  "display_hdr_cap": {
+    "PQ": false,
+    "HLG": false
+  },
+  "HDR10": {
+    "boot": "e5d0b080-a277-42d2-b277-58e4d964a6fe",
+    "signal_type": "0x35091009",
+    "feedback": "bars and blinking visible, overall gray",
+    "hdr_mode": 0,
+    "capture": "9441 rows, no overflow; protected display reads missing; INCOMPLETE"
+  },
+  "HLG_default": {
+    "boot": "e247a573-2c9d-40ae-834c-35872d5f3aab",
+    "signal_type": "0x35091209",
+    "feedback": "same, more gray",
+    "hdr_mode": 0,
+    "capture": "8762 rows, no overflow; startup display coverage incomplete"
+  },
+  "HLG_auto2": {
+    "same_boot_as": "HLG_default",
+    "stimulus": "one runtime hdr_mode 0->2 write; no Stop/Open",
+    "feedback": "black",
+    "hdr_process_mode": 5,
+    "hlg_process_mode": 5,
+    "mode_enum": "PROC_MATCH=5, PROC_OFF=4",
+    "capture": "4499 rows, no overflow",
+    "observed_calls": [
+      {
+        "module": "VD1_HDR",
+        "request": "HLG_SDR",
+        "value": "0x10"
+      },
+      {
+        "module": "OSD1_HDR",
+        "request": "HDR_BYPASS",
+        "value": "0x1"
+      }
+    ],
+    "decoder": "continues, errors0",
+    "AVMUTE": 0
+  },
+  "last_device_state": "HLG black, hdr_mode2, flush0; no recovery/replay/reboot after black feedback",
+  "conclusion": "Main10 decoding and HDR transfer recognition observed; correct HDR->SDR display not passed. Hardware HDR capability remains unproved; exact SoC-specific authoritative evidence not established."
+}
