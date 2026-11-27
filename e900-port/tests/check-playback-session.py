@@ -30,8 +30,8 @@ def row(i,phase,reg,value=0,source=1,kind=2,session=8,handle=0):
 
 def covered(phase):
     rows=[row(0,phase,1,8)]
-    for code in (3,11,12,13,14,8,9):
-        rows.append(row(len(rows),phase,code,handle=1 if code in (8,9) else 0))
+    for code in (3,11,12,13,14,8,9,18):
+        rows.append(row(len(rows),phase,code,value=7 if code==18 else 0,handle=1 if code in (8,9) else 0))
     for reg in (0x1a50,0x1d26,0x1d28,0x3800):
         rows.append(row(len(rows),phase,reg,source=5,kind=7))
     return rows
@@ -44,7 +44,15 @@ assert not M['display_coverage'](wrong)['complete']
 wrong=copy.deepcopy(rows)
 for r in wrong:
     if r['reg'] in (8,9):r['handle']=2
-assert not M['display_coverage'](wrong)['complete']
+assert M['display_coverage'](wrong)['complete']
+assert not M['display_coverage'](wrong)['disposition']['hdr_requested']
+# Explicit CSC no-change/unsupported PPS are observed no-ops, not missing hooks.
+skipped=[r for r in copy.deepcopy(rows) if not (r['source']==1 and r['reg'] in (8,9))]
+for r in skipped:
+    if r['source']==1 and r['reg']==18:r['value']=6
+    if r['source']==1 and r['reg']==14:r['reg']=15
+assert M['display_coverage'](skipped)['complete']
+assert M['display_coverage'](skipped)['disposition']['pps_unsupported']
 wrong=copy.deepcopy(rows);wrong.append(row(len(wrong),1,11))
 assert not M['display_coverage'](wrong)['complete']
 # Live prefixes grow within a page; pages can contain a later append. Never
@@ -76,21 +84,46 @@ finally:A['snapshot']=prior
 with tempfile.TemporaryDirectory() as directory:
     root=Path(directory)
     docs={}
-    for name,phase in [('first',1),('reference',1),('transition',2)]:
+    for generation,(name,phase) in enumerate([('first',1),('reference',1),('transition',2)],1):
         folder=root/name;folder.mkdir()
         rs=covered(1) if name=='first' else [row(0,1,0,1,kind=1),row(1,1,0x1d28,3,source=5,kind=7),row(2,1,0x1d28,4,source=5,kind=7)]+[row(3+i,1,reg,source=5,kind=7) for i,reg in enumerate((0x1a50,0x1d26,0x3800))]
         if name=='first':rs.insert(0,row(0,1,0,1,kind=1))
         if name=='transition':rs=[row(0,2,0,2,kind=1),row(1,2,1,1),row(2,2,2,1),row(3,3,0,3,kind=1)]+covered(3)
-        for i,r in enumerate(rs):r['index']=i;r['stamp']=100+i
-        st=dict(generation=1,status=2,count=len(rs),capacity=65536,overflow=0,phase=3 if name=='transition' else 1)
+        for i,r in enumerate(rs):
+            r['index']=i;r['stamp']=generation*100+i;r['generation']=generation
+            if name=='transition' and r['phase']==3:r['session']=10
+        st=dict(generation=generation,status=2,count=len(rs),capacity=65536,overflow=0,phase=3 if name=='transition' else 1)
         text='\n'.join(' '.join(str(r[k]) if i<2 else format(r[k],'x') for i,k in enumerate(A['FIELDS'])) for r in rs)
         doc=dict(boot_id='boot',state=st,pages=[text],records=rs,after=dict(disable='0',global_output='1',**{'global':'1'}));docs[name]=doc
         (folder/('stop.json' if name=='transition' else 'first.json')).write_text(json.dumps(doc))
-        (folder/('stop.owner.json' if name=='transition' else 'first.owner.json')).write_text(json.dumps(dict(boot_id='boot',generation=1)))
-        (folder/'manifest.json').write_text(json.dumps(dict(boot_id='boot')))
-        result=dict(boot_id='boot',status='COVERED_REQUIRES_VISUAL',file='test',confirmed_normal=name=='reference',stop_boundary=dict(context={'decoder':'No vdec.','disable':'1'}))
+        (folder/('stop.owner.json' if name=='transition' else 'first.owner.json')).write_text(json.dumps(dict(boot_id='boot',generation=generation)))
+        (folder/'manifest.json').write_text(json.dumps(dict(boot_id='boot',collector_sha256='a'*64)))
+        result=dict(boot_id='boot',before=dict(checked_policy={'test':'0'}),state=st,runner_sha256='b'*64,status='COVERED_REQUIRES_VISUAL',file='test',confirmed_normal=name=='reference',stop_boundary=dict(context={'decoder':'No vdec.','disable':'1'}))
         (folder/'result.json').write_text(json.dumps(result))
     assert M['compare_session'](root)['classification']=='REVIEW_REQUIRED'
+    # Same boot and individually valid pages are insufficient if phases were
+    # collected out of order, by different tools, or from another provider.
+    baseline=(root/'reference/result.json').read_text()
+    forged=json.loads(baseline);forged['runner_sha256']='c'*64
+    (root/'reference/result.json').write_text(json.dumps(forged))
+    try:M['compare_session'](root)
+    except ValueError:pass
+    else:raise AssertionError('Mixed executor accepted')
+    (root/'reference/result.json').write_text(baseline)
+    original_ref=copy.deepcopy(docs['reference'])
+    def save_doc(name,d):
+        d['pages']=['\n'.join(' '.join(str(r[k]) if i<2 else format(r[k],'x') for i,k in enumerate(A['FIELDS'])) for r in d['records'])]
+        (root/name/('stop.json' if name=='transition' else 'first.json')).write_text(json.dumps(d))
+    for change in ('time','session'):
+        d=copy.deepcopy(original_ref)
+        for r in d['records']:
+            if change=='time':r['stamp']=0
+            elif r['source']==5:r['session']=999
+        save_doc('reference',d)
+        try:M['compare_session'](root)
+        except ValueError:pass
+        else:raise AssertionError('Mixed/reordered reference accepted')
+    save_doc('reference',original_ref)
     d=docs['transition'];d['records'][1]['value']=8
     d['pages']=['\n'.join(' '.join(str(r[k]) if i<2 else format(r[k],'x') for i,k in enumerate(A['FIELDS'])) for r in d['records'])]
     (root/'transition/stop.json').write_text(json.dumps(d))
@@ -158,3 +191,14 @@ with tempfile.TemporaryDirectory() as directory:
     subprocess.run(['cc','-std=gnu99','-Wall','-Wextra','-Werror',str(c),'-o',str(exe)],check=True)
     subprocess.run([str(exe)],check=True)
 print('PASS: actual session-first toggle note repeats on replay sessions, excludes fake frames and preserves upstream first_picture policy')
+
+# Leftover experimental or verbose state must be rejected before media RPC.
+def policy(module,name):
+    if name in ('gxlx2_pixel_scan','gxlx2_edge_scan'):return 'status=0 owned=0'
+    return 'N' if name in ('gxlx2_g12_mif','gxlx2_gen3_clear_high','gxlx2_osd_blender_only') else '0'
+assert M['checked_policy'](policy)
+for bad in ('gxlx2_gen3_clear_high','gxlx2_osd_blender_only','gxlx2_debug_events'):
+    try:M['checked_policy'](lambda module,name:'1' if name==bad else policy(module,name))
+    except RuntimeError:pass
+    else:raise AssertionError('Leftover experiment/logging state accepted')
+print('PASS: display experiment and verbose-channel preflight checks reject leftover state')

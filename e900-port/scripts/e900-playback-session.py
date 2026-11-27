@@ -30,11 +30,11 @@ def display_coverage(rows):
         return {'complete': False, 'missing': ['provider_registration']}
     provider = registrations[-1]
     rows = [r for r in rows if r['index'] >= provider['index'] and r['session'] == provider['session']]
-    required = {3: 'first_frame', 11: 'dcu_entry', 12: 'dcu_exit',
-                13: 'pps_entry', 14: 'pps_exit', 8: 'hdr_request', 9: 'hdr_submitted'}
-    missing = [name for code, name in required.items()
-               if not any(code not in (8, 9) or r['handle'] == 1 for r in calls(rows, code))]
-    for entry, exit_code in ((11, 12), (13, 14)):
+    required = {3: 'first_frame', 11: 'dcu_entry', 13: 'pps_entry', 18: 'csc_return'}
+    missing = [name for code, name in required.items() if not calls(rows, code)]
+    # An observed no-op return is coverage, not proof of configuration success.
+    # vd_scaler_setting's unsupported return (15) replaces its normal exit (14).
+    for entry, exits in ((11, (12,)), (13, (14, 15))):
         pending = 0
         invalid = False
         for r in rows:
@@ -42,7 +42,7 @@ def display_coverage(rows):
                 continue
             if r['reg'] == entry:
                 pending += 1
-            elif r['reg'] == exit_code:
+            elif r['reg'] in exits:
                 pending -= 1
                 invalid |= pending < 0
         if pending or invalid:
@@ -58,11 +58,18 @@ def display_coverage(rows):
                 missing.append('unmatched_hdr_submission')
     if hdr_pending:
         missing.append('unreturned_hdr_request')
-    if any(calls(rows, code) for code in (15, 16, 17)):
-        missing.append('downstream_skipped_configuration')
+    for code, known in ((16, (1,)), (17, (1,2)), (18, tuple(range(1,8)))):
+        if any(r['value'] not in known for r in calls(rows, code)):
+            missing.append('unknown_return_reason_'+str(code))
     reads = {r['reg'] for r in rows if r['source'] == 5 and r['kind'] == 7}
     missing += ['read_'+hex(reg) for reg in (0x1a50, 0x1d26, 0x1d28, 0x3800) if reg not in reads]
     return {'complete': not missing, 'missing': missing,
+            'disposition': {'dcu_skipped': [r['value'] for r in calls(rows,16)],
+                            'pps_unsupported': bool(calls(rows,15)),
+                            'pps_skipped': [r['value'] for r in calls(rows,17)],
+                            'csc_returns': sorted({r['value'] for r in calls(rows,18)}),
+                            'hdr_requested': bool([r for r in calls(rows,8) if r['handle']==1]),
+                            'hdr_flush_disabled': bool([r for r in calls(rows,10) if r['handle']==1])},
             'scope': 'Selected software boundaries and guarded reads, not pixel proof'}
 
 
@@ -164,6 +171,32 @@ def wait_for(trace, predicate, timeout, stable=0):
     raise RuntimeError('Coverage/state timeout; no further media action permitted')
 
 
+def checked_policy(reader=None):
+    reader = reader or (lambda module, name: Path('/sys/module',module,'parameters',name).read_text().strip())
+    values = {}
+    for module, name in (('amvideo','gxlx2_g12_mif'), ('amvideo','gxlx2_gen3_clear_high'),
+                         ('fb','gxlx2_osd_blender_only')):
+        value = reader(module,name)
+        values[module+'.'+name] = value
+        if value not in ('N','0'):
+            raise RuntimeError('Display experiment still enabled: '+module+'.'+name)
+    for name in ('gxlx2_pixel_scan','gxlx2_edge_scan'):
+        value = dict(word.split('=',1) for word in reader('amvideo',name).split() if '=' in word)
+        if value.get('status') not in ('0','3','4') or value.get('owned','0') != '0':
+            raise RuntimeError('Pixel/edge probe active or not safely retired: '+name)
+        values['amvideo.'+name] = {key:value.get(key) for key in ('status','owned')}
+    for module in ('amvideo','am_vecm','rdma','rdma_mgr','fb','register_ops','di','vpu'):
+        for name in ('gxlx2_debug_events','gxlx2_gen3_rmw_events'):
+            try:
+                value = reader(module,name)
+            except FileNotFoundError:
+                continue  # This optional logging knob is not compiled in.
+            values[module+'.'+name] = value
+            if value != '0':
+                raise RuntimeError('Verbose event channel active: '+module+'.'+name)
+    return values
+
+
 def preflight():
     api = Path('/sys/module/rdma_mgr/parameters/gxlx2_playback_live_api')
     if not api.is_file() or api.read_text().strip() != '1':
@@ -180,6 +213,7 @@ def preflight():
         raise RuntimeError('Verbose legacy stage probes active')
     if Path('/sys/module/rdma/parameters/enable').read_text().strip() != '1,0':
         raise RuntimeError('RDMA policy differs from reference')
+    c['checked_policy'] = checked_policy()
     return c
 
 
@@ -289,6 +323,11 @@ def compare_session(run):
             raise ValueError('Incomplete session phase: '+name)
         if owner['generation'] != doc['state']['generation']:
             raise ValueError('Replaced generation')
+        if result.get('state') != doc['state']:
+            raise ValueError('Result belongs to another frozen window')
+        expected_phase = 3 if name == 'transition' else 1
+        if doc['state']['phase'] != expected_phase:
+            raise ValueError('Wrong final phase')
         rows = AUDIT['decode'](doc['pages'], doc['state'])
         if rows != doc['records']:
             raise ValueError('Altered raw records')
@@ -297,6 +336,20 @@ def compare_session(run):
         if name != 'transition' and any(r['phase'] != 1 for r in rows):
             raise ValueError('Mixed baseline phases')
         results[name], docs[name] = result, doc
+    hashes = {r.get('runner_sha256', '') for r in results.values()}
+    if len(hashes) != 1 or len(next(iter(hashes))) != 64:
+        raise ValueError('Missing/mixed executor versions')
+    policies = [r['before'].get('checked_policy') for r in results.values()]
+    if not policies[0] or any(policy != policies[0] for policy in policies):
+        raise ValueError('Missing/mixed experiment policy snapshots')
+    collectors = {json.loads((run/n/'manifest.json').read_text()).get('collector_sha256', '') for n in results}
+    if len(collectors) != 1 or len(next(iter(collectors))) != 64:
+        raise ValueError('Missing/mixed collector versions')
+    for left, right in (('first','reference'), ('reference','transition')):
+        if (docs[right]['state']['generation']-docs[left]['state']['generation']) & 0xffffffff != 1:
+            raise ValueError('Nonconsecutive experiment generations')
+        if docs[right]['records'][0]['stamp'] < docs[left]['records'][-1]['stamp']:
+            raise ValueError('Reordered/overlapping experiment windows')
     rows = docs['transition']['records']
     split = next((i for i,r in enumerate(rows) if r['source']==1 and r['kind']==1 and r['phase']==3), None)
     if split is None or any(r['phase']!=2 for r in rows[:split]) or any(r['phase']!=3 for r in rows[split:]):
@@ -311,6 +364,12 @@ def compare_session(run):
     reference = docs['reference']
     if not reference_ready(reference['records'], reference['after']):
         raise ValueError('Missing independent guarded reference samples')
+    baseline_session = [r for r in calls(docs['first']['records'],1) if r['value']==REG][-1]['session']
+    if any(r['session']!=baseline_session for r in reference['records'] if r['source']==5 and r['kind']==7):
+        raise ValueError('Normal reference belongs to another playback session')
+    replay_session = [r for r in calls(rows[split:],1) if r['value']==REG][-1]['session']
+    if replay_session == baseline_session:
+        raise ValueError('Replay did not enter a new provider session')
     if len({r['file'] for r in results.values()}) != 1:
         raise ValueError('File changed')
     # Continuous transition proves the recorder had no freeze/re-arm gap;
@@ -318,6 +377,9 @@ def compare_session(run):
     return {'classification': 'REVIEW_REQUIRED', 'boot_id': boot,
             'localization': AUDIT['localization'](docs['first']['records'], rows[split:]),
             'reference_records': docs['reference']['records'],
+            'normal_reference_readback_comparison': AUDIT['localization'](
+                [r for r in reference['records'] if r['source']==5],
+                [r for r in rows[split:] if r['source']==5]),
             'continuous_transition': rows,
             'limitations': ['Visual replay outcome must be supplied separately.',
                             'Coverage gates do not prove physical pixel output or complete delayed-work teardown.']}

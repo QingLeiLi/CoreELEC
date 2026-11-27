@@ -6,7 +6,7 @@ Build292证明旧的“decoder出现后等120ms”会漏显示初始化，三段
 
 需要新0043内核：只读`gxlx2_playback_live_api=1`，65536条有界append-only记录（约3MiB静态内存），同锁下导出8条前缀，活动期也可读取；用户态核对generation、行号、溢出。切换phase重置16组安全读预算，不重置generation/提交批次，Stop→replay不冻结、不重新arm。ring-only路径采完固定寄存器即返回，避免逐帧pr_info；原显式legacy快照仍保留。首帧事件改为每个软件生命周期session首次非fake toggle，不再依赖上游first_picture重配置策略；它是软件显示调用边界，不是硬件出图证明。没有改变显示策略、HDR处理、寄存器允许表或新增任意MMIO。
 
-新工具先检查版本、容量、init完成、hold0/HDR实验N/RDMA1,0/global1及旧verbose探针关闭。旧固件缺接口会在媒体动作前失败，不尝试猜测兼容。
+新工具先检查版本、容量、init完成、hold0/HDR实验N/RDMA1,0/global1及旧verbose探针关闭。旧固件缺接口会在媒体动作前失败，不尝试猜测兼容。还检查G12 MIF/GEN3/OSD实验关闭、pixel/edge探针退出及verbose事件预算为0，保存所检查策略；不自动替用户清理开关。
 
 ```sh
 # TOOLS为本次部署的debug-tools目录，RUN必须是全新目录。
@@ -18,11 +18,11 @@ python3 "$TOOLS/e900-playback-session.py" transition --run "$RUN"
 python3 "$TOOLS/e900-playback-session.py" compare --run "$RUN" > "$RUN/comparison.json"
 ```
 
-首播/重播完成判据：同一最新provider会话中的首帧、配对DCU/PPS调用、VD1 HDR请求/提交及活动态固定读回，且disable=0，条件持续300ms；并非解码帧计数。缺hook、调用跳过、超时、错代或溢出均记`INCOMPLETE`，不自动补播、不自动重试、不宣布硬件损坏。该判据刻意保守：合法路径若没有这些事件，也需要审查原记录后修正覆盖模型，不绕过门槛。
+首播/重播窗口判据：同一最新provider会话中的首帧、DCU/PPS调用及已知返回、CSC返回原因、活动态固定读回，且disable=0，条件持续300ms；只有实际发起VD1 HDR请求时才要求配对提交。unsupported/null-input/no-signal-change等已知返回单独记入disposition，不当作缺日志，也不当作配置成功；并非解码帧计数。缺hook、未知返回原因、未配对请求/返回、超时、错代或溢出均记`INCOMPLETE`，不自动补播、不自动重试、不宣布硬件损坏。该判据刻意保守：合法路径若没有这些事件，也需要审查原记录后修正覆盖模型，不绕过门槛。
 
 正常参考另存原页，需用户明确确认、同boot/文件、活动层，至少两次非零FIFO与MIF/misc/HDR读回。FIFO非零本身不是画面证据；零值与用户画面冲突时停止，不继续制造故障。
 
-Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应。超时则只导出原记录，绝不执行重播。
+Stop阶段等待provider UNREG（固定头文件值1）、disable请求1、No vdec、disable=1持续300ms；随后在**同一代**内标记phase3并重播。它不保证每个内核延迟工作都已完成，但延迟清理与重播之间没有记录器重置造成的空隙。RPC同时保存发送/返回boottime和响应。比较器要求首播→参考→转换的generation连续、kernel stamp不倒序、同一执行器/采集器版本与所检查策略，正常参考属于首播会话而重播属于新会话；同时输出正常参考对重播的实际读回差异。超时则只导出原记录，绝不执行重播。
 
 容量扩大仍不保证任意时长完整，6秒默认timeout也不是覆盖保证。达到上限仍明确溢出冻结，不能用重新arm拼接。主机测试覆盖真实Build292反例、实时前缀、同代阶段切换、Stop超时禁止重播、静默ring路径及补丁应用；完整ARM构建、新hook实机可达性、观察开销与实际画面尚待验证。
 
