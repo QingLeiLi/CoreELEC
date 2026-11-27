@@ -1,0 +1,55 @@
+Subject: [SDR EXPERIMENT] five source counterparts of Build293L binary selectors
+
+Not installed by default. Format-specific HDR/HLG helpers still require
+capability review. This is the source equivalent of the limited SDR trial.
+
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -5614,7 +5614,8 @@
+ 	};
+ 	int i, j, p_sel;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
++	    !is_meson_gxlx2_cpu()) {
+ 		if (gamut_conv_enable)
+ 			gamut_convert_process(
+ 				vinfo, source_type,
+@@ -8155,7 +8156,8 @@
+ 	memcpy(&receiver_hdr_info, &vinfo->hdr_info,
+ 			sizeof(struct hdr_info));
+ 
+-	if (!cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
++	if (!cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) ||
++	    is_meson_gxlx2_cpu())
+ 		hdr_support_process(vinfo, vd_path);
+ 
+ 	if (vf && vinfo)
+@@ -8210,7 +8212,8 @@
+ 			return 0;
+ 		}
+ 
+-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
++	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++	    !is_meson_gxlx2_cpu()) {
+ 		enum vd_path_e oth_path =
+ 			(vd_path == VD1_PATH) ? VD2_PATH : VD1_PATH;
+ 
+@@ -8268,7 +8271,8 @@
+ 		}
+ 	}
+ 
+-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
++	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++	    !is_meson_gxlx2_cpu()) {
+ 		if ((vd_path == VD1_PATH)
+ 		|| ((vd_path == VD2_PATH)
+ 		&& !is_video_layer_on(VD1_PATH)
+@@ -8327,6 +8331,7 @@
+ 		SIG_SRC_CHG | SIG_HDR_OOTF_CHG | SIG_FORCE_CHG | SIG_RANGE_CHG |
+ 		SIG_CUVA_HDR_MODE))) {
+ 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++		!is_meson_gxlx2_cpu() &&
+ 		(get_cpu_type() != MESON_CPU_MAJOR_ID_TL1)) {
+ 			if (vd_path == VD1_PATH && e900_edge_tracking()) {
+ 				e900_csc_last_branch = 1; e900_csc_post_count++;
