@@ -1,0 +1,264 @@
+Subject: [DIAGNOSTIC] bind VDIN pre-ACK slot completion to snapshot payload
+
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.h
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.h
+@@ -431,6 +431,20 @@
+ 	u32 event_sts;
+ };
+ 
++/* Capture-only pre-ACK evidence. Protected by devp->isr_lock in the ISR. */
++struct e900_vdin_slot_meta {
++	u64 completion_generation;
++	u64 done_jiffies;
++	u64 frame_timestamp;
++	u64 slot_dma_address; /* software vfmem_start[index], not Canvas LUT readback */
++	u32 session;
++	u32 frame_index;
++	u32 expected_canvas;
++	u32 observed_canvas;
++	bool preack_done;
++	bool timestamp_bound;
++};
++
+ struct vdin_dev_s {
+ 	struct cdev cdev;
+ 	struct device *dev;
+@@ -467,6 +481,9 @@
+ 	enum vdin_matrix_csc_e csc_idx;
+ 	struct vf_entry *curr_wr_vfe;
+ 	struct vf_entry *last_wr_vfe;
++	struct e900_vdin_slot_meta e900_slots[VDIN_CANVAS_MAX_CNT];
++	u64 e900_completion_generation;
++	u32 e900_capture_session;
+ 	unsigned int curr_field_type;
+ 	unsigned int curr_dv_flag;
+ 
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_ctl.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_ctl.c
+@@ -3482,6 +3482,36 @@
+ 				    DIRECT_DONE_STATUS_WID);
+ 
+ 		if (done) {
++			/* Capture ISR holds isr_lock. Record the just-completed
++			 * target before the existing ACK, with one narrow WR_CANVAS
++			 * read. No Canvas LUT selector is touched. */
++			if (devp->index == 1 &&
++			    devp->work_mode == VDIN_WORK_MD_E900_CAPTURE &&
++			    (devp->flags & VDIN_FLAG_DEC_STARTED) &&
++			    devp->curr_wr_vfe) {
++				u32 index = devp->curr_wr_vfe->vf.index;
++
++				if (index < VDIN_CANVAS_MAX_CNT &&
++				    index < devp->vfmem_max_cnt) {
++					struct e900_vdin_slot_meta *meta =
++						&devp->e900_slots[index];
++
++					meta->completion_generation =
++						++devp->e900_completion_generation;
++					meta->done_jiffies = jiffies_64;
++					meta->session = devp->e900_capture_session;
++					meta->frame_index = index;
++					meta->expected_canvas =
++						devp->curr_wr_vfe->vf.canvas0Addr & 0xff;
++					meta->observed_canvas =
++						vdin_get_canvas_id(offset);
++					meta->frame_timestamp = 0;
++					meta->slot_dma_address =
++						devp->vfmem_start[index];
++					meta->preack_done = true;
++					meta->timestamp_bound = false;
++				}
++			}
+ 			wr_bits(offset, VDIN_WR_CTRL, 1,
+ 				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
+ 			wr_bits(offset, VDIN_WR_CTRL, 0,
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_drv.c
+@@ -889,6 +889,12 @@
+ #endif
+ 
+ 	disable_irq(devp->irq);
++	/* disable_irq synchronizes the ISR before invalidating slot records. */
++	if (is_meson_gxlx2_cpu() && devp->index == 1 &&
++	    devp->work_mode == VDIN_WORK_MD_E900_CAPTURE) {
++		devp->e900_capture_session++;
++		memset(devp->e900_slots, 0, sizeof(devp->e900_slots));
++	}
+ 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2) && devp->index == 0 &&
+ 	    devp->vpu_crash_irq > 0)
+ 		disable_irq(devp->vpu_crash_irq);
+@@ -1100,6 +1106,11 @@
+ 		devp->rdma_enable = 0;
+ 		devp->work_mode = VDIN_WORK_MD_E900_CAPTURE;
+ 		devp->flags &= ~VDIN_FLAG_RDMA_ENABLE;
++		if (devp->index == 1) {
++			devp->e900_capture_session++;
++			memset(devp->e900_slots, 0,
++			       sizeof(devp->e900_slots));
++		}
+ 	}
+ 	devp->parm.port = para->port;
+ 	devp->parm.info.fmt = para->fmt;
+@@ -2554,6 +2565,19 @@
+ 	curr_wr_vf->type = last_field_type;
+ 	curr_wr_vf->type_original = curr_wr_vf->type;
+ 	curr_wr_vf->timestamp = jiffies_64;
++	if (is_meson_gxlx2_cpu() && devp->index == 1 &&
++	    devp->work_mode == VDIN_WORK_MD_E900_CAPTURE &&
++	    curr_wr_vf->index < VDIN_CANVAS_MAX_CNT) {
++		struct e900_vdin_slot_meta *meta =
++			&devp->e900_slots[curr_wr_vf->index];
++
++		if (meta->preack_done && !meta->timestamp_bound &&
++		    meta->session == devp->e900_capture_session &&
++		    meta->frame_index == curr_wr_vf->index) {
++			meta->frame_timestamp = curr_wr_vf->timestamp;
++			meta->timestamp_bound = true;
++		}
++	}
+ 
+ 	vdin_set_vframe_prop_info(curr_wr_vf, devp);
+ 	vdin_get_crc_val(curr_wr_vf, devp);
+--- a/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
++++ b/drivers/amlogic/media/vin/tvin/vdin/vdin_debug.c
+@@ -40,6 +40,7 @@
+ #include "vdin_canvas.h"
+ #include "vdin_vf.h"
+ #include <linux/vmalloc.h>
++#include <linux/crc32.h>
+ #include <linux/highmem.h>
+ #include <linux/delay.h>
+ #include "vdin_afbce.h"
+@@ -1672,24 +1673,39 @@
+ 	__le32 version, header_bytes, width, height, format_convert;
+ 	__le32 active_row_bytes, source_stride, frame_index, bitdepth, flags;
+ 	__le64 frame_timestamp, sample_jiffies, completion_count, payload_bytes;
++	/* v2: pre-ACK slot evidence and payload integrity; v1 was 80 bytes. */
++	__le64 completion_generation, done_jiffies, slot_timestamp;
++	__le64 postcopy_generation;
++	__le32 slot_session, expected_canvas, observed_canvas, payload_crc32;
++	/* Both software addresses: pre-ACK vfmem and copied pool offset. */
++	__le64 slot_dma_address, payload_dma_address;
+ };
+ 
+ /* Returns a private CPU copy; no borrowed vframe or device pointer escapes. */
+ static int e900_vdin_snapshot_copy(struct vdin_dev_s *devp,
+ 				  void **result, size_t *result_size)
+ {
++#if !IS_REACHABLE(CONFIG_CRC32)
++	*result = NULL;
++	*result_size = 0;
++	return -EOPNOTSUPP;
++#else
+ 	struct e900_vdin_snapshot_header *header;
+ 	struct vf_entry *vfe = NULL;
++	struct e900_vdin_slot_meta slot_meta = {0};
+ 	void *packet = NULL, *base;
+ 	unsigned int rows, stride, active, index = 0, row;
+ 	unsigned long flags, deadline;
+-	u64 requested_at;
++	u64 requested_at, postcopy_generation;
++	u32 postcopy_session;
++	u64 postcopy_timestamp;
++	u32 crc = ~0U, evidence_flags = 3;
+ 	unsigned int stale_frames = 0;
+ 	size_t payload, slot;
+ 	int ret, sync_ret;
+ 	bool cpu_owned = false;
+ 
+-	BUILD_BUG_ON(sizeof(struct e900_vdin_snapshot_header) != 80);
++	BUILD_BUG_ON(sizeof(struct e900_vdin_snapshot_header) != 144);
+ 	*result = NULL;
+ 	*result_size = 0;
+ 	if (!is_meson_gxlx2_cpu() || devp->index != 1)
+@@ -1785,6 +1801,8 @@
+ 				stale_frames++;
+ 				ret = -EAGAIN;
+ 			}
++			if (vfe)
++				slot_meta = devp->e900_slots[index];
+ 		}
+ 		spin_unlock_irqrestore(&devp->isr_lock, flags);
+ 		if (ret != -EAGAIN)
+@@ -1819,7 +1837,7 @@
+ 	header = packet;
+ 	memset(header, 0, sizeof(*header));
+ 	memcpy(header->magic, "E9VDIN1", 8);
+-	header->version = cpu_to_le32(1);
++	header->version = cpu_to_le32(2);
+ 	header->header_bytes = cpu_to_le32(sizeof(*header));
+ 	header->width = cpu_to_le32(active / 3);
+ 	header->height = cpu_to_le32(rows);
+@@ -1828,15 +1846,59 @@
+ 	header->source_stride = cpu_to_le32(stride);
+ 	header->frame_index = cpu_to_le32(index);
+ 	header->bitdepth = cpu_to_le32(8);
+-	/* Software ready-queue / DMA-sync checks, not an HDMI-valid assertion. */
+-	header->flags = cpu_to_le32(3);
++	/* Bits 0-1 retain v1 software checks. v2 evidence bits are below. */
++	if (slot_meta.preack_done)
++		evidence_flags |= BIT(2);
++	if (slot_meta.preack_done &&
++	    slot_meta.expected_canvas == slot_meta.observed_canvas)
++		evidence_flags |= BIT(3);
++	if (slot_meta.timestamp_bound &&
++	    slot_meta.frame_timestamp == vfe->vf.timestamp)
++		evidence_flags |= BIT(4);
++	if (slot_meta.completion_generation &&
++	    slot_meta.frame_index == index)
++		evidence_flags |= BIT(5);
++	if (slot_meta.session &&
++	    slot_meta.session == devp->e900_capture_session)
++		evidence_flags |= BIT(6);
+ 	header->frame_timestamp = cpu_to_le64(vfe->vf.timestamp);
+ 	header->sample_jiffies = cpu_to_le64(jiffies_64);
+ 	header->completion_count = cpu_to_le64(devp->frame_cnt);
+ 	header->payload_bytes = cpu_to_le64(payload);
+-	for (row = 0; row < rows; row++)
+-		memcpy((char *)packet + sizeof(*header) + row * active,
+-		       (char *)base + slot + (size_t)row * stride, active);
++	header->completion_generation =
++		cpu_to_le64(slot_meta.completion_generation);
++	header->done_jiffies = cpu_to_le64(slot_meta.done_jiffies);
++	header->slot_timestamp = cpu_to_le64(slot_meta.frame_timestamp);
++	header->slot_session = cpu_to_le32(slot_meta.session);
++	header->expected_canvas = cpu_to_le32(slot_meta.expected_canvas);
++	header->observed_canvas = cpu_to_le32(slot_meta.observed_canvas);
++	header->slot_dma_address = cpu_to_le64(slot_meta.slot_dma_address);
++	header->payload_dma_address = cpu_to_le64(devp->mem_start + slot);
++	for (row = 0; row < rows; row++) {
++		char *dest = (char *)packet + sizeof(*header) + row * active;
++
++		memcpy(dest, (char *)base + slot + (size_t)row * stride, active);
++		crc = crc32_le(crc, (const u8 *)dest, active);
++	}
++	header->payload_crc32 = cpu_to_le32(crc ^ ~0U);
++	/* The receiver owns vfe, but keep a generation check as evidence if
++	 * slot ownership unexpectedly changes during the CPU copy. */
++	spin_lock_irqsave(&devp->isr_lock, flags);
++	postcopy_generation = devp->e900_slots[index].completion_generation;
++	postcopy_session = devp->e900_slots[index].session;
++	postcopy_timestamp = devp->e900_slots[index].frame_timestamp;
++	spin_unlock_irqrestore(&devp->isr_lock, flags);
++	header->postcopy_generation = cpu_to_le64(postcopy_generation);
++	if (postcopy_generation == slot_meta.completion_generation &&
++	    postcopy_session == slot_meta.session &&
++	    postcopy_session == devp->e900_capture_session &&
++	    postcopy_timestamp == slot_meta.frame_timestamp &&
++	    postcopy_timestamp == vfe->vf.timestamp &&
++	    slot_meta.slot_dma_address == devp->vfmem_start[index] &&
++	    slot_meta.slot_dma_address == devp->mem_start + slot &&
++	    slot_meta.completion_generation)
++		evidence_flags |= BIT(7);
++	header->flags = cpu_to_le32(evidence_flags);
+ 	ret = 0;
+ out_frame:
+ 	if (cpu_owned) {
+@@ -1864,6 +1926,7 @@
+ out_device:
+ 	device_unlock(&devp->this_pdev->dev);
+ 	return ret;
++#endif
+ }
+ 
+ static int e900_vdin_snapshot_save(struct vdin_dev_s *devp, const char *path)

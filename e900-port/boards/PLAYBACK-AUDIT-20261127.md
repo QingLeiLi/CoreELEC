@@ -51,3 +51,11 @@ OSD source3 prepare的trigger/value=0表示**可变表窗口**，aux=RDMA_TABLE_
 代次隔离：批次号跨arm不归零，每代记录floor，迟到旧word/IRQ不进入新代；软件IRQ关联仍保留无硬件cookie限制。独立ring容量4096，满即冻结并置overflow，比较器拒绝。没有自动覆盖旧记录，也不会自动重试媒体操作。
 
 本轮完成检查：新内核ring/用户态比较器/HDR恢复状态测试、原HDR策略与写序、video-init-order，以及post2、video-pipeline、display-stage-hooks、gen3-rmw-osd、blend-boundary、blend-transition、submit-tables、runtime-sr均通过。USB产物导出检查通过，工具/doc已加入构建产物。新增OSD源文件固定基线hash已列入source-fixtures；旧合成测试仅补观测stub，保留原策略断言。display-stage增加连续无帧guard拒绝回归，确认新ring路径零MMIO、零日志、不消耗有效样本预算。缓存检查仍有本地reference文件缺失的既有限制；没有因此宣布全套CI或ARM编译通过。
+
+## 0039/0040扩展（本轮源码，尚未部署）
+
+0040在同一活动态保护与采样预算内追加HDR2_CTRL原值和既有mode2固定布局/PPS地址：1a69/1a6a、1a53..1a56、1d19/1d01/1d02/1d13/1d08/1d18/1d0d。上文“仅5项读回”是0038的原覆盖，最新读回以本段及FULL-CHAIN-OBSERVABILITY-20261127.md为准。没有新增LUT/selector写。
+
+首播与重播冻结可显式加`--hdmi-status`保存现有TX config/avmute状态，Stop阶段会跳过。`config`含硬件和软件字段，`hpd_state`是软件HPD，AVMUTE getter读现有硬件状态，不构成线上的有效像素证明。
+
+0039回采新包使用明确v2头格式并关联preACK完成槽；必须配套新inspect和loopback工具。像素候选报告/回环报告补充boot_id，避免跨启动拼接证据。旧v1可离线复核，但不满足新的槽关联要求。

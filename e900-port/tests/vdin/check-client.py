@@ -3,18 +3,28 @@ import os
 import importlib.util,json,struct,zlib,subprocess,tempfile,shlex
 H=Path(os.environ["E900_CAPTURE_TEST_ROOT"])
 s=importlib.util.spec_from_file_location('snapshot_client',H/'inspect-snapshot.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
-b=(H/'synthetic.e9cap').read_bytes();meta,pixels=m.inspect(b);assert meta['width']==2 and pixels==bytes(range(32,38))+bytes(range(40,46));cases=1
+b=(H/'synthetic.e9cap').read_bytes();meta,pixels=m.inspect(b);assert meta['width']==2 and pixels==bytes(range(32,38))+bytes(range(40,46)) and meta['slot_association_valid'] and meta['payload_crc32_valid'];cases=1
 values=list(m.HEADER.unpack_from(b))
-for field,value in [(0,b'badmagic'),(1,2),(2,79),(3,0),(3,1921),(4,0),(4,1081),(6,7),(7,5),(8,10),(9,10),(10,0),(14,11)]:
+for field,value in [(0,b'badmagic'),(1,3),(2,79),(3,0),(3,1921),(4,0),(4,1081),(6,7),(7,5),(8,10),(9,10),(10,0),(14,11)]:
  modified=values.copy();modified[field]=value
- try:m.inspect(m.HEADER.pack(*modified)+pixels)
+ try:m.inspect(m.HEADER.pack(*modified)+b[m.HEADER.size:])
  except ValueError:pass
  else:raise AssertionError((field,value))
  cases+=1
-for broken in [b'',b[:79],b[:-1],b+b'\0']:
+for broken in [b'',b[:79],b[:143],b[:-1],b+b'\0']:
  try:m.inspect(broken)
  except ValueError:pass
  else:raise AssertionError('Bad length accepted')
+ cases+=1
+# v1 remains inspectable for historical evidence but cannot meet the new association gate.
+legacy_values=values.copy();legacy_values[1:3]=[1,80];legacy_values[10]=3
+legacy=m.HEADER.pack(*legacy_values) + pixels
+assert not m.inspect(legacy)[0]['slot_association_valid'];cases+=1
+for offset in [10*4+8,80+24,80+32,80+40,80+64,80+72,144]:
+ tampered=bytearray(b);tampered[offset]^=1
+ try:bad_meta,_=m.inspect(bytes(tampered))
+ except ValueError:pass
+ else:assert not bad_meta['slot_association_valid'],offset
  cases+=1
 for order in ['RGB','BGR']:
  png=m.png(2,2,pixels,order);assert png[:8]==b'\x89PNG\r\n\x1a\n';i=8;idat=b''

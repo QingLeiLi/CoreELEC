@@ -27,6 +27,7 @@ int main(void){unsigned int cases=0;
  printf("PASS: %u actual DMA mapping/release cases; successful diagnostic pool is retained, failed mapping and other CPUs free normally.\n",cases);return 0;}
 '''
 service_pre=literal(P/'start.py','pre').replace('unsigned int matrix_pattern_mode;', 'unsigned int matrix_pattern_mode;bool e900_capture_pinned;')
+service_pre=service_pre.replace('bool e900_capture_pinned;', 'bool e900_capture_pinned;unsigned int e900_capture_session;unsigned char e900_slots[10];')
 service_pre=service_pre.replace('#define CONFIG_CMA 1','#define CONFIG_CMA 1\n#define VDIN_WORK_MD_E900_CAPTURE 2').replace('unsigned int matrix_pattern_mode;', 'unsigned int matrix_pattern_mode,work_mode;')
 service_main=literal(P/'start.py','main')
 service_main=service_main.replace(' printf("PASS: %u actual service-function cases;', ''' init();devs[1].e900_capture_pinned=true;assert(start_tvin_service(1,&param)==-EBUSY&&!locks&&!starts&&!allocations);cases++;

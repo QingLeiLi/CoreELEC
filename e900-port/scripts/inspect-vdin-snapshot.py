@@ -4,18 +4,36 @@ import argparse,collections,hashlib,json,struct,zlib
 from pathlib import Path
 HEADER=struct.Struct('<8s10I4Q')
 NAMES=['version','header_bytes','width','height','format_convert','active_row_bytes','source_stride','frame_index','bitdepth','flags','frame_timestamp','sample_jiffies','completion_count','payload_bytes']
+EXT_V2=struct.Struct('<4Q4I2Q')
+EXT_NAMES=['completion_generation','done_jiffies','slot_timestamp','postcopy_generation','slot_session','expected_canvas','observed_canvas','payload_crc32','slot_dma_address','payload_dma_address']
 def inspect(data):
  if len(data)<HEADER.size:raise ValueError('Truncated snapshot header')
  values=HEADER.unpack_from(data);meta=dict(zip(NAMES,values[1:]))
  if values[0]!=b'E9VDIN1\0':raise ValueError('Wrong snapshot magic')
- if meta['version']!=1 or meta['header_bytes']!=HEADER.size:raise ValueError('Unsupported snapshot version/header')
+ version=meta['version'];header_bytes=meta['header_bytes']
+ if (version,header_bytes) not in ((1,HEADER.size),(2,HEADER.size+EXT_V2.size)):
+  raise ValueError('Unsupported snapshot version/header')
+ if len(data)<header_bytes:raise ValueError('Truncated snapshot extension')
  if not 0<meta['width']<=1920 or not 0<meta['height']<=1080:raise ValueError('Invalid snapshot dimensions')
  row=meta['width']*3;expected=row*meta['height']
  if meta['active_row_bytes']!=row or meta['source_stride']<row or meta['frame_index']>=10:raise ValueError('Invalid snapshot layout/index')
- if meta['bitdepth']!=8 or meta['flags']!=3:raise ValueError('Unsupported bit depth or incomplete software checks')
- if meta['payload_bytes']!=expected or len(data)!=HEADER.size+expected:raise ValueError('Truncated payload or trailing bytes')
- pixels=data[HEADER.size:];counts=collections.Counter(pixels[i:i+3] for i in range(0,len(pixels),3))
- meta.update(packet_sha256=hashlib.sha256(data).hexdigest(),payload_sha256=hashlib.sha256(pixels).hexdigest(),unique_triplets=len(counts),dominant_triplets=[{'bytes':list(c),'pixels':n} for c,n in counts.most_common(12)],interpretation='Packed three-byte samples; channel order and color space require calibration. Software checks do not prove HDMI output.')
+ if meta['bitdepth']!=8 or (meta['flags']!=3 if version==1 else (meta['flags']&3)!=3):raise ValueError('Unsupported bit depth or incomplete software checks')
+ if meta['payload_bytes']!=expected or len(data)!=header_bytes+expected:raise ValueError('Truncated payload or trailing bytes')
+ pixels=data[header_bytes:]
+ if version==2:
+  meta.update(zip(EXT_NAMES,EXT_V2.unpack_from(data,HEADER.size)))
+  meta['payload_crc32_valid']=zlib.crc32(pixels)==meta['payload_crc32']
+  meta['slot_association_valid']=(
+   meta['flags']==255 and meta['completion_generation']>0 and
+   meta['completion_generation']==meta['postcopy_generation'] and
+   meta['slot_session']>0 and 0<meta['done_jiffies']<=meta['slot_timestamp']==meta['frame_timestamp']<=meta['sample_jiffies'] and
+   meta['expected_canvas']==meta['observed_canvas'] and meta['expected_canvas']<=255 and
+   meta['slot_dma_address']>0 and meta['slot_dma_address']==meta['payload_dma_address'] and
+   meta['payload_crc32_valid'])
+ else:
+  meta['slot_association_valid']=False
+ counts=collections.Counter(pixels[i:i+3] for i in range(0,len(pixels),3))
+ meta.update(packet_sha256=hashlib.sha256(data).hexdigest(),payload_sha256=hashlib.sha256(pixels).hexdigest(),unique_triplets=len(counts),dominant_triplets=[{'bytes':list(c),'pixels':n} for c,n in counts.most_common(12)],interpretation='Packed three-byte samples; channel order and color space require calibration. Slot addresses are driver software values, not Canvas LUT hardware readback; association and CRC do not prove pixel freshness or HDMI output.')
  return meta,pixels
 def png(width,height,pixels,order):
  if order=='BGR':pixels=b''.join(pixels[i:i+3][::-1] for i in range(0,len(pixels),3))

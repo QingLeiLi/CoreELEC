@@ -42,7 +42,9 @@ def collect(root=Path('/'), timeout=15):
     root=Path(root)
     base=root/'sys/module/amvideo/parameters'
     scan,page,data=[base/name for name in ('gxlx2_pixel_scan','gxlx2_pixel_page','gxlx2_pixel_data')]
-    report={'schema':1,'point':'legacy_vpp_matrix_sparse_candidates',
+    boot_path=root/'proc/sys/kernel/random/boot_id'
+    boot_id=boot_path.read_text().strip() if boot_path.is_file() else None
+    report={'boot_id':boot_id,'schema':1,'point':'legacy_vpp_matrix_sparse_candidates',
             'calibration_status':'unverified','physical_tap_verified':False,
             'atomic_frame':False,'records':[], 'monotonic_start':time.monotonic()}
     if not all(p.is_file() for p in (scan,page,data)):

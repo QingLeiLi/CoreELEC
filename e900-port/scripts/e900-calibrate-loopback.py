@@ -10,7 +10,6 @@ import argparse
 import runpy
 import json
 import hashlib
-import struct
 from pathlib import Path
 import shutil
 import subprocess
@@ -107,6 +106,7 @@ def main():
         result=run(command,timeout=25)
         report[label+'_state_path']=result.strip();save()
 
+    inspector=runpy.run_path(str(scripts/'inspect-vdin-snapshot.py'))
     def pair(label):
         if a.control_only:
             return
@@ -120,11 +120,11 @@ def main():
             observation_end=time.monotonic()
             source=Path(packet);target=out/(label+'_'+str(i)+'.e9cap')
             data=source.read_bytes()
-            header=struct.unpack_from('<8s10I4Q',data)
-            if header[0]!=b'E9VDIN1\0' or header[1:3]!=(1,80) or header[10]!=3 or len(data)!=80+header[14]:
-                raise ValueError('Invalid/incomplete completed packet')
             target.write_bytes(data)
-            report['captures'].append({'phase':label,'gui_before':gui_before,'gui_after':gui_after,'observation_start':observation_start,'observation_end':observation_end,'file':target.name,'source':packet,'sha256':hashlib.sha256(data).hexdigest(),'completion_count':header[13],'frame_timestamp':header[11],'sample_jiffies':header[12],'decoder':active()});save()
+            meta,_=inspector['inspect'](data)
+            if not meta['slot_association_valid']:
+                raise ValueError('Invalid/mismatched v2 VDIN slot association or payload CRC')
+            report['captures'].append({'phase':label,'gui_before':gui_before,'gui_after':gui_after,'observation_start':observation_start,'observation_end':observation_end,'file':target.name,'source':packet,'sha256':hashlib.sha256(data).hexdigest(),'completion_count':meta['completion_count'],'frame_timestamp':meta['frame_timestamp'],'sample_jiffies':meta['sample_jiffies'],'slot_association_valid':meta['slot_association_valid'],'decoder':active()});save()
             time.sleep(1)
     try:
         run(['python3',a.debug_tool,'arm','--budget','256'])

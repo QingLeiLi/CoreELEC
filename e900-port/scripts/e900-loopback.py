@@ -32,9 +32,12 @@ class Loopback:
         self.gui = gui or runpy.run_path(str(HERE / 'e900-debug.py'))['kodi_state']
         self.nonce = str(time.time_ns())
         self.previous_completion = self.previous_timestamp = None
+        self.previous_session = self.previous_generation = None
 
     def __call__(self, label):
-        report = dict(phase=label, point='legacy_ENCP_loopback', frames=[],
+        boot_path=Path('/proc/sys/kernel/random/boot_id')
+        report = dict(boot_id=boot_path.read_text().strip() if boot_path.is_file() else None,
+                      phase=label, point='legacy_ENCP_loopback', frames=[],
                       clock_recovery=False, physical_hdmi_observed=False,
                       decoding='BT601_limited_YUV444_reverse64; requires current-session route calibration')
         try:
@@ -47,7 +50,18 @@ class Loopback:
                 r = self.runner(['sh', str(HERE/'e900-capture-ready.sh'), name],
                                 env=env, capture_output=True, text=True, timeout=15, check=True)
                 source = Path(r.stdout.strip().splitlines()[-1])
-                data = source.read_bytes(); meta,pixels = INSPECT['inspect'](data)
+                data = source.read_bytes()
+                target = self.output/(label+'_'+str(i))
+                target.with_suffix('.e9cap').write_bytes(data)
+                meta,pixels = INSPECT['inspect'](data)
+                if not meta['slot_association_valid']:
+                    raise ValueError('Missing/mismatched v2 VDIN slot association or payload CRC')
+                if self.previous_session is not None and meta['slot_session'] != self.previous_session:
+                    raise ValueError('VDIN capture session changed during image pair')
+                if self.previous_generation is not None and meta['completion_generation'] <= self.previous_generation:
+                    raise ValueError('VDIN slot completion generation did not advance')
+                self.previous_session = meta['slot_session']
+                self.previous_generation = meta['completion_generation']
                 if meta['format_convert'] != 2:
                     raise ValueError('Uncalibrated loopback format')
                 for key,previous in [('completion_count',self.previous_completion),
@@ -57,8 +71,6 @@ class Loopback:
                 self.previous_completion = meta['completion_count']
                 self.previous_timestamp = meta['frame_timestamp']
                 rgb = INSPECT['decode_yuv444_bt601'](pixels,meta['width'],True)
-                target = self.output/(label+'_'+str(i))
-                target.with_suffix('.e9cap').write_bytes(data)
                 target.with_suffix('.png').write_bytes(INSPECT['png'](meta['width'],meta['height'],rgb,'RGB'))
                 meta.update(packet=str(target.with_suffix('.e9cap')), png=str(target.with_suffix('.png')),
                             rgb_sha256=hashlib.sha256(rgb).hexdigest(),

@@ -5,6 +5,7 @@ import collections
 import fcntl
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 import time
 
@@ -100,6 +101,30 @@ def snapshot():
     return result
 
 
+def hdmi_snapshot(context, getter=None):
+    """Only audited existing TX getters; no writes or arbitrary registers."""
+    base = Path('/sys/class/amhdmitx/amhdmitx0')
+    getter = getter or (lambda name: subprocess.run(
+        ['cat', str(base/name)], check=True, capture_output=True,
+        text=True, timeout=3).stdout.strip())
+    result = {'host_time_ns': time.time_ns(), 'scope': 'TX configuration/AVMUTE status, not pixels on wire',
+              'atomic_frame': False, 'values': {}}
+    try:
+        result['values']['hpd_state'] = getter('hpd_state')
+        if (result['values']['hpd_state'] != '1' or context.get('global') != '1' or
+            context.get('disable') != '0' or 'ammvdec_h264' not in context.get('decoder', '') or
+            context.get('mode') in (None, '', 'null', 'invalid')):
+            result['status'] = 'skipped_inactive'; return result
+        # show_config reads TX AVI/input configuration and PLL registers;
+        # show_avmute dispatches only MISC_READ_AVMUTE_OP -> read_avmute.
+        for name in ('config', 'avmute'):
+            result['values'][name] = getter(name)
+        result['status'] = 'collected_status_only'
+    except (OSError, subprocess.SubprocessError) as error:
+        result.update(status='unavailable', error=str(error))
+    return result
+
+
 def arm(run, phase):
     run.mkdir(parents=True, exist_ok=True)
     manifest = run/'manifest.json'
@@ -127,7 +152,7 @@ def arm(run, phase):
     print(json.dumps({'phase': phase, 'generation': armed['generation'], 'action': 'armed; perform only the separately authorized media action, then freeze promptly'}))
 
 
-def freeze(run, phase):
+def freeze(run, phase, hdmi=False):
     owner = json.loads((run/(phase+'.owner.json')).read_text())
     if owner['boot_id'] != BOOT.read_text().strip():
         raise RuntimeError('Boot changed; do not touch this recorder')
@@ -147,8 +172,12 @@ def freeze(run, phase):
     if state(read('scan')) != before:
         raise RuntimeError('State changed during export')
     rows = decode(pages, before)
-    new_json(run/(phase+'.json'), {'schema': 1, 'boot_id': owner['boot_id'],
-             'phase': phase, 'state': before, 'pages': pages, 'records': rows, 'after': snapshot()})
+    after = snapshot()
+    report = {'schema': 1, 'boot_id': owner['boot_id'], 'phase': phase,
+              'state': before, 'pages': pages, 'records': rows, 'after': after}
+    if hdmi:
+        report['hdmi'] = hdmi_snapshot(after) if phase != 'stop' else {'status': 'skipped_real_stop'}
+    new_json(run/(phase+'.json'), report)
     print(json.dumps({'phase': phase, 'rows': len(rows), 'overflow': before['overflow']}))
 
 
@@ -178,6 +207,7 @@ def compare(run):
             'replay_only': {k: b[k] for k in b.keys()-a.keys()}, 'changed_ordered_values': changes,
             'counts': {name: dict(collections.Counter(f"{SOURCES[r['source']]}:{KINDS[r['kind']]}" for r in rows)) for name, rows in parsed.items()},
             'lifecycle': {name: [dict(r, event=EVENTS.get(r['reg'], 'unknown')) for r in rows if r['source'] == 1 and r['kind'] == 2] for name, rows in parsed.items()},
+            'endpoint_status': {name: docs[name].get('hdmi', {'status': 'not_requested'}) for name in PHASES},
             'timeline': {name: rows for name, rows in parsed.items()},
             'limitations': ['Missing baseline is unknown, never zero/uninitialized.',
                            'Values retain repetition/order per address; full cross-address order is in timeline.',
@@ -191,13 +221,15 @@ def main():
     parser.add_argument('command', choices=('arm', 'freeze', 'compare'))
     parser.add_argument('--run', type=Path, required=True)
     parser.add_argument('--phase', choices=PHASES)
+    parser.add_argument('--hdmi-status', action='store_true', help='Freeze only: audited TX getters on active H264; never read on Stop')
     args = parser.parse_args()
     if args.command == 'compare':
         print(json.dumps(compare(args.run), indent=2)); return
     if not args.phase: parser.error('--phase required')
     with open('/run/e900-playback.lock', 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        (arm if args.command == 'arm' else freeze)(args.run, args.phase)
+        if args.command == 'arm': arm(args.run, args.phase)
+        else: freeze(args.run, args.phase, args.hdmi_status)
 
 
 if __name__ == '__main__':

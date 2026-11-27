@@ -1,0 +1,35 @@
+Subject: [DIAGNOSTIC] bounded active VD1 HDR control readback without bit interpretation
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -226,6 +226,30 @@
+ 	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
+ 		e900_hdr_recovery_video_session(), 0, 0,
+ 		VPP_FIFO_STATUS, fifo, epoch);
++	/* Fixed VD1 HDR2 control bank used by this GXLX2 pipeline. Raw
++	 * configuration only: no bypass interpretation or pixel-valid claim.
++	 * The surrounding existing active/legacy/bus guard excludes real Stop.
++	 * Never add this read to the opt-out legacy stage sampler alone.
++	 */
++	if (e900_playback_active()) {
++		/* Reuse the fixed safe layout/PPS addresses already in mode2's
++		 * register-only observations. No selector or LUT ports are read.
++		 */
++		static const u32 layout_pps[] = {
++			0x1a69, 0x1a6a, 0x1a53, 0x1a54, 0x1a55, 0x1a56,
++			0x1d19, 0x1d01, 0x1d02, 0x1d13, 0x1d08, 0x1d18, 0x1d0d
++		};
++		unsigned int i;
++		u32 hdr_ctrl = READ_VCBUS_REG(0x3800);
++
++		e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++			e900_hdr_recovery_video_session(), 0, 0,
++			0x3800, hdr_ctrl, epoch);
++		for (i = 0; i < ARRAY_SIZE(layout_pps); i++)
++			e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++				e900_hdr_recovery_video_session(), 0, 0,
++				layout_pps[i], READ_VCBUS_REG(layout_pps[i]), epoch);
++	}
+ 	pr_info("e900-stage epoch=%u mif idx=%u pts=%u live_gen=%x live_canvas=%x live_fmt=%x shadow_gen=%x shadow_canvas=%x shadow_fmt=%x\n",
+ 		epoch, vf->index, vf->pts, gen, canvas, fmt,
+ 		VSYNC_RD_MPEG_REG(mif->vd_if0_gen_reg),

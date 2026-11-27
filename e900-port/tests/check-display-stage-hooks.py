@@ -49,6 +49,7 @@ typedef uint32_t u32;typedef uint8_t u8;
 #define AIU_MEM_AIFIFO_MEM_CTL 255
 #define CODEC_OPS_START(...) ((void)0)
 #define CODEC_OPS_ERROR(...) ((void)0)
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 #define READ_ONCE(x) (x)
 #define WRITE_ONCE(x,v) ((x)=(v))
 #define VIDTYPE_COMPRESS (1U<<20)
@@ -75,12 +76,14 @@ static unsigned cmpxchg(unsigned *p,unsigned old,unsigned value){unsigned seen=*
 static void e900_debug_event(const char *s,u32 a,u32 b,u32 c,u32 d){(void)s;(void)a;(void)b;(void)c;(void)d;}
 /* The standalone 0038 ring is exercised in check-playback-timeline.py. */
 static bool e900_playback_direct_selected(u32 reg){(void)reg;return false;}
-static bool playback_available;static unsigned playback_taken;
+static bool playback_available;static unsigned playback_taken,hdr_reads_recorded;
+static bool e900_playback_active(void){return playback_available;}
 static bool e900_playback_sample_available(void){return playback_available;}
 static bool e900_playback_sample_take(void){playback_taken++;return true;}
 static u32 e900_hdr_recovery_video_session(void){return 0;}
 static void e900_playback_note(u32 source,u32 kind,u32 session,u32 batch,u32 handle,u32 reg,u32 value,u32 aux){
- (void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)reg;(void)value;(void)aux;
+ (void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)value;(void)aux;
+ if(reg==0x3800)hdr_reads_recorded++;
 }
 /* GEN3 provenance itself executes in check-gen3-rmw-osd.py. */
 static void e900_gen3_rmw(u32 reg,int handle,int mode,u32 start,u32 len,u32 hardware,u32 base,u32 result,int source,void*caller){(void)reg;(void)handle;(void)mode;(void)start;(void)len;(void)hardware;(void)base;(void)result;(void)source;(void)caller;}
@@ -102,7 +105,7 @@ static int atomic_read(atomic_t *a){return a->value;}
 static void atomic_inc(atomic_t *a){a->value++;}
 static bool codec_reg_bus_ready(u32 bus){return bus<BUS_MAX && amports_ops[bus];}
 static void fake_write(unsigned reg,unsigned val){(void)reg;(void)val;hw_writes++;}
-static unsigned live(unsigned r){assert(r>=0x1a50&&r<=0x1d5f);live_reads++;return r;}
+static unsigned live(unsigned r){assert((r>=0x1a50&&r<=0x1d5f)||(r==0x3800&&playback_available));live_reads++;return r;}
 static unsigned shadow(unsigned r){shadow_reads++;return r+1;}
 #define READ_VCBUS_REG(r) live(r)
 #define VSYNC_RD_MPEG_REG(r) shadow(r)
@@ -152,6 +155,9 @@ int main(void){
  assert(e900_stage_sample_ops.get(b,&p)>0&&!strcmp(b,"0"));
  assert(!e900_stage_sample_ops.set("8",&p));assert(!e900_stage_sample_ops.set("0",&p));
  e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(live_reads==16*8);
+ assert(!hdr_reads_recorded);
+ playback_available=true;e900_stage_output(0);
+ assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+30);
  return 0;
 }
 '''

@@ -57,3 +57,18 @@ try: M['decode'](pages(bad), st)
 except ValueError: pass
 else: raise AssertionError('Orphan word accepted')
 print('PASS: raw pages/boot/phase/overflow and batch ownership validated; repeated values/mutable OSD writes and missing baseline preserved; no hardware verdict inferred')
+
+# Audited TX reads never run config/AVMUTE on an inactive or disconnected output.
+context = {'global':'1','disable':'0','decoder':'ammvdec_h264','mode':'1080p60hz'}
+calls=[]
+def tx_get(name):
+    calls.append(name)
+    return {'hpd_state':'1','config':'test config','avmute':'0'}[name]
+report=M['hdmi_snapshot'](context,tx_get)
+assert report['status']=='collected_status_only' and calls==['hpd_state','config','avmute']
+calls.clear()
+assert M['hdmi_snapshot'](dict(context,disable='1'),tx_get)['status']=='skipped_inactive'
+assert calls==['hpd_state']
+calls.clear()
+assert M['hdmi_snapshot'](context,lambda name:'0')['status']=='skipped_inactive'
+print('PASS: TX getters require active H264/global/layer/mode/HPD; status never treated as physical pixel proof')
