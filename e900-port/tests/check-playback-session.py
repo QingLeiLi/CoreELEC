@@ -69,6 +69,11 @@ trace=M['LiveRows'](1,read,lambda name,value:writes.append((name,value)))
 assert len(trace.poll())==3
 visible[0]=len(stream)
 assert trace.poll()==stream
+# sysfs module-param show may append a blank line; frozen decoder already
+# ignores these. Live export must accept whitespace without losing any row.
+base_read=read
+blank_trace=M['LiveRows'](1,lambda name: base_read(name) + ('\n\n' if name=='data' else ''),lambda name,value:writes.append((name,value)))
+assert blank_trace.poll()==stream
 assert all(name=='page' for name,_ in writes)
 try:M['LiveRows'](2,read,lambda *_:None).poll()
 except RuntimeError:pass

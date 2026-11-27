@@ -145,6 +145,8 @@ class LiveRows:
             self.write('page', page)
             for line in self.read('data').splitlines():
                 words = line.split()
+                if not words:
+                    continue
                 if len(words) != len(AUDIT['FIELDS']):
                     raise RuntimeError('Malformed live row')
                 r = {key: int(value, 10 if i < 2 else 16)
@@ -367,6 +369,7 @@ def execute(args):
         report['status'] = 'COVERED_REQUIRES_VISUAL'
     except Exception as error:
         report['error'] = str(error)
+        report['primary_error'] = repr(error)
     finally:
         if not armed and (folder/(phase+'.owner.json')).exists():
             # arm() can fail after claiming a generation (e.g. snapshot I/O).

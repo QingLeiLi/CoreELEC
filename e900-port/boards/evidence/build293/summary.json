@@ -1,0 +1,81 @@
+{
+  "classification": "REVIEW_REQUIRED",
+  "boot_id": "ecc141d4-081a-4c44-8774-520dd54103ef",
+  "file": "/storage/videos/Test-H264-720p-20min.mp4",
+  "visual_contrast": {
+    "first": "reference_normal_user_confirmed",
+    "replay": "black",
+    "reported_current_picture": "black"
+  },
+  "replay_coverage": {
+    "complete": true,
+    "missing": [],
+    "display_epoch": 7,
+    "registration_epoch": 7,
+    "disposition": {
+      "dcu_skipped": [],
+      "pps_unsupported": false,
+      "pps_skipped": [],
+      "csc_returns": [
+        2,
+        6,
+        7
+      ],
+      "hdr_requested": false,
+      "hdr_flush_disabled": false
+    },
+    "scope": "Selected software boundaries and guarded reads, not pixel proof"
+  },
+  "transition_overflow": 0,
+  "outcome_readbacks_comparable": true,
+  "endpoint_status": {
+    "reference": {
+      "host_time_ns": 1795809617883448304,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    },
+    "replay_startup": {
+      "host_time_ns": 1795809630038486810,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    },
+    "confirmed_outcome": {
+      "host_time_ns": 1795809765707102499,
+      "scope": "TX configuration/AVMUTE status, not pixels on wire",
+      "atomic_frame": false,
+      "values": {
+        "hpd_state": "1",
+        "config": "cur_VIC: 16\ncur_video_param->VIC=16\nVIC: 16 1920x1080p60hz\nColour depth: 12-bit\nColourspace: YUV444\nColour range: default\nEOTF: SDR\nYCC colour range: limited\nColourimetry: BT.709\nPLL clock: 0xc00002b9, Vid clock div 0x000a78f0\naudio config: on\naudio on/off: on\naudio source: SPDIF\naudio type: L-PCM\naudio channel num: 2 channels\naudio sample rate: 44.1kHz\naudio sample size: 16bit\n3D config: off",
+        "avmute": "0"
+      },
+      "status": "collected_status_only"
+    }
+  },
+  "limitations": [
+    "Missing replay observations remain unknown, not proof hardware is healthy.",
+    "Outcome readback is a separate window after visual confirmation; not a continuous trace of the human response gap.",
+    "Selected software/configuration observations do not prove physical pixels or an earliest physical failure."
+  ],
+  "run": 46047603617,
+  "commit": "fb2ea8ae69",
+  "capture_fix": "sysfs empty-line parser, host regression passed; no kernel changes",
+  "counts": {
+    "first": 4438,
+    "reference": 276,
+    "transition": 10025,
+    "outcome": 222
+  },
+  "last_device_state": "muted black replay; no further media actions"
+}
