@@ -78,6 +78,7 @@ for relative, source in [
     ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
     ("debug-tools/e900-submit-trace.py", port / "scripts/e900-submit-trace.py"),
     ("debug-tools/e900-playback-audit.py", port / "scripts/e900-playback-audit.py"),
+    ("debug-tools/e900-playback-session.py", port / "scripts/e900-playback-session.py"),
     ("debug-tools/PLAYBACK-AUDIT-20261127.md", port / "boards/PLAYBACK-AUDIT-20261127.md"),
     ("debug-tools/FULL-CHAIN-OBSERVABILITY-20261127.md", port / "boards/FULL-CHAIN-OBSERVABILITY-20261127.md"),
     ("debug-tools/VD1-VPP-CONVERGENCE.md", port / "boards/VD1-VPP-CONVERGENCE.md"),

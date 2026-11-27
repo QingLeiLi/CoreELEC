@@ -156,8 +156,9 @@ int main(void){
  assert(!e900_stage_sample_ops.set("8",&p));assert(!e900_stage_sample_ops.set("0",&p));
  e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(live_reads==16*8);
  assert(!hdr_reads_recorded);
- playback_available=true;e900_stage_output(0);
- assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+34);
+ unsigned quiet_before=log_lines;playback_available=true;e900_stage_output(0);
+ assert(log_lines==quiet_before);
+ assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+23);
  return 0;
 }
 '''

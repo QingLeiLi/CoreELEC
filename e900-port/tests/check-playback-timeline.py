@@ -13,12 +13,21 @@ if end < 0:
 section = raw[start:end]
 body = "\n".join(line[1:] for line in section.splitlines()
                  if line.startswith("+") and not line.startswith("+++"))
+# Test the updated production header, including the 0043 live-reader contract.
+with tempfile.TemporaryDirectory(prefix="e900-live-header-") as directory:
+    root = Path(directory)
+    relative = "drivers/amlogic/media/common/rdma/e900_playback_trace.h"
+    target = root / relative; target.parent.mkdir(parents=True)
+    target.write_text(body + "\n")
+    subprocess.run(["git", "apply", "--include="+relative,
+                    str(patch.parent / "0043-gxlx2-live-playback-windows.patch")], cwd=root, check=True)
+    body = target.read_text()
 body = body.replace("#include <linux/jiffies.h>", "")
 assert "e900_playback_batch_floor" in body
 assert "e900_playback_samples < 16" in body
 assert "e900_playback_status = 2" in body
 assert "e900_playback_batch = 0" not in body
-assert "E900_PLAYBACK_CAP 4096" in body
+assert "E900_PLAYBACK_CAP 65536" in body
 assert "E900_PLAYBACK_PAGE 8" in body
 assert "e900_playback_normal_table(handle, trigger, table, count)" in raw
 assert "e900_playback_normal_end(handle, status, kind)" in raw
@@ -83,6 +92,9 @@ int main(void) {
     e900_playback_note(2, 4, 0, batch, 1, 0x3802, 0x55, 1);
     e900_playback_note(2, 5, 0, batch, 1, 0, 1, 2);
     assert(e900_playback_count == 6);
+    assert(e900_playback_live_api == 1);
+    assert(e900_playback_data_get(data, NULL) > 0); /* live read, no freeze */
+    assert(e900_playback_status == 1 && e900_playback_count == 6);
     assert(e900_playback_rows[2].session == 7 && e900_playback_rows[2].phase == 1);
     assert(e900_playback_scan_set("0", NULL) == 0);
     assert(e900_playback_data_get(data, NULL) > 0);
@@ -111,6 +123,11 @@ int main(void) {
     assert(e900_playback_samples == 1);
     assert(e900_playback_scan_set("0", NULL) == 0);
     assert(!e900_playback_sample_available());
+    assert(e900_playback_phase_set("3", NULL) == 0);
+    e900_playback_samples = 16;
+    old = e900_playback_generation;
+    assert(e900_playback_phase_set("2", NULL) == 0);
+    assert(e900_playback_samples == 0 && e900_playback_generation == old);
     assert(e900_playback_phase_set("3", NULL) == 0);
     assert(e900_playback_scan_set("1", NULL) == 0);
     for (i = 0; i < E900_PLAYBACK_CAP; i++)

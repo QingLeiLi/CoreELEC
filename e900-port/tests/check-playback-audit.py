@@ -31,7 +31,8 @@ with tempfile.TemporaryDirectory() as folder:
     save(); result=M['compare'](root)
     assert result['changed_ordered_values']['direct_write:1d04'] == {'first':[7,7], 'replay':[7]}
     assert 'direct_write:3800' in result['first_only'] and 'direct_write:3801' in result['replay_only']
-    assert result['classification']=='REVIEW_REQUIRED'
+    assert result['classification']=='INCOMPLETE_TRANSITION'
+    assert result['coverage_gate']['missing']['first']
     rejects('first', lambda d:d['state'].update(overflow=1))
     rejects('replay', lambda d:d.update(boot_id='foreign'))
     rejects('replay', lambda d:d['records'][1].update(value=999))

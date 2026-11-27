@@ -315,8 +315,18 @@ def compare(run):
                 result[f"{SOURCES[r['source']]}:{r['reg']:04x}"].append(r['value'])
         return dict(result)
     a, b = streams(parsed['first']), streams(parsed['replay'])
+    # Storage integrity alone is not display/teardown coverage. Historical
+    # separate windows remain useful raw data, never a complete transition.
+    missing = {}
+    for name in ('first', 'replay'):
+        codes = {r['reg'] for r in parsed[name] if r['source'] == 1 and r['kind'] == 2}
+        missing[name] = [EVENTS[code] for code in (3, 11, 12, 13, 14, 8, 9) if code not in codes]
+        if not any(r['source'] == 5 and r['kind'] == 7 for r in parsed[name]):
+            missing[name].append('safe_read')
     changes = {key: {'first': a[key], 'replay': b[key]} for key in a.keys() & b.keys() if a[key] != b[key]}
-    return {'schema': 1, 'boot_id': boot, 'classification': 'REVIEW_REQUIRED',
+    return {'schema': 1, 'boot_id': boot, 'classification': 'INCOMPLETE_TRANSITION',
+            'coverage_gate': {'missing': missing,
+                              'reason': 'Separate generations do not cover the Stop-to-replay gap; use continuous session collector'},
             'first_only': {k: a[k] for k in a.keys()-b.keys()},
             'replay_only': {k: b[k] for k in b.keys()-a.keys()}, 'changed_ordered_values': changes,
             'counts': {name: dict(collections.Counter(f"{SOURCES[r['source']]}:{KINDS[r['kind']]}" for r in rows)) for name, rows in parsed.items()},

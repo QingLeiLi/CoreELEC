@@ -209,6 +209,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-hdr-recovery.py"
           python3 "$PORT_ROOT/tests/check-playback-timeline.py"
           python3 "$PORT_ROOT/tests/check-playback-audit.py"
+          python3 "$PORT_ROOT/tests/check-playback-session.py"
           python3 "$PORT_ROOT/tests/check-vd1-call-boundaries.py"
           python3 "$PORT_ROOT/tests/check-downstream-returns.py"
           python3 "$PORT_ROOT/tests/check-pixel-preview.py"

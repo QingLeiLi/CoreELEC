@@ -1,0 +1,89 @@
+Subject: [DIAGNOSTIC] live append-only playback windows without verbose ring logging
+
+--- a/drivers/amlogic/media/common/rdma/e900_playback_trace.h
++++ b/drivers/amlogic/media/common/rdma/e900_playback_trace.h
+@@ -5,7 +5,7 @@
+ /* Separate from 0035's nine-column submit trace. Intent/prepare/IRQ/read
+  * remain distinct; an IRQ is not proof of pixel output. No MMIO under lock.
+  */
+-#define E900_PLAYBACK_CAP 4096
++#define E900_PLAYBACK_CAP 65536
+ #define E900_PLAYBACK_PAGE 8
+ struct e900_playback_row {
+ 	u64 stamp;
+@@ -14,6 +14,9 @@
+ static struct e900_playback_row e900_playback_rows[E900_PLAYBACK_CAP];
+ static DEFINE_SPINLOCK(e900_playback_lock);
+ static unsigned int e900_playback_status, e900_playback_generation;
++/* Append-only rows may be read while recording; versioned userspace contract. */
++static unsigned int e900_playback_live_api = 1;
++module_param_named(gxlx2_playback_live_api, e900_playback_live_api, uint, 0400);
+ static unsigned int e900_playback_count, e900_playback_overflow;
+ static unsigned int e900_playback_page, e900_playback_phase;
+ static u32 e900_playback_session, e900_playback_batch;
+@@ -240,6 +243,8 @@
+ 	if (!is_meson_gxlx2_cpu())
+ 		return -ENODEV;
+ 	spin_lock_irqsave(&e900_playback_lock, flags);
++	if (e900_playback_phase != phase)
++		e900_playback_samples = 0;
+ 	e900_playback_phase = phase;
+ 	e900_playback_add(1, 1, 0, 0, 0, 0, phase, 0);
+ 	spin_unlock_irqrestore(&e900_playback_lock, flags);
+@@ -260,10 +265,8 @@
+ 
+ 	(void)kp;
+ 	spin_lock_irqsave(&e900_playback_lock, flags);
+-	if (e900_playback_status == 1) {
+-		n = -EBUSY;
+-		goto out;
+-	}
++	/* Rows never change before re-arm; this lock serializes an eight-row
++	 * prefix read against append/re-arm. Reader must verify generation. */
+ 	if (e900_playback_page >= E900_PLAYBACK_CAP / E900_PLAYBACK_PAGE) {
+ 		n = -EINVAL;
+ 		goto out;
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -251,6 +251,10 @@
+ 				e900_hdr_recovery_video_session(), 0, 0,
+ 				layout_pps[i], READ_VCBUS_REG(layout_pps[i]), epoch);
+ 	}
++	/* Ring-only sampling must not format/emit the verbose stage snapshot.
++	 * Explicit legacy sampling retains the existing diagnostic output. */
++	if (!legacy_sample)
++		return;
+ 	pr_info("e900-stage epoch=%u mif idx=%u pts=%u live_gen=%x live_canvas=%x live_fmt=%x shadow_gen=%x shadow_canvas=%x shadow_fmt=%x\n",
+ 		epoch, vf->index, vf->pts, gen, canvas, fmt,
+ 		VSYNC_RD_MPEG_REG(mif->vd_if0_gen_reg),
+--- a/drivers/amlogic/media/video_sink/video.c
++++ b/drivers/amlogic/media/video_sink/video.c
+@@ -2278,10 +2278,24 @@
+ 	}
+ 
+ 	cur_dispbuf = vf;
+-	if (first_picture && vf)
+-		e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
+-			atomic_read(&e900_hdr_session), 0, 0,
+-			E900_PB_FIRST_FRAME, vf->index, vf->pts);
++	/* e900-session-first.begin: observe the first real toggle in each
++	 * software lifecycle session, including replay with a kept old frame.
++	 * first_picture also expresses upstream reconfiguration policy; it is
++	 * not our provider-session boundary. This note does not enable a layer
++	 * or prove a frame has reached hardware/HDMI.
++	 */
++	if (vf && !(vf->flag & VFRAME_FLAG_FAKE_FRAME)) {
++		static u32 e900_last_toggle_session = ~0U;
++		u32 session = atomic_read(&e900_hdr_session);
++
++		if (session != e900_last_toggle_session) {
++			e900_last_toggle_session = session;
++			e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++				session, 0, 0,
++				E900_PB_FIRST_FRAME, vf->index, vf->pts);
++		}
++	}
++	/* e900-session-first.end */
+ 
+ 	if (cur_dispbuf && omx_secret_mode)
+ 		cur_disp_omx_index = cur_dispbuf->omx_index;

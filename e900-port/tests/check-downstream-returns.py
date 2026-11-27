@@ -10,11 +10,12 @@ with tempfile.TemporaryDirectory(prefix='e900-returns-') as td:
   if row['repo']=='CoreELEC/linux-amlogic':
    p=root/row['path'];p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(AUDIT/'sources'/row['path'].replace('/','__'),p)
  names=['drivers/amlogic/media/video_sink/video_hw.c','drivers/amlogic/media/enhancement/amvecm/amcsc.c']
- before={}
+ before={};after={}
  for patch in sorted((PORT/'patches/linux').glob('*.patch')):
   if patch.name.startswith('0042-'): before={name:(root/name).read_text() for name in names}
   subprocess.run(['git','apply',str(patch)],cwd=root,check=True)
- after={name:(root/name).read_text() for name in names}
+  # Prove 0042 policy preservation at its own boundary, not unrelated later diagnostics.
+  if patch.name.startswith('0042-'): after={name:(root/name).read_text() for name in names}
  csc=after[names[1]]
  pattern=r'(?m)^(\t+)\{ /\* e900-csc-return (\d+) \*/\n\1\tif \(vd_path == VD1_PATH\)\n\1\t\te900_playback_note\(1, 2, e900_hdr_recovery_video_session\(\),\n\1\t\t\t0, vd_path, 18, \2, ([012])\);\n\1\treturn \3;\n\1\}'
  blocks=list(re.finditer(pattern,csc));assert len(blocks)==7
