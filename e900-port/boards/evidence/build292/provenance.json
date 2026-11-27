@@ -1,0 +1,8 @@
+{
+  "run": 45936122839,
+  "commit": "7c378a97a90dc187832222f834c08ee35e3d5a58",
+  "kernel": "unmodified source-built Image",
+  "hw_init_wait": 1,
+  "previous": "Existing Claude Nov26 15:36:29 kernel and original SYSTEM; original filenames retained",
+  "payload_bytes": 203827225
+}

@@ -1,0 +1,10 @@
+{
+  "host_time_ns": 1795795332703869393,
+  "boot_id": "1fc94561-e738-488d-a2ca-4695586ab346",
+  "decoder": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 762\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000",
+  "mode": "1080p60hz",
+  "global": "1",
+  "disable": "0",
+  "hold": "0",
+  "hdr_experiment": "N"
+}

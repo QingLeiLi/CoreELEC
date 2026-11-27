@@ -1,0 +1,23 @@
+{
+  "phase": "stop",
+  "boot_id": "1fc94561-e738-488d-a2ca-4695586ab346",
+  "steps": [
+    {
+      "method": "Application.SetVolume",
+      "response": {
+        "id": 41,
+        "jsonrpc": "2.0",
+        "result": 0
+      }
+    },
+    {
+      "method": "Player.Stop",
+      "response": {
+        "id": 41,
+        "jsonrpc": "2.0",
+        "result": "OK"
+      }
+    }
+  ],
+  "decoder": "No vdec.\n"
+}

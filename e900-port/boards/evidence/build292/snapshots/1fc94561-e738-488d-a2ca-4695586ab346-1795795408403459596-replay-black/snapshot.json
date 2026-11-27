@@ -1,0 +1,798 @@
+{
+  "schema": 1,
+  "label": "replay-black",
+  "utc": "2026-11-27T16:03:28.404510+00:00",
+  "monotonic_start": 229.242089316,
+  "interpretation": "interval observations, not an atomic hardware/pixel snapshot",
+  "before": {
+    "boot_id": {
+      "status": "ok",
+      "text": "1fc94561-e738-488d-a2ca-4695586ab346\n"
+    },
+    "cmdline": {
+      "status": "ok",
+      "text": "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=1 SYSTEM_IMAGE=SYSTEM292 BOOT_IMAGE=e900-Image292 ssh panic=10 loglevel=7 systemd.show_status=auto\n"
+    },
+    "version": {
+      "status": "ok",
+      "text": "Linux version 4.9.269 (runner@runnervm9f4oe) (gcc version 13.2.0 (GCC) ) #1 SMP PREEMPT Fri Nov 27 04:08:36 UTC 2026\n"
+    },
+    "uptime": {
+      "status": "ok",
+      "text": "229.24 766.13\n"
+    },
+    "interrupts": {
+      "status": "ok",
+      "text": "           CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:      22075      56177      28330      27842     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:        291          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:        152          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:        227          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         45          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         21          0        740          0     GIC-0  40 Edge      eth0\n 25:       5580          0          0       4581     GIC-0  62 Level     xhci-hcd:usb1\n 27:      13687          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          3          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0         46          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0          0          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       5912          0     GIC-0  76 Edge      vdec-1\n 35:      13470          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0          0     GIC-0 228 Edge      ir-meson\nIPI0:     25052      25786      13646      41346       Rescheduling interrupts\nIPI1:       353        430        394        396       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:         2          1          0          0       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0\n"
+    },
+    "memory": {
+      "status": "ok",
+      "text": "MemTotal:        1001492 kB\nMemFree:          397988 kB\nMemAvailable:     672224 kB\nBuffers:           76656 kB\nCached:           244376 kB\nSwapCached:            0 kB\nActive:           216232 kB\nInactive:         188912 kB\nActive(anon):      95000 kB\nInactive(anon):     7480 kB\nActive(file):     121232 kB\nInactive(file):   181432 kB\nUnevictable:           0 kB\nMlocked:               0 kB\nSwapTotal:             0 kB\nSwapFree:              0 kB\nDirty:                 4 kB\nWriteback:             0 kB\nAnonPages:         84260 kB\nMapped:            72796 kB\nShmem:             18368 kB\nSlab:              68356 kB\nSReclaimable:      33252 kB\nSUnreclaim:        35104 kB\nKernelStack:        2928 kB\nPageTables:         1444 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:      500744 kB\nCommitted_AS:     535064 kB\nVmallocTotal:   263061440 kB\nVmallocUsed:           0 kB\nVmallocChunk:          0 kB\nCmaTotal:         401408 kB\nCmaFree:          311488 kB\n"
+    },
+    "vfm": {
+      "status": "ok",
+      "text": "[00]  default { decoder(0) amvideo}\n[01]  dvblpath { dvbldec(0) amlvideo(0) ppmgr(0) deinterlace(0) amvideo}\n[02]  dvelpath { dveldec(0) dvel}\n[03]  dvhdmiin { dv_vdin(0) amvideo}\n[04]  vdec-map-0 { vdec.h264.00(1) amlvideo(1) ppmgr(1) deinterlace(1) amvideo}\n\nprovider list:\n   vdec.h264.00\n   amlvideo\n   ppmgr\n   deinterlace\n\nreceiver list:\n   video_render.0\n   video_render.1\n   amvideo\n   videopip\n   deinterlace\n   ppmgr\n   amlvideo\n   aml_video.1\n"
+    },
+    "decoder": {
+      "status": "ok",
+      "text": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 2145\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    "video_state": {
+      "status": "ok",
+      "text": "zoom_start_x_lines:0.zoom_end_x_lines:1279.\nzoom_start_y_lines:0.zoom_end_y_lines:719.\nframe parameters: pic_in_height 720.\nframe parameters: VPP_line_in_length_ 1280.\nvscale_skip_count 0.\nhscale_skip_count 0.\nsupscl_path 0.\nsupsc0_enable 0.\nsupsc1_enable 0.\nsupsc0_hori_ratio 0.\nsupsc1_hori_ratio 0.\nsupsc0_vert_ratio 0.\nsupsc1_vert_ratio 0.\nspsc0_h_in 720.\nspsc1_h_in 1080.\nspsc0_w_in 1280.\nspsc1_w_in 1920.\nvideo_input_w 1280.\nvideo_input_h 720.\nclk_in_pps 664000000.\nvpp_2pic_mode 0.\nvpp_3d_scale 0.\nvpp_3d_mode 0.\nhscale phase step 0xaaaac0.\nvscale phase step 0xaaaa80.\npps pre hsc enable 0.\npps pre vsc enable 0.\nhscale filter coef 0.\nvscale filter coef 0.\nvpp_vert_chroma_filter_en 0.\npost_blend_vd_h_start 0x0.\npost_blend_vd_h_end 0x77f.\npost_blend_vd_v_start 0x0.\npost_blend_vd_v_end 0x437.\nVPP_hd_start_lines_ 0x0.\nVPP_hd_end_lines_ 0x4ff.\nVPP_vd_start_lines_ 0x0.\nVPP_vd_end_lines_ 0x2cf.\nVPP_hsc_startp 0x0.\nVPP_hsc_endp 0x77f.\nVPP_vsc_startp 0x0.\nVPP_vsc_endp 0x437.\n"
+    },
+    "display_mode": {
+      "status": "ok",
+      "text": "1080p60hz\n"
+    },
+    "parameters": {
+      "am_vecm": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "amvideo": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_stage_samples": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_hw_init_status": {
+          "status": "ok",
+          "text": "2\n"
+        },
+        "gxlx2_hw_init_step": {
+          "status": "ok",
+          "text": "13\n"
+        },
+        "gxlx2_hw_init_wait": {
+          "status": "ok",
+          "text": "Y\n"
+        },
+        "gxlx2_g12_mif": {
+          "status": "ok",
+          "text": "N\n"
+        },
+        "gxlx2_gen3_clear_high": {
+          "status": "ok",
+          "text": "N\n"
+        },
+        "gxlx2_gen3_clear_high_submits": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_pixel_scan": {
+          "status": "ok",
+          "text": "generation=0 status=0 count=0 total=128 owned=0 restored=0 epoch=0 reason=0 guard=0 input=0x0 output=0x0\n\n"
+        },
+        "gxlx2_edge_scan": {
+          "status": "ok",
+          "text": "generation=0 status=0 count=0 tick=0 off=0 restored=0 reason=0 guard=0 x=0 y=0 mode=1\n\n"
+        }
+      },
+      "rdma": {
+        "enable": {
+          "status": "ok",
+          "text": "1,0\n"
+        },
+        "irq_count": {
+          "status": "ok",
+          "text": "13471,0\n"
+        },
+        "vsync_cfg_count": {
+          "status": "ok",
+          "text": "13475,0\n"
+        },
+        "force_rdma_config": {
+          "status": "ok",
+          "text": "0,0\n"
+        },
+        "gxlx2_debug_state": {
+          "status": "ok",
+          "text": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=1 force=0 irq=13471 configured=13475\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0\n\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_gen3_rmw_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_stall_frames": {
+          "status": "ok",
+          "text": "20\n"
+        },
+        "gxlx2_stall_rearms": {
+          "status": "ok",
+          "text": "3\n"
+        }
+      },
+      "di": {
+        "bypass_all": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "bypass_post": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "bypass_post_state": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "vpu": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "rdma_mgr": {
+        "gxlx2_submit_scan": {
+          "status": "ok",
+          "text": "generation=0 status=0 count=0 capacity=4096 overflow=0\n\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_debug_state": {
+          "status": "ok",
+          "text": "channel=0 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=1 used=0 items=0 writes=3 bytes=65536 keep=1 blocked=0 trigger=1\nchannel=2 used=0 items=0 writes=0 bytes=4096 keep=1 blocked=0 trigger=0\nchannel=3 used=0 items=0 writes=0 bytes=4096 keep=1 blocked=0 trigger=0\nchannel=4 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=5 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=6 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=7 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\n\n"
+        },
+        "gxlx2_gen3_rmw_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "fb": {
+        "gxlx2_osd_blender_only": {
+          "status": "ok",
+          "text": "N\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "osd_vpp_misc": {
+          "status": "ok",
+          "text": "4144\n"
+        }
+      },
+      "register_ops": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_gen3_rmw_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      }
+    }
+  },
+  "pixel_capture": {
+    "status": "not_requested"
+  },
+  "marker_written": true,
+  "probe_arm": {
+    "status": "ok"
+  },
+  "after": {
+    "boot_id": {
+      "status": "ok",
+      "text": "1fc94561-e738-488d-a2ca-4695586ab346\n"
+    },
+    "cmdline": {
+      "status": "ok",
+      "text": "boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=1 SYSTEM_IMAGE=SYSTEM292 BOOT_IMAGE=e900-Image292 ssh panic=10 loglevel=7 systemd.show_status=auto\n"
+    },
+    "version": {
+      "status": "ok",
+      "text": "Linux version 4.9.269 (runner@runnervm9f4oe) (gcc version 13.2.0 (GCC) ) #1 SMP PREEMPT Fri Nov 27 04:08:36 UTC 2026\n"
+    },
+    "uptime": {
+      "status": "ok",
+      "text": "230.27 770.02\n"
+    },
+    "interrupts": {
+      "status": "ok",
+      "text": "           CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:      22164      56880      28382      28002     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:        291          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:        152          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:        228          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         47          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         21          0        741          0     GIC-0  40 Edge      eth0\n 25:       5580          0          0       4583     GIC-0  62 Level     xhci-hcd:usb1\n 27:      13735          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          3          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0         46          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0          0          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       5975          0     GIC-0  76 Edge      vdec-1\n 35:      13516          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0          0     GIC-0 228 Edge      ir-meson\nIPI0:     25064      25828      13648      41386       Rescheduling interrupts\nIPI1:       353        430        394        396       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:         4          1          0          0       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0\n"
+    },
+    "memory": {
+      "status": "ok",
+      "text": "MemTotal:        1001492 kB\nMemFree:          397956 kB\nMemAvailable:     672212 kB\nBuffers:           76656 kB\nCached:           244396 kB\nSwapCached:            0 kB\nActive:           216336 kB\nInactive:         188912 kB\nActive(anon):      95092 kB\nInactive(anon):     7480 kB\nActive(file):     121244 kB\nInactive(file):   181432 kB\nUnevictable:           0 kB\nMlocked:               0 kB\nSwapTotal:             0 kB\nSwapFree:              0 kB\nDirty:                 4 kB\nWriteback:             0 kB\nAnonPages:         84316 kB\nMapped:            72816 kB\nShmem:             18368 kB\nSlab:              68392 kB\nSReclaimable:      33272 kB\nSUnreclaim:        35120 kB\nKernelStack:        2928 kB\nPageTables:         1452 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:      500744 kB\nCommitted_AS:     535064 kB\nVmallocTotal:   263061440 kB\nVmallocUsed:           0 kB\nVmallocChunk:          0 kB\nCmaTotal:         401408 kB\nCmaFree:          311488 kB\n"
+    },
+    "vfm": {
+      "status": "ok",
+      "text": "[00]  default { decoder(0) amvideo}\n[01]  dvblpath { dvbldec(0) amlvideo(0) ppmgr(0) deinterlace(0) amvideo}\n[02]  dvelpath { dveldec(0) dvel}\n[03]  dvhdmiin { dv_vdin(0) amvideo}\n[04]  vdec-map-0 { vdec.h264.00(1) amlvideo(1) ppmgr(1) deinterlace(1) amvideo}\n\nprovider list:\n   vdec.h264.00\n   amlvideo\n   ppmgr\n   deinterlace\n\nreceiver list:\n   video_render.0\n   video_render.1\n   amvideo\n   videopip\n   deinterlace\n   ppmgr\n   amlvideo\n   aml_video.1\n"
+    },
+    "decoder": {
+      "status": "ok",
+      "text": "vdec channel 0 statistics:\n  device name : ammvdec_h264-00\n  frame width : 1280\n frame height : 720\n   frame rate : 30 fps\n     bit rate : 0 kbps\n       status : 6\n    frame dur : 3200\n   frame data : 0 KB\n  frame count : 2176\n   drop count : 0\nfra err count : 0\n hw err count : 0\n   total data : 0 KB\nratio_control : 9000\n\n"
+    },
+    "video_state": {
+      "status": "ok",
+      "text": "zoom_start_x_lines:0.zoom_end_x_lines:1279.\nzoom_start_y_lines:0.zoom_end_y_lines:719.\nframe parameters: pic_in_height 720.\nframe parameters: VPP_line_in_length_ 1280.\nvscale_skip_count 0.\nhscale_skip_count 0.\nsupscl_path 0.\nsupsc0_enable 0.\nsupsc1_enable 0.\nsupsc0_hori_ratio 0.\nsupsc1_hori_ratio 0.\nsupsc0_vert_ratio 0.\nsupsc1_vert_ratio 0.\nspsc0_h_in 720.\nspsc1_h_in 1080.\nspsc0_w_in 1280.\nspsc1_w_in 1920.\nvideo_input_w 1280.\nvideo_input_h 720.\nclk_in_pps 664000000.\nvpp_2pic_mode 0.\nvpp_3d_scale 0.\nvpp_3d_mode 0.\nhscale phase step 0xaaaac0.\nvscale phase step 0xaaaa80.\npps pre hsc enable 0.\npps pre vsc enable 0.\nhscale filter coef 0.\nvscale filter coef 0.\nvpp_vert_chroma_filter_en 0.\npost_blend_vd_h_start 0x0.\npost_blend_vd_h_end 0x77f.\npost_blend_vd_v_start 0x0.\npost_blend_vd_v_end 0x437.\nVPP_hd_start_lines_ 0x0.\nVPP_hd_end_lines_ 0x4ff.\nVPP_vd_start_lines_ 0x0.\nVPP_vd_end_lines_ 0x2cf.\nVPP_hsc_startp 0x0.\nVPP_hsc_endp 0x77f.\nVPP_vsc_startp 0x0.\nVPP_vsc_endp 0x437.\n"
+    },
+    "display_mode": {
+      "status": "ok",
+      "text": "1080p60hz\n"
+    },
+    "parameters": {
+      "am_vecm": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "amvideo": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_stage_samples": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_hw_init_status": {
+          "status": "ok",
+          "text": "2\n"
+        },
+        "gxlx2_hw_init_step": {
+          "status": "ok",
+          "text": "13\n"
+        },
+        "gxlx2_hw_init_wait": {
+          "status": "ok",
+          "text": "Y\n"
+        },
+        "gxlx2_g12_mif": {
+          "status": "ok",
+          "text": "N\n"
+        },
+        "gxlx2_gen3_clear_high": {
+          "status": "ok",
+          "text": "N\n"
+        },
+        "gxlx2_gen3_clear_high_submits": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_pixel_scan": {
+          "status": "ok",
+          "text": "generation=0 status=0 count=0 total=128 owned=0 restored=0 epoch=0 reason=0 guard=0 input=0x0 output=0x0\n\n"
+        },
+        "gxlx2_edge_scan": {
+          "status": "ok",
+          "text": "generation=0 status=0 count=0 tick=0 off=0 restored=0 reason=0 guard=0 x=0 y=0 mode=1\n\n"
+        }
+      },
+      "rdma": {
+        "enable": {
+          "status": "ok",
+          "text": "1,0\n"
+        },
+        "irq_count": {
+          "status": "ok",
+          "text": "13516,0\n"
+        },
+        "vsync_cfg_count": {
+          "status": "ok",
+          "text": "13520,0\n"
+        },
+        "force_rdma_config": {
+          "status": "ok",
+          "text": "0,0\n"
+        },
+        "gxlx2_debug_state": {
+          "status": "ok",
+          "text": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=1 force=0 irq=13516 configured=13520\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0\n\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_gen3_rmw_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_stall_frames": {
+          "status": "ok",
+          "text": "20\n"
+        },
+        "gxlx2_stall_rearms": {
+          "status": "ok",
+          "text": "3\n"
+        }
+      },
+      "di": {
+        "bypass_all": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "bypass_post": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "bypass_post_state": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "vpu": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "rdma_mgr": {
+        "gxlx2_submit_scan": {
+          "status": "ok",
+          "text": "generation=0 status=0 count=0 capacity=4096 overflow=0\n\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_debug_state": {
+          "status": "ok",
+          "text": "channel=0 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=1 used=0 items=0 writes=3 bytes=65536 keep=1 blocked=0 trigger=1\nchannel=2 used=0 items=0 writes=0 bytes=4096 keep=1 blocked=0 trigger=0\nchannel=3 used=0 items=0 writes=0 bytes=4096 keep=1 blocked=0 trigger=0\nchannel=4 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=5 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=6 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\nchannel=7 used=0 items=0 writes=0 bytes=0 keep=1 blocked=0 trigger=0\n\n"
+        },
+        "gxlx2_gen3_rmw_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      },
+      "fb": {
+        "gxlx2_osd_blender_only": {
+          "status": "ok",
+          "text": "N\n"
+        },
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "osd_vpp_misc": {
+          "status": "ok",
+          "text": "4144\n"
+        }
+      },
+      "register_ops": {
+        "gxlx2_debug_events": {
+          "status": "ok",
+          "text": "0\n"
+        },
+        "gxlx2_gen3_rmw_events": {
+          "status": "ok",
+          "text": "0\n"
+        }
+      }
+    }
+  },
+  "kodi": {
+    "status": "ok",
+    "result": [
+      {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "result": [
+          {
+            "playerid": 1,
+            "playertype": "internal",
+            "type": "video"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "jsonrpc": "2.0",
+        "result": {
+          "percentage": 5.994500160217285,
+          "speed": 1,
+          "time": {
+            "hours": 0,
+            "milliseconds": 934,
+            "minutes": 1,
+            "seconds": 11
+          }
+        }
+      },
+      {
+        "id": 3,
+        "jsonrpc": "2.0",
+        "result": {
+          "currentcontrol": {
+            "label": ""
+          },
+          "currentwindow": {
+            "id": 12005,
+            "label": "Fullscreen video"
+          },
+          "fullscreen": true
+        }
+      }
+    ]
+  },
+  "dmesg_status": 0,
+  "lifecycle_since_arm": [],
+  "interval_status": "bounded_by_markers",
+  "observations": [
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "idx": "266",
+        "pts": "6401999",
+        "live_gen": "38400043",
+        "live_canvas": "5a5958",
+        "live_fmt": "20310c11",
+        "shadow_gen": "38400043",
+        "shadow_canvas": "5a5958",
+        "shadow_fmt": "20310c11"
+      },
+      "line": "[  229.336438@0]h e900-stage epoch=1 mif idx=266 pts=6401999 live_gen=38400043 live_canvas=5a5958 live_fmt=20310c11 shadow_gen=38400043 shadow_canvas=5a5958 shadow_fmt=20310c11"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "gen2": "1",
+        "gen3": "3033",
+        "fifo": "ff00c0",
+        "shadow_gen2": "1",
+        "shadow_gen3": "3033"
+      },
+      "line": "[  229.346293@0]h e900-stage epoch=1 layout gen2=1 gen3=3033 fifo=ff00c0 shadow_gen2=1 shadow_gen3=3033"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "luma_x": "4ff0000",
+        "luma_y": "2cf0000",
+        "sc": "78404",
+        "hphase": "aaaac0",
+        "vphase": "aaaa80",
+        "matrix": "7000"
+      },
+      "line": "[  229.355339@0]h e900-stage epoch=1 pipe luma_x=4ff0000 luma_y=2cf0000 sc=78404 hphase=aaaac0 vphase=aaaa80 matrix=7000"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "requested": "100054b0",
+        "live": "100054b0",
+        "shadow": "100054b0",
+        "post_h": "77f",
+        "post_v": "437",
+        "drop_vc": "93"
+      },
+      "line": "[  229.365862@0]h e900-stage epoch=1 blend requested=100054b0 live=100054b0 shadow=100054b0 post_h=77f post_v=437 drop_vc=93"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "black_path",
+        "osd1_ctrl": "5300001",
+        "afbc_enable": "0",
+        "clip0": "3fffffff",
+        "clip1": "0",
+        "vadj": "f",
+        "epoch": "1"
+      },
+      "line": "[  229.376729@0]h e900-snapshot kind=black_path osd1_ctrl=5300001 afbc_enable=0 clip0=3fffffff clip1=0 vadj=f epoch=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "software",
+        "enabled": "1",
+        "saved": "1",
+        "onoff": "0",
+        "disable": "0",
+        "global": "1",
+        "black": "0",
+        "property": "0",
+        "new_frame": "0",
+        "new_setting": "0",
+        "bypass_pps": "1",
+        "canvas_slot": "1",
+        "epoch": "1"
+      },
+      "line": "[  229.386992@0]h e900-snapshot kind=software enabled=1 saved=1 onoff=0 disable=0 global=1 black=0 property=0 new_frame=0 new_setting=0 bypass_pps=1 canvas_slot=1 epoch=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "frame",
+        "index": "266",
+        "pts": "6401999",
+        "flag": "10",
+        "planes": "2",
+        "width": "1280",
+        "height": "720",
+        "type": "9000",
+        "depth": "0"
+      },
+      "line": "[  229.401826@0]h e900-snapshot kind=frame index=266 pts=6401999 flag=10 planes=2 width=1280 height=720 type=9000 depth=0"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "mif",
+        "live_canvas0": "5a5958",
+        "shadow_canvas0": "5a5958",
+        "live_canvas1": "5d5c5b",
+        "shadow_canvas1": "5d5c5b",
+        "luma_x1": "4ff0000",
+        "luma_y1": "2cf0000",
+        "chroma_x0": "27f0000",
+        "chroma_y0": "1670000",
+        "repeat": "0",
+        "fmt_width": "5000280"
+      },
+      "line": "[  229.412442@0]h e900-snapshot kind=mif live_canvas0=5a5958 shadow_canvas0=5a5958 live_canvas1=5d5c5b shadow_canvas1=5d5c5b luma_x1=4ff0000 luma_y1=2cf0000 chroma_x0=27f0000 chroma_y0=1670000 repeat=0 fmt_width=5000280"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "route",
+        "viu_misc0": "0",
+        "viu_misc1": "f0000",
+        "hold": "8080808",
+        "ofifo": "fff00fff",
+        "blend_requested": "100054b0"
+      },
+      "line": "[  229.431496@0]h e900-snapshot kind=route viu_misc0=0 viu_misc1=f0000 hold=8080808 ofifo=fff00fff blend_requested=100054b0"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "canvas_cache",
+        "plane": "0",
+        "id": "58",
+        "addr": "27050000",
+        "width": "1280",
+        "height": "768",
+        "wrap": "0",
+        "block": "1"
+      },
+      "line": "[  229.442279@0]h e900-snapshot kind=canvas_cache plane=0 id=58 addr=27050000 width=1280 height=768 wrap=0 block=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "canvas_cache",
+        "plane": "1",
+        "id": "59",
+        "addr": "27140000",
+        "width": "1280",
+        "height": "384",
+        "wrap": "0",
+        "block": "1"
+      },
+      "line": "[  229.452283@0]h e900-snapshot kind=canvas_cache plane=1 id=59 addr=27140000 width=1280 height=384 wrap=0 block=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "canvas_cache",
+        "plane": "2",
+        "id": "5a",
+        "addr": "0",
+        "width": "0",
+        "height": "0",
+        "wrap": "0",
+        "block": "0"
+      },
+      "line": "[  229.462286@0]h e900-snapshot kind=canvas_cache plane=2 id=5a addr=0 width=0 height=0 wrap=0 block=0"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "idx": "266",
+        "pts": "6401999",
+        "live_gen": "38420043",
+        "live_canvas": "5a5958",
+        "live_fmt": "20310c11",
+        "shadow_gen": "38420043",
+        "shadow_canvas": "5a5958",
+        "shadow_fmt": "20310c11"
+      },
+      "line": "[  229.471428@0]h e900-stage epoch=1 mif idx=266 pts=6401999 live_gen=38420043 live_canvas=5a5958 live_fmt=20310c11 shadow_gen=38420043 shadow_canvas=5a5958 shadow_fmt=20310c11"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "gen2": "1",
+        "gen3": "33",
+        "fifo": "ff00c0",
+        "shadow_gen2": "1",
+        "shadow_gen3": "33"
+      },
+      "line": "[  229.486626@0]h e900-stage epoch=1 layout gen2=1 gen3=33 fifo=ff00c0 shadow_gen2=1 shadow_gen3=33"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "luma_x": "4ff0000",
+        "luma_y": "2cf0000",
+        "sc": "78404",
+        "hphase": "aaaac0",
+        "vphase": "aaaa80",
+        "matrix": "7000"
+      },
+      "line": "[  229.495324@0]h e900-stage epoch=1 pipe luma_x=4ff0000 luma_y=2cf0000 sc=78404 hphase=aaaac0 vphase=aaaa80 matrix=7000"
+    },
+    {
+      "source": "e900-stage",
+      "fields": {
+        "epoch": "1",
+        "requested": "100054b0",
+        "live": "100054b0",
+        "shadow": "100054b0",
+        "post_h": "77f",
+        "post_v": "437",
+        "drop_vc": "93"
+      },
+      "line": "[  229.505846@0]h e900-stage epoch=1 blend requested=100054b0 live=100054b0 shadow=100054b0 post_h=77f post_v=437 drop_vc=93"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "black_path",
+        "osd1_ctrl": "5300001",
+        "afbc_enable": "0",
+        "clip0": "3fffffff",
+        "clip1": "0",
+        "vadj": "f",
+        "epoch": "1"
+      },
+      "line": "[  229.516713@0]h e900-snapshot kind=black_path osd1_ctrl=5300001 afbc_enable=0 clip0=3fffffff clip1=0 vadj=f epoch=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "software",
+        "enabled": "1",
+        "saved": "1",
+        "onoff": "0",
+        "disable": "0",
+        "global": "1",
+        "black": "0",
+        "property": "0",
+        "new_frame": "0",
+        "new_setting": "0",
+        "bypass_pps": "1",
+        "canvas_slot": "1",
+        "epoch": "1"
+      },
+      "line": "[  229.526976@0]h e900-snapshot kind=software enabled=1 saved=1 onoff=0 disable=0 global=1 black=0 property=0 new_frame=0 new_setting=0 bypass_pps=1 canvas_slot=1 epoch=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "frame",
+        "index": "266",
+        "pts": "6401999",
+        "flag": "10",
+        "planes": "2",
+        "width": "1280",
+        "height": "720",
+        "type": "9000",
+        "depth": "0"
+      },
+      "line": "[  229.541811@0]h e900-snapshot kind=frame index=266 pts=6401999 flag=10 planes=2 width=1280 height=720 type=9000 depth=0"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "mif",
+        "live_canvas0": "5a5958",
+        "shadow_canvas0": "5a5958",
+        "live_canvas1": "5d5c5b",
+        "shadow_canvas1": "5d5c5b",
+        "luma_x1": "4ff0000",
+        "luma_y1": "2cf0000",
+        "chroma_x0": "27f0000",
+        "chroma_y0": "1670000",
+        "repeat": "0",
+        "fmt_width": "5000280"
+      },
+      "line": "[  229.552425@0]h e900-snapshot kind=mif live_canvas0=5a5958 shadow_canvas0=5a5958 live_canvas1=5d5c5b shadow_canvas1=5d5c5b luma_x1=4ff0000 luma_y1=2cf0000 chroma_x0=27f0000 chroma_y0=1670000 repeat=0 fmt_width=5000280"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "route",
+        "viu_misc0": "0",
+        "viu_misc1": "f0000",
+        "hold": "8080808",
+        "ofifo": "fff00fff",
+        "blend_requested": "100054b0"
+      },
+      "line": "[  229.571485@0]h e900-snapshot kind=route viu_misc0=0 viu_misc1=f0000 hold=8080808 ofifo=fff00fff blend_requested=100054b0"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "canvas_cache",
+        "plane": "0",
+        "id": "58",
+        "addr": "27050000",
+        "width": "1280",
+        "height": "768",
+        "wrap": "0",
+        "block": "1"
+      },
+      "line": "[  229.582266@0]h e900-snapshot kind=canvas_cache plane=0 id=58 addr=27050000 width=1280 height=768 wrap=0 block=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "canvas_cache",
+        "plane": "1",
+        "id": "59",
+        "addr": "27140000",
+        "width": "1280",
+        "height": "384",
+        "wrap": "0",
+        "block": "1"
+      },
+      "line": "[  229.592267@0]h e900-snapshot kind=canvas_cache plane=1 id=59 addr=27140000 width=1280 height=384 wrap=0 block=1"
+    },
+    {
+      "source": "e900-snapshot",
+      "fields": {
+        "kind": "canvas_cache",
+        "plane": "2",
+        "id": "5a",
+        "addr": "0",
+        "width": "0",
+        "height": "0",
+        "wrap": "0",
+        "block": "0"
+      },
+      "line": "[  229.602271@0]h e900-snapshot kind=canvas_cache plane=2 id=5a addr=0 width=0 height=0 wrap=0 block=0"
+    }
+  ],
+  "monotonic_end": 230.329513733
+}

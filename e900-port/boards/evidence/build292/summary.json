@@ -1,0 +1,260 @@
+{
+  "run": 45936122839,
+  "commit": "7c378a97a90dc187832222f834c08ee35e3d5a58",
+  "boot_id": "1fc94561-e738-488d-a2ca-4695586ab346",
+  "visual": {
+    "first": "user confirmed colorbars normal",
+    "replay": "user confirmed black"
+  },
+  "state": "replay remains active, volume0; no recovery or additional media action after black report",
+  "windows": {
+    "first": {
+      "generation": 1,
+      "status": 2,
+      "count": 617,
+      "capacity": 4096,
+      "overflow": 0,
+      "phase": 1
+    },
+    "stop": {
+      "generation": 2,
+      "status": 2,
+      "count": 72,
+      "capacity": 4096,
+      "overflow": 0,
+      "phase": 2
+    },
+    "replay": {
+      "generation": 3,
+      "status": 2,
+      "count": 267,
+      "capacity": 4096,
+      "overflow": 0,
+      "phase": 3
+    }
+  },
+  "black_steady": {
+    "generation": 4,
+    "status": 2,
+    "count": 1617,
+    "capacity": 4096,
+    "overflow": 0,
+    "phase": 3
+  },
+  "readback_comparison": [
+    {
+      "register": "0x1a50",
+      "stop_begin_active_values": [
+        "0x38420043"
+      ],
+      "black_steady_values": [
+        "0x38420043"
+      ]
+    },
+    {
+      "register": "0x1a51",
+      "stop_begin_active_values": [
+        "0x5a5958"
+      ],
+      "black_steady_values": [
+        "0x5a5958"
+      ]
+    },
+    {
+      "register": "0x1a53",
+      "stop_begin_active_values": [
+        "0x4ff0000"
+      ],
+      "black_steady_values": [
+        "0x4ff0000"
+      ]
+    },
+    {
+      "register": "0x1a54",
+      "stop_begin_active_values": [
+        "0x2cf0000"
+      ],
+      "black_steady_values": [
+        "0x2cf0000"
+      ]
+    },
+    {
+      "register": "0x1a55",
+      "stop_begin_active_values": [
+        "0x27f0000"
+      ],
+      "black_steady_values": [
+        "0x27f0000"
+      ]
+    },
+    {
+      "register": "0x1a56",
+      "stop_begin_active_values": [
+        "0x1670000"
+      ],
+      "black_steady_values": [
+        "0x1670000"
+      ]
+    },
+    {
+      "register": "0x1a68",
+      "stop_begin_active_values": [
+        "0x20310c11"
+      ],
+      "black_steady_values": [
+        "0x20310c11"
+      ]
+    },
+    {
+      "register": "0x1a69",
+      "stop_begin_active_values": [
+        "0x5000280"
+      ],
+      "black_steady_values": [
+        "0x5000280"
+      ]
+    },
+    {
+      "register": "0x1a6a",
+      "stop_begin_active_values": [
+        "0x0"
+      ],
+      "black_steady_values": [
+        "0x0"
+      ]
+    },
+    {
+      "register": "0x1d01",
+      "stop_begin_active_values": [
+        "0x500"
+      ],
+      "black_steady_values": [
+        "0x500"
+      ]
+    },
+    {
+      "register": "0x1d02",
+      "stop_begin_active_values": [
+        "0x2d0"
+      ],
+      "black_steady_values": [
+        "0x2d0"
+      ]
+    },
+    {
+      "register": "0x1d08",
+      "stop_begin_active_values": [
+        "0xaaaa80"
+      ],
+      "black_steady_values": [
+        "0xaaaa80"
+      ]
+    },
+    {
+      "register": "0x1d0d",
+      "stop_begin_active_values": [
+        "0x2424"
+      ],
+      "black_steady_values": [
+        "0x2424"
+      ]
+    },
+    {
+      "register": "0x1d13",
+      "stop_begin_active_values": [
+        "0xaaaac0"
+      ],
+      "black_steady_values": [
+        "0xaaaac0"
+      ]
+    },
+    {
+      "register": "0x1d18",
+      "stop_begin_active_values": [
+        "0x240000"
+      ],
+      "black_steady_values": [
+        "0x240000"
+      ]
+    },
+    {
+      "register": "0x1d19",
+      "stop_begin_active_values": [
+        "0x78404"
+      ],
+      "black_steady_values": [
+        "0x78404"
+      ]
+    },
+    {
+      "register": "0x1d26",
+      "stop_begin_active_values": [
+        "0x100054b0"
+      ],
+      "black_steady_values": [
+        "0x100054b0"
+      ]
+    },
+    {
+      "register": "0x1d28",
+      "stop_begin_active_values": [
+        "0x401cffe",
+        "0x401effe"
+      ],
+      "black_steady_values": [
+        "0x0"
+      ]
+    },
+    {
+      "register": "0x3800",
+      "stop_begin_active_values": [
+        "0xd05f"
+      ],
+      "black_steady_values": [
+        "0x1c040"
+      ]
+    },
+    {
+      "register": "0x3802",
+      "stop_begin_active_values": [
+        "0x0"
+      ],
+      "black_steady_values": [
+        "0x4000000"
+      ]
+    },
+    {
+      "register": "0x3804",
+      "stop_begin_active_values": [
+        "0x0"
+      ],
+      "black_steady_values": [
+        "0x4000000"
+      ]
+    },
+    {
+      "register": "0x3806",
+      "stop_begin_active_values": [
+        "0x0"
+      ],
+      "black_steady_values": [
+        "0x400"
+      ]
+    },
+    {
+      "register": "0x380e",
+      "stop_begin_active_values": [
+        "0x0"
+      ],
+      "black_steady_values": [
+        "0x4000000"
+      ]
+    }
+  ],
+  "limitations": [
+    "First/replay freeze used decoder availability, not first displayed frame; no DCU/PPS/HDR initialization coverage in these windows.",
+    "Normal reference readbacks belong to Stop-start active-frame interval; not a separately sampled confirmed normal steady window.",
+    "Configuration differences are candidates, not proof of earliest pixel failure or causality.",
+    "No new VDIN pixel calibration or output capture was performed."
+  ]
+}

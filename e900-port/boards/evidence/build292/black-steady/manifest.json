@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "boot_id": "1fc94561-e738-488d-a2ca-4695586ab346",
+  "collector_sha256": "9753f214cc982745077e4834cd3c13c1697060d4cce5f47d5c767e058a1b9eb5",
+  "scope": "Bounded selected lifecycle/writer/readback records; not complete hardware execution or pixel proof"
+}
