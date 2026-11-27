@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**293H两个格式helper实验（2026-11-28，进行中）**：用户授权继续，在293L五处选择外仅新增HDR10/HLG各一处NOP走legacy入口，源候选0046未安装。原hash/opcode与ARM64反汇编核对、重复生成与错误源拒绝通过。USB新bootd6929b25，原293/293L回退保留，余44.7MiB；新日志READY后释放init，首播前hdr_mode2，Open HLG一次。cur_signal_type为HLG、mode5、解码推进错误0；画面及实际写者结果未判定。下一步仅等用户反馈并读原包，不自动重播。详见[293H实验](BUILD293H-HDR-HELPER-TRIAL-20261128.md)。
+
+
 **剩余G12调用核实（2026-11-28）**：确认HLG自动匹配后`video_process→hlg_process`内部CPU>=G12分支再次调用VD1 HLG_SDR/OSD HDR_BYPASS，真实index137–140与CTRL index146=e05f匹配。不同于Stop bypass的1c040，不混同单bit原因。HDR10/hdr10p/HLG→HDR/SDR→HDR四个helper也有源码可达G12入口，未假称本轮执行。完整栈真实谓词和原包核验通过，无设备动作。下一项可在用户授权下仅额外切换HDR10/HLG两个helper做低成本实验，不能据黑屏断言SoC无HDR能力。详见[函数级审计](HDR-G12-HELPER-AUDIT-20261128.md)。
 
 
