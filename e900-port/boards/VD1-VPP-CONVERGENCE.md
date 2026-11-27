@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**Build293白盒跟进（2026-11-28）**：确认首播也未执行HDR事务；Stop fake FORCE_SIGNAL执行HDR_BYPASS，重播仅return2/7不代表重配。发现hold前信号缓存被消费，真实C前缀复现成立；但相同SDR metadata反例证明仅延后缓存不够。0044仅保存在candidates，不进入默认构建。下一项准备使用现有disable_flush_flag仅隔离Stop HDR家族事务的受控B组，需新正常基准、用户先许可；无需重编，尚未操作设备。范围/停止条件见[白盒与实验计划](BUILD293-CSC-WHITEBOX-20261128.md)。
+
+
 **Build293实测（2026-11-28，当前步骤）**：run46047603617/fb2ea8ae69已部署，USB余100.2MiB，292回退保留。API2；用户确认首播正常、Stop/replay黑屏。独立正常参考与连续Stop→replay及黑态窗口均齐全、无溢出，4438/276/10025/222行。Stop批506写HDR CTRL=1c040及矩阵，重播无新VD1 HDR请求/CTRL写，黑态读回保持该值，正常d05f；GEN2/GEN3/FIFO配置及采样PPS稳态相同。只确认差异与软件写者，未证因果。首轮发现sysfs末尾空行解析bug，Python已修并回归，在独立新boot完成有效对照。下一步离线追踪Stop CSC/HDR调用与重播返回路径，不改寄存器、不重复播放。详见[实测记录](BUILD293-RESULT-20261128.md)。
 
 

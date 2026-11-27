@@ -207,6 +207,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-submit-tables.py"
           python3 "$PORT_ROOT/tests/check-submit-client.py"
           python3 "$PORT_ROOT/tests/check-hdr-recovery.py"
+          python3 "$PORT_ROOT/tests/check-csc-signal-hold.py"
           python3 "$PORT_ROOT/tests/check-playback-timeline.py"
           python3 "$PORT_ROOT/tests/check-playback-audit.py"
           python3 "$PORT_ROOT/tests/check-playback-session.py"

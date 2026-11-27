@@ -1,0 +1,33 @@
+Subject: [CANDIDATE] defer GXLX2 signal cache consumption until VD1 can process
+
+Build293 observes return2 then no HDR reconfiguration after Stop. This
+fix preserves the pending cache transition rather than forcing MMIO.
+Hardware causality and replay validation remain pending.
+
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -8151,6 +8151,24 @@
+ 			return 0;
+ 		}
+ 
++	/* e900-csc-defer-signal-cache: CHECK_OUTPUT may precede VD1 ON_PENDING.
++	 * signal_type_changed() consumes CS/source/range cache changes. Once
++	 * consumed, the later TOGGLE_FRAME can see no change and skip HDR
++	 * programming. Keep those changes untouched while this path must hold.
++	 * Match the existing HDR_MODULE_BYPASS return2 predicate exactly;
++	 * other SoCs, VD2, force-processing and valid on/wait paths stay intact.
++	 */
++	if (is_meson_gxlx2_cpu() && vd_path == VD1_PATH &&
++	    video_process_status[vd_path] == HDR_MODULE_BYPASS &&
++	    !(video_process_flags[vd_path] & PROC_FLAG_FORCE_PROCESS) &&
++	    !((is_video_layer_on(vd_path) || video_layer_wait_on[vd_path]) &&
++	      (!is_dolby_vision_on() || vd_path == VD2_PATH))) {
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++			0, vd_path, 18, 2, 2);
++		return 2;
++	}
++	/* e900-csc-defer-signal-cache end */
++
+ 	/* Tx hdr information */
+ 	memcpy(&receiver_hdr_info, &vinfo->hdr_info,
+ 			sizeof(struct hdr_info));
