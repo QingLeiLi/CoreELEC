@@ -6,6 +6,9 @@
 
 ## 当前状态与下一项
 
+**legacy CSC正式源码候选（2026-11-28，当前步骤）**：将293L通过的五处选择原样源码化为默认decoder补丁`0044-gxlx2-legacy-sdr-csc-routing.patch`，仅限GXLX2，未安装cache-deferral候选。五个实际谓词host测试确认其它CPU ID0..127不变；全部helper/write body不变，完整补丁应用、HDR/debug/init/采集/缓存回归通过。HDR10/HLG/SDR→HDR专用helper仍有独立G12分支，已列表，不宣称全HDR修复。下一项源码ARM构建decoder/image，source_trace关、VDIN沿用开启；本轮未触发构建或操作设备。详见[正式修复与格式边界](LEGACY-CSC-FIX-20261128.md)。
+
+
 **低成本legacy实机通过（2026-11-28，当前结果）**：用户要求最小成本试验，固定Build293仅改五处分支生成293L，不全编译。新boot6df8d570，用户确认首播与默认Stop/replay均正常；未屏蔽HDR，flush=0。3067/280/14778/168行齐全无溢出；Stop实际走legacy矩阵/LUT控制，无HDR2请求/区域软件写入，CTRL保持d05f，FIFO变化。与默认A黑屏、Stop禁HDR的B正常一致，支持所测SDR legacy路由；不是全HDR或重复验收。五处源等价候选0045不进入默认构建，原293可回退。下一步正式源码化和格式能力审查；本轮不再播放。详见[legacy实测](BUILD293-LEGACY-CSC-TRIAL-20261128.md)。
 
 
