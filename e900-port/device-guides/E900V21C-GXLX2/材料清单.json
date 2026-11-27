@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-27",
+  "total_bytes": 5773018631,
+  "files": [
+    {
+      "path": "01-Android/android_tv_e900v22e_e900v22d_s905l3b.tar.xz",
+      "bytes": 255099600,
+      "sha256": "a60c06428198f879e7ef1d1e81b0483ac910e491c67169f7785fda0d53abd9a4"
+    },
+    {
+      "path": "01-Android/license/mac_ether.ini",
+      "bytes": 101,
+      "sha256": "a16f59bd5607ac2dbcb51cba0c04cd16039a5229d57ae9079d71fa2c8d82a466"
+    },
+    {
+      "path": "01-Android/license/mac_wifi.ini",
+      "bytes": 119,
+      "sha256": "c5db0c498060fb41195afa0727227f8eff0ab2a05fbcdab35446e1a8a9842136"
+    },
+    {
+      "path": "01-Android/license/HDCP_LIENCE.ini",
+      "bytes": 53,
+      "sha256": "a10bc67850c33049fe8de2cc8044f94680a6bc32afffaaa206a25883aad293d2"
+    },
+    {
+      "path": "02-工具/USB_Burning_Tool_v2.1.2.zip",
+      "bytes": 8673055,
+      "sha256": "257dec64aca917927546f625933637a133f7291ae40f41b60231b39a002f593c"
+    },
+    {
+      "path": "01-Android/E900V22E-YYFROM.img",
+      "bytes": 974598692,
+      "sha256": "30ac903fc4e2ede881986eeefb46fba74b7a4d4d0e20044d8bcb3d62f70bcc46"
+    },
+    {
+      "path": "01-Android/固件说明-原编码.txt",
+      "bytes": 1194,
+      "sha256": "66f49246cd3a89898de32c85f1eeebe009d817914455c9fca5202d55dc4a9262"
+    },
+    {
+      "path": "02-工具/Term-1.0.70.apk",
+      "bytes": 564672,
+      "sha256": "4cbf6adb273a6afa01f7d5f4ea97ac22b5a97ce1a34c000f2ef308a6383e8821"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/NOTICE.txt",
+      "bytes": 1153595,
+      "sha256": "4bb69d666c27e0d020613e9add9dbe3881aa826b6c4e3641821835616bf76ffb"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/adb",
+      "bytes": 19552192,
+      "sha256": "ea8c9743b1fa97fbabbb6629726f60528725322328dcf86050aed86afe4bb5ff"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/etc1tool",
+      "bytes": 686352,
+      "sha256": "9e3452746cfdaf53afd4c8f3affe5150cc51c72dce0eb09a352bd4be618754b5"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/fastboot",
+      "bytes": 6027872,
+      "sha256": "c6cb7013c9e4568f5e6e1f7a392c62304665093bedf4134719c00cd5251d198c"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/hprof-conv",
+      "bytes": 134624,
+      "sha256": "1b0e45805b1a2a4ff1a6b8f94ab2fb2b927430c876ddc81efb0d31ca50cd4927"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/lib64/libc++.dylib",
+      "bytes": 2680192,
+      "sha256": "44014f0011038d9b2c4a26bd8adb2962bc6d7ce42b7933e147e474dde45247d8"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/make_f2fs",
+      "bytes": 611664,
+      "sha256": "77af6b09825617198bd7e345ec96c2010151ecf4d4fd645ac302098f2003339d"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/make_f2fs_casefold",
+      "bytes": 611680,
+      "sha256": "dab78ef07c5dec8075ced84d3a3177d2e9629dc5bca35dd035d91e07208aa2d8"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/mke2fs",
+      "bytes": 1865536,
+      "sha256": "65aa9e2922a29ed9c2a0ad41d07ed2ea286a8124519f2c88d1972755061a5c8c"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/mke2fs.conf",
+      "bytes": 1157,
+      "sha256": "ad58a58dcdd24d85055814ca9cac67db89d4e67c434e96774bdce0d0a007d067"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/source.properties",
+      "bytes": 38,
+      "sha256": "900f0df9c24ff27f7a97e966101af5de125569a3e58c434c770e5bb4095e80b2"
+    },
+    {
+      "path": "02-工具/Mac-platform-tools-37.0.2/sqlite3",
+      "bytes": 6739040,
+      "sha256": "100786e60ba7ba16dfb2321431a48aeeda90d42834bd0fbfe334f25d68ea5b52"
+    },
+    {
+      "path": "03-Armbian/Armbian_26.05.0_amlogic_s905l3b-e900v22e_trixie_6.18.26_server_2026.05.01.img",
+      "bytes": 3686793216,
+      "sha256": "e02fd83b844ceda2ca98a9dd6a894712c43195df87ba0411a4fa61950d7a050f"
+    },
+    {
+      "path": "03-Armbian/Armbian_26.05.0_amlogic_s905l3b-e900v22e_trixie_6.18.26_server_2026.05.01.img.gz",
+      "bytes": 807223987,
+      "sha256": "4bc96714931ae95bfb62ac67e8a457030e840e9532185b7745113563aad4ebc5"
+    }
+  ]
+}
