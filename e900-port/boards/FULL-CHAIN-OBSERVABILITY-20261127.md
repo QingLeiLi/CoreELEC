@@ -60,3 +60,9 @@ playback compare新增localization：按事件种类/handle/出现次序对齐�
 5. VDIN v2关联失败：先处理具体canvas/slot/session字段；关联通过但像素静止仍须核对源Canvas动态与电视，不能使用静态彩条排除下游。
 
 本轮未部署或触发播放；“已缩小到几个寄存器/函数”的实机结论必须等待新固件数据。当前已实现逐项生成可复核候选，不能离线承诺一定是其中某个寄存器。
+
+## 0042：配置调用是否真正执行
+
+保留源Canvas已有正常证据，不再扩Canvas读取。本轮补缺的是下游函数返回原因：code16=DCU空vf跳过；17=PPS空setting(1)/空frame_par(2)；18=CSC return，value原因1无效vinfo、2bypass且层未就绪、3Dolby处理、4模式变化延后、5HDMI CHECK_OUTPUT延后、6无变化且无toggle、7正常函数尾部，aux保留原return值。原因7也不能单独等价HDR事务已提交，应与code8/9的request/submitted配对。全部仅写默认关闭的有界ring，不改返回值、原条件或显示策略。
+
+因此，新采集可区分“函数未调用”“已调用但跳过”“进入正常路径但未见HDR提交”“提交和实际配置不一致”。先审覆盖窗口/代次和异步锁存，再将候选落到具体函数/地址，不按日志计数猜硬件复位。

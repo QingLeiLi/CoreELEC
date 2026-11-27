@@ -1,0 +1,123 @@
+Subject: [DIAGNOSTIC] distinguish downstream no-op returns from completed calls
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -1138,6 +1138,7 @@
+ 
+ 	if (!vf) {
+ 		pr_info("vd1_set_dcu vf NULL, return\n");
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(), 0, 0, 16, 1, 0);
+ 		return;
+ 	}
+ 
+@@ -2563,8 +2564,10 @@
+ 	u32 hsc_init_rev_num0 = 4;
+ 	u32 bit9_mode = 0;
+ 
+-	if (!setting || !setting->frame_par)
++	if (!setting || !setting->frame_par) {
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(), 0, 0, 17, !setting ? 1 : 2, 0);
+ 		return;
++	}
+ 
+ 	frame_par = setting->frame_par;
+ 	misc_off = setting->misc_reg_offt;
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -8144,7 +8144,12 @@
+ 
+ 	if (!vinfo || vinfo->mode == VMODE_NULL ||
+ 	    vinfo->mode == VMODE_INVALID)
+-		return 0;
++		{ /* e900-csc-return 1 */
++			if (vd_path == VD1_PATH)
++				e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++					0, vd_path, 18, 1, 0);
++			return 0;
++		}
+ 
+ 	/* Tx hdr information */
+ 	memcpy(&receiver_hdr_info, &vinfo->hdr_info,
+@@ -8186,14 +8191,24 @@
+ 				__LINE__,
+ 				vd_path == VD1_PATH ? "VD1" : "VD2");
+ 		} else {
+-			return 2;
++			{ /* e900-csc-return 2 */
++				if (vd_path == VD1_PATH)
++					e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++						0, vd_path, 18, 2, 2);
++				return 2;
++			}
+ 		}
+ 	}
+ 
+ 	if (is_dolby_vision_on() &&
+ 	    ((vd_path == VD1_PATH) ||
+ 	    !cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)))
+-		return 0;
++		{ /* e900-csc-return 3 */
++			if (vd_path == VD1_PATH)
++				e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++					0, vd_path, 18, 3, 0);
++			return 0;
++		}
+ 
+ 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
+ 		enum vd_path_e oth_path =
+@@ -8223,7 +8238,12 @@
+ 				video_layer_wait_on[vd_path] = true;
+ 			video_process_flags[oth_path] |=
+ 				PROC_FLAG_FORCE_PROCESS;
+-			return 1;
++			{ /* e900-csc-return 4 */
++				if (vd_path == VD1_PATH)
++					e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++						0, vd_path, 18, 4, 1);
++				return 1;
++			}
+ 		}
+ 	} else {
+ 		source_format[vd_path] = get_hdr_source_type();
+@@ -8278,7 +8298,12 @@
+ 	if (hdmi_scs_type_changed &&
+ 		(flags & CSC_FLAG_CHECK_OUTPUT) &&
+ 		csc_en & 0x10)
+-		return 1;
++		{ /* e900-csc-return 5 */
++			if (vd_path == VD1_PATH)
++				e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++					0, vd_path, 18, 5, 1);
++			return 1;
++		}
+ 
+ 	/* All earlier returns are past; a valid recovery can now reach processing. */
+ 	e900_hdr_force = e900_hdr_recovery_consume(vf, vinfo, vd_path);
+@@ -8287,7 +8312,12 @@
+ 
+ 	if (((!signal_change_flag) && (force_csc_type == 0xff))
+ 		&& ((flags & CSC_FLAG_TOGGLE_FRAME) == 0))
+-		return 0;
++		{ /* e900-csc-return 6 */
++			if (vd_path == VD1_PATH)
++				e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++					0, vd_path, 18, 6, 0);
++			return 0;
++		}
+ 
+ 	if ((cur_csc_type[vd_path] != csc_type)
+ 	|| (signal_change_flag
+@@ -8412,7 +8442,12 @@
+ 	if (rgb_type_proc[vd_path] == FORCE_RGB_PROCESS)
+ 		rgb_type_proc[vd_path] &= ~FORCE_RGB_PROCESS;
+ 
+-	return 0;
++	{ /* e900-csc-return 7 */
++		if (vd_path == VD1_PATH)
++			e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++				0, vd_path, 18, 7, 0);
++		return 0;
++	}
+ }
+ 
+ static struct vframe_s last_vf_backup[VD_PATH_MAX];

@@ -61,3 +61,5 @@ OSD source3 prepare的trigger/value=0表示**可变表窗口**，aux=RDMA_TABLE_
 0039回采新包使用明确v2头格式并关联preACK完成槽；必须配套新inspect和loopback工具。像素候选报告/回环报告补充boot_id，避免跨启动拼接证据。旧v1可离线复核，但不满足新的槽关联要求。
 
 0041新增生命周期code11/12=DCU进入/返回，13/14=PPS进入/返回，15=PPS不支持而提前返回。compare的localization将事件与实际寄存器差异映射到函数/寄存器名，保留原始行和缺覆盖标记；readback_provenance仅给先前写入候选，不把异步提交与当前读回不相等直接当作故障。详见全链路文档的逐项判据。
+
+0042新增code16 DCU空帧、17 PPS缺参数、18 CSC/HDR返回原因。比较器lifecycle逐项解码return_reason，含正常函数尾部与提前返回；完整含义见全链路文档。首播源Canvas的已验证正常证据保留，本轮不新增Canvas读取，也不把VDIN目标槽核验混作源Canvas故障。

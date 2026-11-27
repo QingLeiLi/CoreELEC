@@ -17,7 +17,7 @@ SOURCES = {1: 'lifecycle', 2: 'normal_rdma', 3: 'osd_rdma', 4: 'direct_write', 5
 EVENTS = {1: 'provider', 2: 'disable', 3: 'first_frame', 4: 'layer_switch',
           5: 'blend_state', 6: 'pps', 7: 'csc_post', 8: 'hdr_request',
           9: 'hdr_submitted', 10: 'hdr_disabled', 11: 'dcu_entry', 12: 'dcu_exit',
-          13: 'pps_entry', 14: 'pps_exit', 15: 'pps_unsupported'}
+          13: 'pps_entry', 14: 'pps_exit', 15: 'pps_unsupported', 16: 'dcu_skipped', 17: 'pps_skipped', 18: 'csc_return'}
 KINDS = {1: 'marker', 2: 'state', 3: 'prepare', 4: 'word', 5: 'irq', 6: 'cancel', 7: 'read'}
 
 
@@ -206,7 +206,26 @@ FUNCTION_MAP = {1: 'video_receiver_event_fun', 2: '_video_set_disable',
                 8: 'hdr_func entry', 9: 'hdr_func submission end',
                 10: 'hdr_func disable_flush return', 11: 'vd_set_dcu entry',
                 12: 'vd_set_dcu exit', 13: 'vd_scaler_setting entry',
-                14: 'vd_scaler_setting exit', 15: 'vd_scaler_setting unsupported return'}
+                14: 'vd_scaler_setting exit', 15: 'vd_scaler_setting unsupported return', 16: 'vd1_set_dcu null frame',
+                17: 'vd1_scaler_setting missing input', 18: 'vpp_matrix_update return'}
+
+
+
+RETURN_REASONS = {
+    16: {1: 'vd1_set_dcu: null vf; no DCU configuration'},
+    17: {1: 'vd1_scaler_setting: null setting', 2: 'vd1_scaler_setting: null frame_par'},
+    18: {1: 'invalid/null vinfo', 2: 'HDR bypass state and layer not ready',
+         3: 'Dolby Vision owns processing', 4: 'output mode change deferred',
+         5: 'HDMI CSC CHECK_OUTPUT deferral', 6: 'no signal change and no toggle',
+         7: 'normal function end; does not alone prove HDR submitted'},
+}
+
+
+def event_detail(row):
+    result = dict(row, event=EVENTS.get(row['reg'], 'unknown'))
+    if row['reg'] in RETURN_REASONS:
+        result['return_reason'] = RETURN_REASONS[row['reg']].get(row['value'], 'unknown')
+    return result
 
 
 def localization(first, replay):
@@ -240,7 +259,7 @@ def localization(first, replay):
         # differ. Counts/ordering are retained; do not turn those into failures.
         if mode == 'call':
             signatures = lambda rows: [(r['value'], r['aux']) for r in rows]
-            if reg in (1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) and signatures(a) != signatures(b):
+            if reg in (1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18) and signatures(a) != signatures(b):
                 i = next((i for i in range(min(len(a), len(b)))
                           if signatures(a)[i] != signatures(b)[i]), min(len(a), len(b)))
                 item.update(classification='CALL_ARGUMENT_OR_COUNT_DIFFERENCE',
@@ -301,7 +320,7 @@ def compare(run):
             'first_only': {k: a[k] for k in a.keys()-b.keys()},
             'replay_only': {k: b[k] for k in b.keys()-a.keys()}, 'changed_ordered_values': changes,
             'counts': {name: dict(collections.Counter(f"{SOURCES[r['source']]}:{KINDS[r['kind']]}" for r in rows)) for name, rows in parsed.items()},
-            'lifecycle': {name: [dict(r, event=EVENTS.get(r['reg'], 'unknown')) for r in rows if r['source'] == 1 and r['kind'] == 2] for name, rows in parsed.items()},
+            'lifecycle': {name: [event_detail(r) for r in rows if r['source'] == 1 and r['kind'] == 2] for name, rows in parsed.items()},
             'endpoint_status': {name: docs[name].get('hdmi', {'status': 'not_requested'}) for name in PHASES},
             'localization': localization(parsed['first'], parsed['replay']),
             'timeline': {name: rows for name, rows in parsed.items()},
