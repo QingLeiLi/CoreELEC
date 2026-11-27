@@ -18,7 +18,9 @@ with tempfile.TemporaryDirectory(prefix='e900-edge-') as td:
  assert hw.index('e900_edge_hook(vinfo, 0,')<hw.index('vpp_misc_set = e900_blend_hold_apply')<hw.index('e900_edge_hook(vinfo, 1,')
  assert hw.index('e900_edge_before_disable(layer_id, on);')<hw.index('e900_pixel_before_disable(layer_id, on);')
  assert 'pr_info(' not in edge and 'WRITE_VCBUS_REG(VPP_MISC' not in edge
- dispatch_start=csc.index('\t\tif (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&\n\t\t(get_cpu_type() != MESON_CPU_MAJOR_ID_TL1)) {')
+ # 0044 intentionally routes GXLX2 through legacy CSC. Extract the current
+ # production selector and execute it below, including the new CPU exclusion.
+ dispatch_start=csc.index('\t\tif (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&\n\t\t!is_meson_gxlx2_cpu() &&\n\t\t(get_cpu_type() != MESON_CPU_MAJOR_ID_TL1)) {')
  dispatch_end=csc.index('\n\t\tcur_hdr_policy',dispatch_start)
  dispatch=csc[dispatch_start:dispatch_end]
  fake_start=csc.index('\t\t\t\tif (vd_path == VD1_PATH && e900_edge_tracking())',csc.index('if (send_fake_frame)'))
@@ -166,7 +168,7 @@ int main(void){
  memset(e900_edge_records,0xff,sizeof(e900_edge_records));e900_edge_generation=0xffffffff;
  for(i=0;i<64;i++){char page[8];sprintf(page,"%u",i);assert(!e900_edge_page_set(page,NULL));n=e900_edge_data_get(buf,NULL);assert(n>0&&n<PAGE_SIZE);}
  for(i=0x20;i<=0x30;i++)for(j=0;j<4;j++){
-  bool active=!!(j&1);unsigned path=(j>>1)&1;bool post=i>=0x28&&i!=0x2e;
+  bool active=!!(j&1);unsigned path=(j>>1)&1;bool post=i>=0x28&&i!=0x2e&&i!=0x2a;
   dispatch_post=dispatch_legacy=e900_csc_post_count=e900_csc_legacy_count=e900_csc_fake_count=0;
   run_dispatch(i,active,path);assert(dispatch_post==(unsigned)post&&dispatch_legacy==(unsigned)!post);
   assert(e900_csc_post_count==(unsigned)(active&&!path&&post));assert(e900_csc_legacy_count==(unsigned)(active&&!path&&!post));

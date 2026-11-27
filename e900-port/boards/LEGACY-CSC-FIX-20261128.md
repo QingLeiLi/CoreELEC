@@ -39,3 +39,9 @@
 - 下一次Actions选`profile=decoder`、`target=image`、`source_trace=false`、`vdin_capture=true`（沿用293配置）。源码ARM构建/链接及部署待完成，不用二进制实测代替源码产物验收。
 
 新构建后优先默认开关下首播/连续重播、global_output关闭恢复、菜单和视频画面，重复及真正冷启动；然后再扩其它格式。按协作约定每轮用户确认画面后再进入下一动作，不在黑态叠加试验。
+
+## CI测试同步修复
+
+用户构建在check-blend-transition.py报substring not found：该测试仍抽取0044之前不含GXLX2排除条件的dispatch文本，并期待0x2a走post。现更新为当前生产分支，执行同一段真实C，明确断言GXLX2走legacy，其它CPU选择和branch计数/active/path断言保留。不是移除检查或跳过GXLX2。
+
+按工作流列出的37项主机检查全部通过。本地check-local首次失败来自旧audit/source-manifest漏osd_rdma.c；使用仓库当前source-fixtures清单及同一已固定hash源码后通过，CI的fetch步骤原本就生成该当前清单，未因此改生产代码。相关日志在本地/tmp/e900-workflow-host-review-20261128。未操作盒子、未改内核补丁；源码ARM构建仍待本次CI继续验证。
