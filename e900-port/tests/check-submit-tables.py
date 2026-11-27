@@ -61,6 +61,13 @@ static void wr(u32 r,u32 v,u32 s,u32 l){assert(hw_calls<10000);calls[hw_calls++]
 static struct rdma_device_info rdma_info;
 static struct rdma_device_data_s rdma_meson_dev;
 static unsigned debug_flag;static int rdma_lock;
+/* 0038's independent ring is tested with its real functions separately. */
+static void e900_playback_normal_table(int handle,int trigger,const u32 *table,int count){
+ (void)handle;(void)trigger;(void)table;(void)count;
+}
+static void e900_playback_normal_end(int handle,u32 status,u32 kind){
+ (void)handle;(void)status;(void)kind;
+}
 '''+header+'\n'+fn(old,'rdma_config').replace('int rdma_config(', 'int baseline(')+'\n'+fn(new,'rdma_config')+'\n'+fn(new,'rdma_clear')+r'''
 static u32 pending[1024],table[1024];static struct rdma_regadr_s regs;static struct rdma_op_s op;
 static void reset(void){

@@ -77,6 +77,8 @@ port = pathlib.Path(__file__).resolve().parents[1]
 for relative, source in [
     ("debug-tools/e900-debug.py", port / "scripts/e900-debug.py"),
     ("debug-tools/e900-submit-trace.py", port / "scripts/e900-submit-trace.py"),
+    ("debug-tools/e900-playback-audit.py", port / "scripts/e900-playback-audit.py"),
+    ("debug-tools/PLAYBACK-AUDIT-20261127.md", port / "boards/PLAYBACK-AUDIT-20261127.md"),
     ("debug-tools/VD1-VPP-CONVERGENCE.md", port / "boards/VD1-VPP-CONVERGENCE.md"),
     ("debug-tools/VD1-VPP-CONVERGENCE-HISTORY.md", port / "boards/VD1-VPP-CONVERGENCE-HISTORY.md"),
     ("debug-tools/SUBMISSION-TABLES.md", port / "boards/SUBMISSION-TABLES.md"),

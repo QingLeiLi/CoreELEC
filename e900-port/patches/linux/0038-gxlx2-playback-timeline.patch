@@ -1,0 +1,764 @@
+Subject: [DIAGNOSTIC] bounded first-play Stop replay timeline
+
+--- a/drivers/amlogic/media/common/arch/registers/register_ops.c
++++ b/drivers/amlogic/media/common/arch/registers/register_ops.c
+@@ -131,6 +131,10 @@
+ 	struct chip_register_ops *ops = amports_ops[bus_type];
+ 
+ 	if (!ops) {
++		if (bus_type == IO_VC_BUS &&
++		    e900_playback_direct_selected(reg))
++			e900_playback_note(E900_PB_DIRECT, E900_PB_CANCEL,
++				0, 0, bus_type, reg, val, 0);
+ 		if (is_meson_gxlx2_cpu()) {
+ 			atomic_inc(&e900_bus_write_drops[bus_type]);
+ 			if (bus_type == IO_VC_BUS &&
+@@ -147,6 +151,9 @@
+ 	if (bus_type == IO_VC_BUS &&
+ 	    (reg == 0x1a50 || reg == 0x1aa7 || reg == 0x1a06 || reg == 0x1d26))
+ 		e900_debug_event("write_vc", reg, val, ops->w_cnt, 0);
++	if (bus_type == IO_VC_BUS && e900_playback_direct_selected(reg))
++		e900_playback_note(E900_PB_DIRECT, E900_PB_WORD,
++			0, 0, bus_type, reg, val, ops->w_cnt + 1);
+ 	ops->w_cnt++;
+ 	CODEC_OPS_START(bus_type, reg, ops->w_cnt);
+ 
+--- /dev/null
++++ b/drivers/amlogic/media/common/rdma/e900_playback_trace.h
+@@ -0,0 +1,301 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#ifndef E900_PLAYBACK_TRACE_H
++#define E900_PLAYBACK_TRACE_H
++#include <linux/jiffies.h>
++/* Separate from 0035's nine-column submit trace. Intent/prepare/IRQ/read
++ * remain distinct; an IRQ is not proof of pixel output. No MMIO under lock.
++ */
++#define E900_PLAYBACK_CAP 4096
++#define E900_PLAYBACK_PAGE 8
++struct e900_playback_row {
++	u64 stamp;
++	u32 source, kind, session, phase, batch, handle, reg, value, aux;
++};
++static struct e900_playback_row e900_playback_rows[E900_PLAYBACK_CAP];
++static DEFINE_SPINLOCK(e900_playback_lock);
++static unsigned int e900_playback_status, e900_playback_generation;
++static unsigned int e900_playback_count, e900_playback_overflow;
++static unsigned int e900_playback_page, e900_playback_phase;
++static u32 e900_playback_session, e900_playback_batch;
++static u32 e900_playback_batch_floor;
++static unsigned int e900_playback_samples;
++static u32 e900_playback_normal_pending[RDMA_NUM];
++
++/* Caller holds trace lock. A full ring freezes with an explicit overflow. */
++static void e900_playback_add(u32 source, u32 kind, u32 session,
++			      u32 batch, u32 handle, u32 reg, u32 value, u32 aux)
++{
++	struct e900_playback_row *r;
++
++	if (e900_playback_status != 1)
++		return;
++	if (e900_playback_count == E900_PLAYBACK_CAP) {
++		e900_playback_overflow = 1;
++		e900_playback_status = 2;
++		return;
++	}
++	r = &e900_playback_rows[e900_playback_count++];
++	r->stamp = get_jiffies_64();
++	r->source = source;
++	r->kind = kind;
++	r->session = session ? session : e900_playback_session;
++	r->phase = e900_playback_phase;
++	r->batch = batch;
++	r->handle = handle;
++	r->reg = reg;
++	r->value = value;
++	r->aux = aux;
++}
++
++void e900_playback_note(u32 source, u32 kind, u32 session,
++			 u32 batch, u32 handle, u32 reg, u32 value, u32 aux)
++{
++	unsigned long flags;
++
++	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1)
++		return;
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	if (batch && batch <= e900_playback_batch_floor)
++		goto out;
++	if (source == 1 && session)
++		e900_playback_session = session;
++	e900_playback_add(source, kind, session, batch, handle, reg, value, aux);
++out:
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++}
++EXPORT_SYMBOL(e900_playback_note);
++
++u32 e900_playback_begin(u32 source, u32 handle, u32 trigger, u32 total)
++{
++	unsigned long flags;
++	u32 batch = 0;
++
++	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1)
++		return 0;
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	if (e900_playback_status == 1) {
++		if (e900_playback_count == E900_PLAYBACK_CAP) {
++			e900_playback_overflow = 1;
++			e900_playback_status = 2;
++			goto out;
++		}
++		batch = ++e900_playback_batch;
++		if (!batch)
++			batch = ++e900_playback_batch;
++		e900_playback_add(source, 3, 0, batch, handle, 0, trigger, total);
++	}
++out:
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++	return batch;
++}
++EXPORT_SYMBOL(e900_playback_begin);
++
++bool e900_playback_active(void)
++{
++	return is_meson_gxlx2_cpu() &&
++		READ_ONCE(e900_playback_status) == 1;
++}
++EXPORT_SYMBOL(e900_playback_active);
++
++bool e900_playback_batch_valid(u32 batch)
++{
++	return batch && READ_ONCE(e900_playback_status) == 1 &&
++		batch > READ_ONCE(e900_playback_batch_floor);
++}
++EXPORT_SYMBOL(e900_playback_batch_valid);
++
++bool e900_playback_sample_available(void)
++{
++	return READ_ONCE(e900_playback_status) == 1 &&
++		READ_ONCE(e900_playback_samples) < 16;
++}
++EXPORT_SYMBOL(e900_playback_sample_available);
++
++bool e900_playback_sample_take(void)
++{
++	unsigned long flags;
++	bool take = false;
++
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	if (e900_playback_status == 1 && e900_playback_samples < 16) {
++		e900_playback_samples++;
++		take = true;
++	}
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++	return take;
++}
++EXPORT_SYMBOL(e900_playback_sample_take);
++
++/* The ordinary manager's existing prepare/end hooks call these independently
++ * of whether the older submit recorder is armed. */
++static void e900_playback_normal_table(int handle, int trigger,
++				       const u32 *table, int count)
++{
++	u32 batch, old;
++	unsigned int i, selected = 0;
++
++	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1 ||
++	    handle <= 0 || handle >= RDMA_NUM || count <= 0)
++		return;
++	for (i = 0; i < (unsigned int)count; i++)
++		selected += e900_playback_selected(table[i * 2]);
++	old = xchg(&e900_playback_normal_pending[handle], 0);
++	if (old)
++		e900_playback_note(2, 6, 0, old, handle, 0, 5, 0);
++	if (!selected)
++		return;
++	batch = e900_playback_begin(2, handle, trigger, count);
++	if (!batch)
++		return;
++	for (i = 0; i < (unsigned int)count; i++)
++		if (e900_playback_selected(table[i * 2]))
++			e900_playback_note(2, 4, 0, batch, handle,
++				table[i * 2], table[i * 2 + 1], i);
++	{
++		unsigned long flags;
++
++		spin_lock_irqsave(&e900_playback_lock, flags);
++		if (e900_playback_status == 1 &&
++		    batch > e900_playback_batch_floor)
++			e900_playback_normal_pending[handle] = batch;
++		spin_unlock_irqrestore(&e900_playback_lock, flags);
++	}
++}
++
++static void e900_playback_normal_end(int handle, u32 status, u32 kind)
++{
++	u32 batch;
++
++	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1 ||
++	    handle <= 0 || handle >= RDMA_NUM)
++		return;
++	batch = xchg(&e900_playback_normal_pending[handle], 0);
++	if (batch)
++		e900_playback_note(2, kind == 2 ? 5 : 6, 0, batch,
++				   handle, 0, status, kind);
++}
++
++static int e900_playback_scan_set(const char *s, const struct kernel_param *kp)
++{
++	unsigned int command;
++	unsigned long flags;
++	int ret = kstrtouint(s, 0, &command);
++
++	(void)kp;
++	if (ret)
++		return ret;
++	if (command > 1)
++		return -EINVAL;
++	if (!is_meson_gxlx2_cpu())
++		return -ENODEV;
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	if (command) {
++		if (e900_playback_status == 1) {
++			ret = -EBUSY;
++			goto out;
++		}
++		e900_playback_generation++;
++		e900_playback_count = e900_playback_overflow = 0;
++		e900_playback_page = e900_playback_samples = 0;
++		e900_playback_batch_floor = e900_playback_batch;
++		memset(e900_playback_normal_pending, 0,
++		       sizeof(e900_playback_normal_pending));
++		e900_playback_status = 1;
++		e900_playback_add(1, 1, 0, 0, 0, 0, e900_playback_phase, 0);
++	} else {
++		e900_playback_status = 2;
++	}
++out:
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++	return ret;
++}
++
++static int e900_playback_scan_get(char *buf, const struct kernel_param *kp)
++{
++	unsigned long flags;
++	int n;
++
++	(void)kp;
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	n = scnprintf(buf, PAGE_SIZE,
++		"generation=%u status=%u count=%u capacity=%u overflow=%u phase=%u\n",
++		e900_playback_generation, e900_playback_status,
++		e900_playback_count, E900_PLAYBACK_CAP,
++		e900_playback_overflow, e900_playback_phase);
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++	return n;
++}
++
++static int e900_playback_phase_set(const char *s, const struct kernel_param *kp)
++{
++	unsigned int phase;
++	unsigned long flags;
++	int ret = kstrtouint(s, 0, &phase);
++
++	(void)kp;
++	if (ret)
++		return ret;
++	if (phase < 1 || phase > 3)
++		return -EINVAL;
++	if (!is_meson_gxlx2_cpu())
++		return -ENODEV;
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	e900_playback_phase = phase;
++	e900_playback_add(1, 1, 0, 0, 0, 0, phase, 0);
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++	return 0;
++}
++
++static int e900_playback_phase_get(char *buf, const struct kernel_param *kp)
++{
++	(void)kp;
++	return scnprintf(buf, PAGE_SIZE, "%u\n", READ_ONCE(e900_playback_phase));
++}
++
++static int e900_playback_data_get(char *buf, const struct kernel_param *kp)
++{
++	unsigned long flags;
++	unsigned int i, begin;
++	int n = 0;
++
++	(void)kp;
++	spin_lock_irqsave(&e900_playback_lock, flags);
++	if (e900_playback_status == 1) {
++		n = -EBUSY;
++		goto out;
++	}
++	if (e900_playback_page >= E900_PLAYBACK_CAP / E900_PLAYBACK_PAGE) {
++		n = -EINVAL;
++		goto out;
++	}
++	begin = e900_playback_page * E900_PLAYBACK_PAGE;
++	for (i = begin; i < e900_playback_count &&
++	     i < begin + E900_PLAYBACK_PAGE; i++) {
++		const struct e900_playback_row *r = &e900_playback_rows[i];
++
++		n += scnprintf(buf + n, PAGE_SIZE - n,
++			"%u %u %llx %x %x %x %x %x %x %x %x %x\n",
++			i, e900_playback_generation,
++			(unsigned long long)r->stamp,
++			r->source, r->kind, r->session, r->phase,
++			r->batch, r->handle, r->reg, r->value, r->aux);
++	}
++out:
++	spin_unlock_irqrestore(&e900_playback_lock, flags);
++	return n;
++}
++
++static const struct kernel_param_ops e900_playback_scan_ops = {
++	.set = e900_playback_scan_set, .get = e900_playback_scan_get,
++};
++static const struct kernel_param_ops e900_playback_phase_ops = {
++	.set = e900_playback_phase_set, .get = e900_playback_phase_get,
++};
++static const struct kernel_param_ops e900_playback_data_ops = {
++	.get = e900_playback_data_get,
++};
++module_param_cb(gxlx2_playback_scan, &e900_playback_scan_ops, NULL, 0600);
++module_param_cb(gxlx2_playback_phase, &e900_playback_phase_ops, NULL, 0600);
++module_param_named(gxlx2_playback_page, e900_playback_page, uint, 0600);
++module_param_cb(gxlx2_playback_data, &e900_playback_data_ops, NULL, 0400);
++#endif
+--- a/drivers/amlogic/media/common/rdma/e900_submit_trace.h
++++ b/drivers/amlogic/media/common/rdma/e900_submit_trace.h
+@@ -37,6 +37,7 @@
+  unsigned long flags;
+  unsigned int selected = 0, i;
+  u32 batch;
++ e900_playback_normal_table(handle, trigger, table, count);
+  if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_submit_status) != 1 ||
+      handle <= 0 || handle >= RDMA_NUM || count <= 0) return;
+  spin_lock_irqsave(&e900_submit_lock, flags);
+@@ -69,6 +70,7 @@
+ {
+  unsigned long flags;
+  u32 batch;
++ e900_playback_normal_end(handle, status, kind);
+  if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_submit_status) != 1 ||
+      handle <= 0 || handle >= RDMA_NUM) return;
+  spin_lock_irqsave(&e900_submit_lock, flags);
+--- a/drivers/amlogic/media/common/rdma/rdma_mgr.c
++++ b/drivers/amlogic/media/common/rdma/rdma_mgr.c
+@@ -79,6 +79,7 @@
+ static int rdma_force_reset = -1;
+ 
+ #define RDMA_NUM 8
++#include "e900_playback_trace.h"
+ #include "e900_submit_trace.h"
+ #define RDMA_TABLE_SIZE (16 * (PAGE_SIZE))
+ #define MAX_TRACE_NUM  16
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -8305,6 +8305,11 @@
+ 				e900_hdr_post_calls++;
+ 				e900_hdr_log("post_call", e900_hdr_generation);
+ 			}
++			if (vd_path == VD1_PATH)
++				e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++					e900_hdr_recovery_video_session(), 0, 0,
++					E900_PB_CSC_POST, csc_type,
++					signal_change_flag);
+ 			video_post_process(
+ 				vf, csc_type, vinfo,
+ 				vd_path, p, source_format);
+--- a/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
++++ b/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
+@@ -2289,9 +2289,15 @@
+ 
+ 	if (disable_flush_flag) {
+ 		e900_debug_event("hdr_flush_disabled", module_sel, hdr_process_select, 0, 0);
++		e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++			e900_hdr_recovery_video_session(), 0, module_sel,
++			E900_PB_HDR_DISABLED, hdr_process_select, 0);
+ 		return hdr_process_select;
+ 	}
+ 	e900_debug_event("hdr_request", module_sel, hdr_process_select, 0, 0);
++	e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++		e900_hdr_recovery_video_session(), 0, module_sel,
++		E900_PB_HDR_REQUEST, hdr_process_select, 0);
+ 
+ 	memset(&hdr_mtx_param, 0, sizeof(struct hdr_proc_mtx_param_s));
+ 	memset(&hdr_lut_param, 0, sizeof(struct hdr_proc_lut_param_s));
+@@ -3210,6 +3216,11 @@
+ 	hdr_hist_config(module_sel, &hdr_lut_param);
+ 	e900_debug_event("hdr_submitted", module_sel, hdr_process_select,
+ 		 hdr_lut_param.lut_on, hdr_mtx_param.mtx_on);
++	e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++		e900_hdr_recovery_video_session(), 0, module_sel,
++		E900_PB_HDR_SUBMITTED, hdr_process_select,
++		(hdr_lut_param.lut_on & 0xffff) |
++		(hdr_mtx_param.mtx_on << 16));
+ 
+ 	return hdr_process_select;
+ }
+--- a/drivers/amlogic/media/osd/osd_rdma.c
++++ b/drivers/amlogic/media/osd/osd_rdma.c
+@@ -39,6 +39,7 @@
+ #include "osd_io.h"
+ #include "osd_reg.h"
+ #include "osd_rdma.h"
++#include <linux/amlogic/media/registers/e900_debug.h>
+ #include "osd_hw.h"
+ #include "osd_backup.h"
+ #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
+@@ -85,6 +86,7 @@
+ 
+ static bool osd_rdma_done;
+ static int osd_rdma_handle = -1;
++static u32 e900_osd_batch;
+ static struct rdma_table_item *rdma_temp_tbl;
+ void *memcpy(void *dest, const void *src, size_t len);
+ 
+@@ -117,6 +119,41 @@
+ }
+ #endif
+ 
++/* This private OSD table is separate from the ordinary RDMA manager table. */
++static void e900_osd_trace_prepare(void)
++{
++	u32 old, batch = 0;
++	unsigned int i, selected = 0;
++
++	if (!e900_playback_active())
++		return;
++	old = xchg(&e900_osd_batch, 0);
++	if (old)
++		e900_playback_note(E900_PB_OSD_RDMA, E900_PB_CANCEL,
++			0, old, OSD_RDMA_CHANNEL_INDEX, 0, 0, 1);
++	for (i = 0; i < item_count; i++)
++		selected += e900_playback_selected(rdma_table[i].addr);
++	if (selected)
++		batch = e900_playback_begin(E900_PB_OSD_RDMA,
++			OSD_RDMA_CHANNEL_INDEX, 0, RDMA_TABLE_INTERNAL_COUNT);
++	for (i = 0; batch && i < item_count; i++)
++		if (e900_playback_selected(rdma_table[i].addr))
++			e900_playback_note(E900_PB_OSD_RDMA, E900_PB_WORD,
++				0, batch, OSD_RDMA_CHANNEL_INDEX,
++				rdma_table[i].addr, rdma_table[i].val, i);
++	WRITE_ONCE(e900_osd_batch, batch);
++}
++
++static void e900_osd_trace_irq(u32 status)
++{
++	u32 batch = xchg(&e900_osd_batch, 0);
++
++	if (batch)
++		e900_playback_note(E900_PB_OSD_RDMA, E900_PB_IRQ, 0,
++			batch, OSD_RDMA_CHANNEL_INDEX, 0,
++			status, item_count);
++}
++
+ static inline void reset_rdma_table(void)
+ {
+ 	struct rdma_table_item request_item;
+@@ -227,6 +264,7 @@
+ 		osd_rdma_mem_cpy(rdma_table, &reset_item[0], 8);
+ 		osd_rdma_mem_cpy(&rdma_table[item_count - 1],
+ 			&reset_item[1], 8);
++		e900_osd_trace_prepare();
+ 		osd_reg_write(END_ADDR,
+ 			(table_paddr + item_count * 8 - 1));
+ 	}
+@@ -243,6 +281,7 @@
+ 	static int pace_logging;
+ 
+ 	if ((item_count > 500) || rdma_reset_tigger_flag) {
++		u32 old_batch = xchg(&e900_osd_batch, 0);
+ 		int i;
+ 		struct rdma_table_item reset_item[2] = {
+ 			{
+@@ -255,6 +294,10 @@
+ 			}
+ 		};
+ 
++		if (old_batch)
++			e900_playback_note(E900_PB_OSD_RDMA, E900_PB_CANCEL,
++				0, old_batch, OSD_RDMA_CHANNEL_INDEX,
++				0, item_count, rdma_reset_tigger_flag);
+ 		/* rdma table is full */
+ 		if (!(pace_logging++ % 50))
+ 			pr_info("update_table_item overflow!vsync_cnt=%d, rdma_cnt=%d\n",
+@@ -342,6 +385,18 @@
+ 	item_count++;
+ 	paddr = table_paddr + item_count * 8 - 1;
+ 	if (!OSD_RDMA_STATUS_IS_REJECT) {
++		if (e900_playback_selected(addr)) {
++			u32 batch = READ_ONCE(e900_osd_batch);
++
++			if (!e900_playback_batch_valid(batch)) {
++				e900_osd_trace_prepare();
++			} else {
++				e900_playback_note(E900_PB_OSD_RDMA,
++					E900_PB_WORD, 0, batch,
++					OSD_RDMA_CHANNEL_INDEX,
++					addr, val, item_count - 2);
++			}
++		}
+ 		osd_reg_write(END_ADDR, paddr);
+ 	} else if (!irq_mode) {
+ 		reject2++;
+@@ -1108,6 +1163,7 @@
+ 
+ 	rdma_status = osd_reg_read(RDMA_STATUS);
+ 	debug_rdma_status = rdma_status;
++	e900_osd_trace_irq(rdma_status);
+ 	OSD_RDMA_STATUS_CLEAR_REJECT;
+ 	osd_update_vsync_hit();
+ 	reset_rdma_table();
+@@ -1311,6 +1367,12 @@
+ 		reset_rdma_table();
+ 		start_osd_rdma(OSD_RDMA_CHANNEL_INDEX);
+ 	} else {
++		u32 old_batch = xchg(&e900_osd_batch, 0);
++
++		if (old_batch)
++			e900_playback_note(E900_PB_OSD_RDMA, E900_PB_CANCEL,
++				0, old_batch, OSD_RDMA_CHANNEL_INDEX,
++				0, 0, 2);
+ 		stop_rdma(OSD_RDMA_CHANNEL_INDEX);
+ 	}
+ 
+@@ -1435,6 +1497,7 @@
+ 	rdma_status = osd_reg_read(RDMA_STATUS);
+ 	debug_rdma_status = rdma_status;
+ 	if (rdma_status & (1 << (24 + OSD_RDMA_CHANNEL_INDEX))) {
++		e900_osd_trace_irq(rdma_status);
+ 		OSD_RDMA_STATUS_CLEAR_REJECT;
+ 		reset_rdma_table();
+ 		osd_update_scan_mode();
+--- a/drivers/amlogic/media/video_sink/video.c
++++ b/drivers/amlogic/media/video_sink/video.c
+@@ -925,6 +925,7 @@
+ static const struct vinfo_s *vinfo;
+ 
+ /* config */
++static atomic_t e900_hdr_session = ATOMIC_INIT(0);
+ struct vframe_s *cur_dispbuf;
+ static struct vframe_s *cur_dispbuf2;
+ bool need_disable_vd2;
+@@ -2277,6 +2278,10 @@
+ 	}
+ 
+ 	cur_dispbuf = vf;
++	if (first_picture && vf)
++		e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++			atomic_read(&e900_hdr_session), 0, 0,
++			E900_PB_FIRST_FRAME, vf->index, vf->pts);
+ 
+ 	if (cur_dispbuf && omx_secret_mode)
+ 		cur_disp_omx_index = cur_dispbuf->omx_index;
+@@ -7202,7 +7207,6 @@
+ 	spin_unlock_irqrestore(&omx_hdr_lock, flags);
+ }
+ #endif
+-static atomic_t e900_hdr_session = ATOMIC_INIT(0);
+ u32 e900_hdr_recovery_video_session(void)
+ {
+ 	return atomic_read(&e900_hdr_session);
+@@ -7217,6 +7221,9 @@
+ 	    type == VFRAME_EVENT_PROVIDER_REG) {
+ 		atomic_inc(&e900_hdr_session);
+ 		e900_hdr_recovery_cancel();
++		e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++			atomic_read(&e900_hdr_session), 0, 0,
++			E900_PB_PROVIDER, type, 0);
+ 	}
+ 	if (type == VFRAME_EVENT_PROVIDER_UNREG) {
+ 		video_vf_unreg_provider();
+@@ -7921,6 +7928,9 @@
+ 		atomic_inc(&e900_hdr_session);
+ 		e900_hdr_recovery_cancel();
+ 	}
++	e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++		atomic_read(&e900_hdr_session), 0, 0,
++		E900_PB_DISABLE, val, layer->disable_video);
+ 	layer->disable_video = val;
+ 
+ 	if ((layer->disable_video ==
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -175,9 +175,11 @@
+ 	struct video_layer_s *layer = &vd_layer[0];
+ 	struct hw_vd_reg_s *mif = &layer->vd_mif_reg;
+ 	struct vframe_s *vf = layer->dispbuf;
+-	unsigned int epoch, gen, canvas, fmt, off = cur_dev->vpp_off;
++	unsigned int epoch, gen, canvas, fmt, misc, fifo;
++	unsigned int off = cur_dev->vpp_off;
++	bool legacy_sample = e900_stage_take(&gxlx2_stage_samples);
+ 
+-	if (!e900_stage_take(&gxlx2_stage_samples))
++	if (!legacy_sample && !e900_playback_sample_available())
+ 		return;
+ 	epoch = READ_ONCE(e900_stage_epoch);
+ 	if (layer->switch_vf && layer->vf_ext)
+@@ -191,12 +193,15 @@
+ 	    mif->vd_if0_gen_reg != 0x1a50 ||
+ 	    mif->vd_if0_canvas0 != 0x1a51 ||
+ 	    mif->viu_vd_fmt_ctrl != 0x1a68 || off) {
+-		pr_info("e900-stage epoch=%u output_skipped active=%u frame=%u legacy=%u g12_mif=%u swap_vd2=%u bus=%u\n",
+-			epoch, layer->enabled, !!vf, legacy_vpp,
+-			gxlx2_g12_mif, layer->vd1_vd2_mux,
+-			codec_reg_bus_ready(IO_VC_BUS));
++		if (legacy_sample)
++			pr_info("e900-stage epoch=%u output_skipped active=%u frame=%u legacy=%u g12_mif=%u swap_vd2=%u bus=%u\n",
++				epoch, layer->enabled, !!vf, legacy_vpp,
++				gxlx2_g12_mif, layer->vd1_vd2_mux,
++				codec_reg_bus_ready(IO_VC_BUS));
+ 		return;
+ 	}
++	if (!legacy_sample && !e900_playback_sample_take())
++		return;
+ 	/* READ_VCBUS_REG is live hardware; VSYNC_RD is the RDMA-aware view.
+ 	 * Current vsync's submissions may not have latched: compare a sequence,
+ 	 * never classify a single shadow/live difference as a hardware failure.
+@@ -204,6 +209,23 @@
+ 	gen = READ_VCBUS_REG(mif->vd_if0_gen_reg);
+ 	canvas = READ_VCBUS_REG(mif->vd_if0_canvas0);
+ 	fmt = READ_VCBUS_REG(mif->viu_vd_fmt_ctrl);
++	misc = READ_VCBUS_REG(VPP_MISC);
++	fifo = READ_VCBUS_REG(VPP_FIFO_STATUS);
++	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++		e900_hdr_recovery_video_session(), 0, 0,
++		mif->vd_if0_gen_reg, gen, epoch);
++	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++		e900_hdr_recovery_video_session(), 0, 0,
++		mif->vd_if0_canvas0, canvas, epoch);
++	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++		e900_hdr_recovery_video_session(), 0, 0,
++		mif->viu_vd_fmt_ctrl, fmt, epoch);
++	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++		e900_hdr_recovery_video_session(), 0, 0,
++		VPP_MISC, misc, epoch);
++	e900_playback_note(E900_PB_SAFE_READ, E900_PB_READ,
++		e900_hdr_recovery_video_session(), 0, 0,
++		VPP_FIFO_STATUS, fifo, epoch);
+ 	pr_info("e900-stage epoch=%u mif idx=%u pts=%u live_gen=%x live_canvas=%x live_fmt=%x shadow_gen=%x shadow_canvas=%x shadow_fmt=%x\n",
+ 		epoch, vf->index, vf->pts, gen, canvas, fmt,
+ 		VSYNC_RD_MPEG_REG(mif->vd_if0_gen_reg),
+@@ -223,7 +245,7 @@
+ 		READ_VCBUS_REG(VPP_VSC_START_PHASE_STEP),
+ 		READ_VCBUS_REG(VPP_MATRIX_CTRL));
+ 	pr_info("e900-stage epoch=%u blend requested=%x live=%x shadow=%x post_h=%x post_v=%x drop_vc=%u\n",
+-		epoch, blend_requested, READ_VCBUS_REG(VPP_MISC),
++		epoch, blend_requested, misc,
+ 		VSYNC_RD_MPEG_REG(VPP_MISC),
+ 		READ_VCBUS_REG(VPP_POSTBLEND_VD1_H_START_END),
+ 		READ_VCBUS_REG(VPP_POSTBLEND_VD1_V_START_END),
+@@ -910,6 +932,10 @@
+ 	e900_edge_before_disable(layer_id, on);
+ 	e900_pixel_before_disable(layer_id, on);
+ 	e900_debug_event("layer_switch", layer_id, on, async, vd_layer[0].onoff_state);
++	if (layer_id == 0 || layer_id == 0xff)
++		e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++			e900_hdr_recovery_video_session(), 0, layer_id,
++			E900_PB_LAYER_SWITCH, on, vd_layer[0].onoff_state);
+ 	if (layer_id == 0xff)
+ 		pr_debug("VID: VD all %s with async %s\n",
+ 			 on ? "on" : "off",
+@@ -5558,6 +5584,26 @@
+ 
+ 	if (video1_off_req)
+ 		disable_vd1_blend(&vd_layer[0]);
++	if (is_meson_gxlx2_cpu()) {
++		static u32 last_state = ~0U, last_frame_count = ~0U;
++		u32 state = (vd_layer[0].enabled & 1) |
++			((vd_layer[0].global_output & 1) << 1) |
++			((vd_layer[0].onoff_state & 7) << 2) |
++			((vd_layer[0].disable_video & 3) << 5) |
++			((!!vd_layer[0].switch_vf) << 7);
++
++		if (state != last_state ||
++		    (vd_layer[0].new_vframe_count != last_frame_count &&
++		     (vd_layer[0].new_vframe_count <= 3 ||
++		      last_frame_count == 0))) {
++			e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++				e900_hdr_recovery_video_session(), 0, 0,
++				E900_PB_BLEND_STATE, state,
++				vd_layer[0].new_vframe_count);
++			last_state = state;
++			last_frame_count = vd_layer[0].new_vframe_count;
++		}
++	}
+ }
+ 
+ /*********************************************************
+--- a/drivers/amlogic/media/video_sink/vpp.c
++++ b/drivers/amlogic/media/video_sink/vpp.c
+@@ -2261,6 +2261,9 @@
+ 	sr = &sr_info;
+ 	sr_support = sr->sr_support;
+ 	e900_note_pps(sr->sr_support, sr0_sr1_refresh);
++	e900_playback_note(E900_PB_LIFE, E900_PB_STATE,
++		e900_hdr_recovery_video_session(), 0, 0,
++		E900_PB_PPS, sr->sr_support, sr0_sr1_refresh);
+ 	if (super_scaler == 0) {
+ 		sr_support &= ~SUPER_CORE0_SUPPORT;
+ 		sr_support &= ~SUPER_CORE1_SUPPORT;
+--- a/include/linux/amlogic/media/registers/e900_debug.h
++++ b/include/linux/amlogic/media/registers/e900_debug.h
+@@ -67,4 +67,57 @@
+ static inline void e900_hdr_recovery_cancel(void) { }
+ #endif
+ u32 e900_hdr_recovery_video_session(void);
++/* Playback timeline source/kind and lifecycle code map (0038). */
++#define E900_PB_LIFE 1
++#define E900_PB_NORMAL_RDMA 2
++#define E900_PB_OSD_RDMA 3
++#define E900_PB_DIRECT 4
++#define E900_PB_SAFE_READ 5
++#define E900_PB_MARKER 1
++#define E900_PB_STATE 2
++#define E900_PB_PREPARE 3
++#define E900_PB_WORD 4
++#define E900_PB_IRQ 5
++#define E900_PB_CANCEL 6
++#define E900_PB_READ 7
++#define E900_PB_PROVIDER 1
++#define E900_PB_DISABLE 2
++#define E900_PB_FIRST_FRAME 3
++#define E900_PB_LAYER_SWITCH 4
++#define E900_PB_BLEND_STATE 5
++#define E900_PB_PPS 6
++#define E900_PB_CSC_POST 7
++#define E900_PB_HDR_REQUEST 8
++#define E900_PB_HDR_SUBMITTED 9
++#define E900_PB_HDR_DISABLED 10
++static inline bool e900_playback_selected(u32 reg)
++{
++	return (reg >= 0x1a00 && reg <= 0x1aff) ||
++		(reg >= 0x1d00 && reg <= 0x1dff) ||
++		(reg >= 0x3800 && reg <= 0x38ff) ||
++		(reg >= 0x3d60 && reg <= 0x3d6f);
++}
++static inline bool e900_playback_direct_selected(u32 reg)
++{
++	return e900_playback_selected(reg);
++}
++#if IS_REACHABLE(CONFIG_AMLOGIC_MEDIA_RDMA)
++void e900_playback_note(u32 source, u32 kind, u32 session,
++			 u32 batch, u32 handle, u32 reg, u32 value, u32 aux);
++u32 e900_playback_begin(u32 source, u32 handle, u32 trigger, u32 total);
++bool e900_playback_active(void);
++bool e900_playback_batch_valid(u32 batch);
++bool e900_playback_sample_available(void);
++bool e900_playback_sample_take(void);
++#else
++static inline void e900_playback_note(u32 source, u32 kind, u32 session,
++			 u32 batch, u32 handle, u32 reg, u32 value, u32 aux) { }
++static inline u32 e900_playback_begin(u32 source, u32 handle,
++				      u32 trigger, u32 total) { return 0; }
++static inline bool e900_playback_active(void) { return false; }
++static inline bool e900_playback_batch_valid(u32 batch) { return false; }
++static inline bool e900_playback_sample_available(void) { return false; }
++static inline bool e900_playback_sample_take(void) { return false; }
++#endif
++
+ #endif

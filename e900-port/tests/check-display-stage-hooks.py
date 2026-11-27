@@ -59,6 +59,12 @@ typedef uint32_t u32;typedef uint8_t u8;
 #define VPP_VSC_START_PHASE_STEP 0x1d08
 #define VPP_MATRIX_CTRL 0x1d5f
 #define VPP_MISC 0x1d26
+#define VPP_FIFO_STATUS 0x1d28
+#define E900_PB_DIRECT 4
+#define E900_PB_CANCEL 6
+#define E900_PB_WORD 4
+#define E900_PB_SAFE_READ 5
+#define E900_PB_READ 7
 #define VPP_POSTBLEND_VD1_H_START_END 0x1d1c
 #define VPP_POSTBLEND_VD1_V_START_END 0x1d1d
 struct kernel_param {void *arg;};
@@ -67,6 +73,15 @@ static int param_get_uint(char *b,const struct kernel_param *p){return sprintf(b
 static int kstrtouint(const char *s,unsigned base,unsigned *out){char *e;unsigned long n=strtoul(s,&e,base);if(e==s||(*e&&*e!='\n'))return -EINVAL;if(n>UINT32_MAX)return -ERANGE;*out=n;return 0;}
 static unsigned cmpxchg(unsigned *p,unsigned old,unsigned value){unsigned seen=*p;if(seen==old)*p=value;return seen;}
 static void e900_debug_event(const char *s,u32 a,u32 b,u32 c,u32 d){(void)s;(void)a;(void)b;(void)c;(void)d;}
+/* The standalone 0038 ring is exercised in check-playback-timeline.py. */
+static bool e900_playback_direct_selected(u32 reg){(void)reg;return false;}
+static bool playback_available;static unsigned playback_taken;
+static bool e900_playback_sample_available(void){return playback_available;}
+static bool e900_playback_sample_take(void){playback_taken++;return true;}
+static u32 e900_hdr_recovery_video_session(void){return 0;}
+static void e900_playback_note(u32 source,u32 kind,u32 session,u32 batch,u32 handle,u32 reg,u32 value,u32 aux){
+ (void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)reg;(void)value;(void)aux;
+}
 /* GEN3 provenance itself executes in check-gen3-rmw-osd.py. */
 static void e900_gen3_rmw(u32 reg,int handle,int mode,u32 start,u32 len,u32 hardware,u32 base,u32 result,int source,void*caller){(void)reg;(void)handle;(void)mode;(void)start;(void)len;(void)hardware;(void)base;(void)result;(void)source;(void)caller;}
 static unsigned cpu=0x2a,live_reads,shadow_reads,log_lines,hw_writes;
@@ -105,6 +120,11 @@ int main(void){
  l->vd_mif_reg=(struct hw_vd_reg_s){.vd_if0_gen_reg=0x1a50,.vd_if0_canvas0=0x1a51,.viu_vd_fmt_ctrl=0x1a68,.vd_if0_luma_x0=0x1a53,.vd_if0_luma_y0=0x1a55,.vd_if0_gen_reg2=0x1a6d,.vd_if0_gen_reg3=0x1aa7,.vd_if0_luma_fifo_size=0x1a63};
  assert(!gxlx2_stage_samples&&!e900_stage_input_left);
  e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(!live_reads&&!log_lines);
+ /* New ring can wait across Stop without unbounded skipped logs or reads. */
+ playback_available=true;l->enabled=false;
+ for(unsigned i=0;i<100;i++)e900_stage_output(0);
+ assert(!live_reads&&!log_lines&&!playback_taken);
+ playback_available=false;l->enabled=true;
  assert(e900_stage_sample_ops.set("9",&p)==-ERANGE);
  assert(e900_stage_sample_ops.set("bad",&p)==-EINVAL);
  assert(!gxlx2_stage_samples);
@@ -128,10 +148,10 @@ int main(void){
  assert(!e900_stage_sample_ops.set("8",&p));
  for(unsigned i=0;i<12;i++){e900_stage_input(0,&vf,l,true);e900_stage_output(0x1234);}
  assert(!gxlx2_stage_samples&&!e900_stage_input_left);
- assert(live_reads==15*8 && shadow_reads==6*8 && hw_writes==1);
+ assert(live_reads==16*8 && shadow_reads==6*8 && hw_writes==1);
  assert(e900_stage_sample_ops.get(b,&p)>0&&!strcmp(b,"0"));
  assert(!e900_stage_sample_ops.set("8",&p));assert(!e900_stage_sample_ops.set("0",&p));
- e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(live_reads==15*8);
+ e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(live_reads==16*8);
  return 0;
 }
 '''

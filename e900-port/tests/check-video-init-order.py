@@ -132,6 +132,12 @@ static int blocking_notifier_call_chain(struct fake_chain *c,unsigned long event
 static void e900_debug_event(const char*s,unsigned a,unsigned b,unsigned c,unsigned d){(void)s;(void)a;(void)b;(void)c;(void)d;}
 /* Executed independently by check-gen3-rmw-osd.py. */
 static void e900_gen3_rmw(unsigned reg,int handle,int mode,unsigned start,unsigned len,unsigned hardware,unsigned base,unsigned result,int source,void*caller){(void)reg;(void)handle;(void)mode;(void)start;(void)len;(void)hardware;(void)base;(void)result;(void)source;(void)caller;}
+/* Timeline behavior is exercised separately by check-playback-timeline.py. */
+#define E900_PB_DIRECT 4
+#define E900_PB_WORD 4
+#define E900_PB_CANCEL 6
+static bool e900_playback_direct_selected(unsigned r) {return (r>=0x1a00&&r<=0x1aff)||(r>=0x1d00&&r<=0x1dff)||(r>=0x3800&&r<=0x38ff)||(r>=0x3d60&&r<=0x3d6f);}
+static void e900_playback_note(unsigned s,unsigned k,unsigned se,unsigned b,unsigned h,unsigned r,unsigned v,unsigned a){(void)s;(void)k;(void)se;(void)b;(void)h;(void)r;(void)v;(void)a;}
 static struct chip_register_ops *amports_ops[BUS_MAX];
 static unsigned e900_bus_write_drops[BUS_MAX];
 #define atomic_inc(p) (++*(p))

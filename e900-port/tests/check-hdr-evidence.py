@@ -16,6 +16,9 @@ with tempfile.TemporaryDirectory(prefix='e900-hdr-evidence-') as td:
             before = (root/name).read_text()
         subprocess.run(['git', 'apply', str(patch)], cwd=root, check=True)
     after = (root/name).read_text()
+    # Remove only the three added playback observation calls, preserving policy.
+    after, n = re.subn(r'^\t+e900_playback_note\(E900_PB_LIFE, E900_PB_STATE,[^;]+;\n', '', after, flags=re.M)
+    assert n == 3, 'Expected request/disabled/submitted playback notes'
     stripped = after
     # Remove only the four explicit calls, not an arbitrary C block.
     for event in ('hdr_flush_disabled', 'hdr_request', 'hdr_osd_wrap_off', 'hdr_submitted'):

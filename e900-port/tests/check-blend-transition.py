@@ -77,6 +77,17 @@ static int mem;
 static unsigned video_process_status[1],video_process_flags[1],null_vf_cnt[1];
 static bool video_on[1],video_layer_wait_on[1];
 static unsigned e900_csc_last_branch,e900_csc_post_count,e900_csc_legacy_count,e900_csc_fake_count;
+/* New opt-in HDR/0038 timeline side effects; CSC branch assertions remain exact. */
+#define E900_PB_LIFE 1
+#define E900_PB_STATE 2
+#define E900_PB_CSC_POST 7
+static bool e900_hdr_force;
+static unsigned e900_hdr_post_calls,e900_hdr_generation;
+static void e900_hdr_log(const char *event,u32 gen){(void)event;(void)gen;}
+static u32 e900_hdr_recovery_video_session(void){return 0;}
+static void e900_playback_note(u32 source,u32 kind,u32 session,u32 batch,u32 handle,u32 reg,u32 value,u32 aux){
+ (void)source;(void)kind;(void)session;(void)batch;(void)handle;(void)reg;(void)value;(void)aux;
+}
 static int irq_count[2],vsync_cfg_count[2];static unsigned force_rdma_config[2];static bool rdma_done[2];
 static bool is_meson_gxlx2_cpu(void){return cpu==0x2a;}
 static bool codec_reg_bus_ready(unsigned b){assert(b==4);return bus;}
