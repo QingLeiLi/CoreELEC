@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-17",
+  "current_state": "ADB device connected; root shell works",
+  "previous_symptoms": [
+    "TCP 5555 reachable",
+    "adb transport offline",
+    "legacy CNXN probe timed out",
+    "host reconnect alone failed",
+    "device root setprop/service restart restored connection"
+  ],
+  "confirmed_settings": {
+    "service.adb.tcp.port": "5555",
+    "persist.adb.tcp.port": "5555",
+    "usb_config": "mtp,adb",
+    "adb_enabled": "1",
+    "adb_keys_file": "exists; contents not read"
+  },
+  "confirmed_helper_failure": {
+    "uid": 10018,
+    "package": "com.shafa.market",
+    "log": "init: sys_prop: Unable to start service ctl [adbd] uid:10018",
+    "interval": "approximately 10 seconds",
+    "meaning": "unprivileged helper cannot start/recover init adbd service"
+  },
+  "init_lifecycle": {
+    "adbd": "disabled core service started by property triggers",
+    "usb_mtp_adb": "stop adbd; configure gadget; start adbd",
+    "dev.bootcomplete": "USB modules and functionfs initialized; usb config reapplied"
+  },
+  "conclusion": "Device-side ADB lifecycle/handshake problem suspected; helper permission failure confirmed, original offline root cause not proven after restart",
+  "changes": "read-only investigation; no device settings modified in this investigation"
+}

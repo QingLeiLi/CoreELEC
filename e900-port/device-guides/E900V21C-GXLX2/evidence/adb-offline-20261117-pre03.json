@@ -1,0 +1,15 @@
+{
+  "time": "2026-11-17T03:08:05.463178",
+  "host_adb": "37.0.2, default server PID 6793; no duplicate default-port listener",
+  "tcp_5555": "connect succeeds in approximately 2ms",
+  "raw_handshake": {
+    "CNXN_0x01000000": "no reply within 4s",
+    "CNXN_0x01000001": "no reply within 4s",
+    "legacy_after_default_disconnect": "no reply within 5s"
+  },
+  "isolated_host_server_5038": "new server starts successfully; device still offline",
+  "cleanup": "isolated server stopped",
+  "conclusion": "Failure localized to device endpoint or its application data path before any received AUTH/CNXN response. No proof of exact adbd internal cause; collect device logs and thread state before restarting.",
+  "prior_confirmed_evidence": "helper com.shafa.market uid10018 lacks init service start permissions; this does not prove cause of current unresponsive handshake.",
+  "device_writes": false
+}

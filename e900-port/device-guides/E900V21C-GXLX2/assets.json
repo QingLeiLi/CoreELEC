@@ -1,0 +1,14 @@
+[
+  {
+    "role": "Android线刷包",
+    "path": "/Users/lql/Downloads/IPTV/CoreELEC-E900V21C/firmware-candidates/android_tv_e900v22e_e900v22d_s905l3b.tar.xz",
+    "bytes": 255099600,
+    "sha256": "a60c06428198f879e7ef1d1e81b0483ac910e491c67169f7785fda0d53abd9a4"
+  },
+  {
+    "role": "终端APK",
+    "path": "/Users/lql/Downloads/IPTV/CoreELEC-E900V21C/Term-1.0.70.apk",
+    "bytes": 564672,
+    "sha256": "4cbf6adb273a6afa01f7d5f4ea97ac22b5a97ce1a34c000f2ef308a6383e8821"
+  }
+]
