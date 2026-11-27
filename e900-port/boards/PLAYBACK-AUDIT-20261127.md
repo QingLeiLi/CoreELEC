@@ -59,3 +59,5 @@ OSD source3 prepare的trigger/value=0表示**可变表窗口**，aux=RDMA_TABLE_
 首播与重播冻结可显式加`--hdmi-status`保存现有TX config/avmute状态，Stop阶段会跳过。`config`含硬件和软件字段，`hpd_state`是软件HPD，AVMUTE getter读现有硬件状态，不构成线上的有效像素证明。
 
 0039回采新包使用明确v2头格式并关联preACK完成槽；必须配套新inspect和loopback工具。像素候选报告/回环报告补充boot_id，避免跨启动拼接证据。旧v1可离线复核，但不满足新的槽关联要求。
+
+0041新增生命周期code11/12=DCU进入/返回，13/14=PPS进入/返回，15=PPS不支持而提前返回。compare的localization将事件与实际寄存器差异映射到函数/寄存器名，保留原始行和缺覆盖标记；readback_provenance仅给先前写入候选，不把异步提交与当前读回不相等直接当作故障。详见全链路文档的逐项判据。

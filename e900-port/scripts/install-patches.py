@@ -48,7 +48,8 @@ PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-r
                                          "linux/0037-gxlx2-force-hdr2-reconfig-on-global-output-recovery.patch",
                                          "linux/0038-gxlx2-playback-timeline.patch",
                                          "linux/0039-gxlx2-vdin-slot-completion-evidence.patch",
-                                         "linux/0040-gxlx2-active-hdr-control-readback.patch"]
+                                         "linux/0040-gxlx2-active-hdr-control-readback.patch",
+                                         "linux/0041-gxlx2-vd1-call-boundaries.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
 HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")

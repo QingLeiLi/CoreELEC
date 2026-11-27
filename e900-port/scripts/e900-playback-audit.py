@@ -16,7 +16,8 @@ PHASES = {'first': 1, 'stop': 2, 'replay': 3}
 SOURCES = {1: 'lifecycle', 2: 'normal_rdma', 3: 'osd_rdma', 4: 'direct_write', 5: 'safe_read'}
 EVENTS = {1: 'provider', 2: 'disable', 3: 'first_frame', 4: 'layer_switch',
           5: 'blend_state', 6: 'pps', 7: 'csc_post', 8: 'hdr_request',
-          9: 'hdr_submitted', 10: 'hdr_disabled'}
+          9: 'hdr_submitted', 10: 'hdr_disabled', 11: 'dcu_entry', 12: 'dcu_exit',
+          13: 'pps_entry', 14: 'pps_exit', 15: 'pps_unsupported'}
 KINDS = {1: 'marker', 2: 'state', 3: 'prepare', 4: 'word', 5: 'irq', 6: 'cancel', 7: 'read'}
 
 
@@ -181,6 +182,100 @@ def freeze(run, phase, hdmi=False):
     print(json.dumps({'phase': phase, 'rows': len(rows), 'overflow': before['overflow']}))
 
 
+
+# Fixed source map: a changed value is a lead, never a root-cause verdict.
+REGISTER_MAP = {
+    0x1a50: ('VD1_IF0_GEN_REG', 'vd_set_dcu -> vd1_set_dcu', 'VD1 MIF'),
+    0x1a51: ('VD1_IF0_CANVAS0', 'set_layer_display_canvas', 'Canvas selection'),
+    0x1a68: ('VIU_VD1_FMT_CTRL', 'vd_set_dcu -> vd1_set_dcu', 'formatter'),
+    0x1d04: ('VPP_SCALE_COEF', 'vd_scaler_setting', 'PPS coefficient stream'),
+    0x1d19: ('VPP_SC_MISC', 'vd_scaler_setting', 'PPS'),
+    0x1d25: ('VPP_POSTBLEND_CURRENT_XY', 'vpp_blend_update', 'dynamic status; not a restart control'),
+    0x1d26: ('VPP_MISC', 'vpp_blend_update', 'blend'),
+    0x1d28: ('VPP_FIFO_STATUS', 'vpp_blend_update', 'dynamic FIFO status'),
+    0x3802: ('VD1_HDR2_MATRIXI_COEF00_01', 'set_hdr_matrix', 'HDR input matrix'),
+    0x3804: ('VD1_HDR2_MATRIXI_COEF11_12', 'set_hdr_matrix', 'HDR input matrix'),
+    0x3806: ('VD1_HDR2_MATRIXI_COEF22', 'set_hdr_matrix', 'HDR input matrix'),
+    0x380e: ('VD1_HDR2_MATRIXO_COEF00_01', 'set_hdr_matrix', 'HDR output matrix'),
+    0x3800: ('VD1_HDR2_CTRL', 'hdr_func', 'HDR configuration; no bypass bit assumption'),
+}
+FUNCTION_MAP = {1: 'video_receiver_event_fun', 2: '_video_set_disable',
+                3: 'video_toggle_frame', 4: 'safe_switch_videolayer',
+                5: 'vpp_blend_update', 6: 'vpp_set_super_scaler_regs',
+                7: 'vpp_matrix_update -> video_post_process',
+                8: 'hdr_func entry', 9: 'hdr_func submission end',
+                10: 'hdr_func disable_flush return', 11: 'vd_set_dcu entry',
+                12: 'vd_set_dcu exit', 13: 'vd_scaler_setting entry',
+                14: 'vd_scaler_setting exit', 15: 'vd_scaler_setting unsupported return'}
+
+
+def localization(first, replay):
+    """Align event classes/ordinals; expose unresolved asynchronous writes."""
+    def indexed(rows):
+        groups = collections.defaultdict(list)
+        for row in rows:
+            if row['source'] == 1 and row['kind'] == 2:
+                groups[('call', row['reg'], row['handle'])].append(row)
+            elif row['kind'] == 7:
+                groups[('live', row['reg'], 0)].append(row)
+        return groups
+    left, right = indexed(first), indexed(replay)
+    findings = []
+    for key in sorted(left.keys() | right.keys()):
+        a, b = left.get(key, []), right.get(key, [])
+        mode, reg, handle = key
+        item = {'category': mode, 'code_or_register': hex(reg), 'handle': handle,
+                'first_count': len(a), 'replay_count': len(b)}
+        if mode == 'call':
+            item['function'] = FUNCTION_MAP.get(reg, 'unmapped')
+        else:
+            name, function, meaning = REGISTER_MAP.get(reg, ('unmapped', 'unmapped', 'raw configuration'))
+            item.update(register=name, function=function, meaning=meaning)
+        if not a or not b:
+            item.update(classification='MISSING_COVERAGE_OR_CALL',
+                        evidence={'first': a[:1], 'replay': b[:1]},
+                        limitation='An absent event can be outside the capture window; not proof a call was omitted.')
+            findings.append(item); continue
+        # Provider event IDs, frame indices/PTS and new-frame counts legitimately
+        # differ. Counts/ordering are retained; do not turn those into failures.
+        if mode == 'call':
+            signatures = lambda rows: [(r['value'], r['aux']) for r in rows]
+            if reg in (1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) and signatures(a) != signatures(b):
+                i = next((i for i in range(min(len(a), len(b)))
+                          if signatures(a)[i] != signatures(b)[i]), min(len(a), len(b)))
+                item.update(classification='CALL_ARGUMENT_OR_COUNT_DIFFERENCE',
+                            evidence={'first': a[i:i+1], 'replay': b[i:i+1]})
+                findings.append(item)
+        else:
+            i = next((i for i in range(min(len(a),len(b))) if a[i]['value'] != b[i]['value']), None)
+            if i is not None:
+                item.update(classification='LIVE_VALUE_DIFFERENCE',
+                            evidence={'first': a[i], 'replay': b[i]},
+                            limitation='Ordinal samples are not synchronized scanlines; dynamic status and frame addresses may differ normally.')
+                findings.append(item)
+    def provenance(rows):
+        writes = collections.defaultdict(list)
+        result = []
+        for row in rows:
+            if row['kind'] == 4:
+                writes[row['reg']].append(row)
+            elif row['kind'] == 7:
+                candidates = writes[row['reg']][-4:]
+                result.append({'read': row, 'prior_selected_writes': candidates,
+                               'matches_last_selected_write': None if not candidates else candidates[-1]['value'] == row['value'],
+                               'limitation': 'Preparation/dispatch precedes hardware latch; mismatch is not a lost-write assertion.'})
+        return result
+    return {'status': 'CANDIDATES_REQUIRE_AUDIT', 'findings': findings,
+            'readback_provenance': {'first': provenance(first), 'replay': provenance(replay)},
+            'alignment': 'Same source event/register occurrence; raw index and kernel stamps retained. No claim of earliest physical pixel failure.',
+            'coverage': {name: {'provider': any(r['source']==1 and r['reg']==1 for r in rows),
+                               'hdr_request': any(r['source']==1 and r['reg']==8 for r in rows),
+                               'hdr_submitted': any(r['source']==1 and r['reg']==9 for r in rows),
+                               'safe_read': any(r['kind']==7 for r in rows),
+                               'osd_window': any(r['source']==3 and r['kind']==3 for r in rows)}
+                         for name, rows in [('first',first),('replay',replay)]}}
+
+
 def compare(run):
     docs = {name: json.loads((run/(name+'.json')).read_text()) for name in PHASES}
     boot = json.loads((run/'manifest.json').read_text())['boot_id']
@@ -208,6 +303,7 @@ def compare(run):
             'counts': {name: dict(collections.Counter(f"{SOURCES[r['source']]}:{KINDS[r['kind']]}" for r in rows)) for name, rows in parsed.items()},
             'lifecycle': {name: [dict(r, event=EVENTS.get(r['reg'], 'unknown')) for r in rows if r['source'] == 1 and r['kind'] == 2] for name, rows in parsed.items()},
             'endpoint_status': {name: docs[name].get('hdmi', {'status': 'not_requested'}) for name in PHASES},
+            'localization': localization(parsed['first'], parsed['replay']),
             'timeline': {name: rows for name, rows in parsed.items()},
             'limitations': ['Missing baseline is unknown, never zero/uninitialized.',
                            'Values retain repetition/order per address; full cross-address order is in timeline.',

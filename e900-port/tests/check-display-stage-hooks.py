@@ -105,7 +105,7 @@ static int atomic_read(atomic_t *a){return a->value;}
 static void atomic_inc(atomic_t *a){a->value++;}
 static bool codec_reg_bus_ready(u32 bus){return bus<BUS_MAX && amports_ops[bus];}
 static void fake_write(unsigned reg,unsigned val){(void)reg;(void)val;hw_writes++;}
-static unsigned live(unsigned r){assert((r>=0x1a50&&r<=0x1d5f)||(r==0x3800&&playback_available));live_reads++;return r;}
+static unsigned live(unsigned r){assert((r>=0x1a50&&r<=0x1d5f)||((r==0x3800||r==0x3802||r==0x3804||r==0x3806||r==0x380e)&&playback_available));live_reads++;return r;}
 static unsigned shadow(unsigned r){shadow_reads++;return r+1;}
 #define READ_VCBUS_REG(r) live(r)
 #define VSYNC_RD_MPEG_REG(r) shadow(r)
@@ -157,7 +157,7 @@ int main(void){
  e900_stage_output(0);e900_stage_input(0,&vf,l,true);assert(live_reads==16*8);
  assert(!hdr_reads_recorded);
  playback_available=true;e900_stage_output(0);
- assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+30);
+ assert(playback_taken==1 && hdr_reads_recorded==1 && live_reads==16*8+34);
  return 0;
 }
 '''

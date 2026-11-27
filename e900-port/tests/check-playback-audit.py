@@ -72,3 +72,16 @@ assert calls==['hpd_state']
 calls.clear()
 assert M['hdmi_snapshot'](context,lambda name:'0')['status']=='skipped_inactive'
 print('PASS: TX getters require active H264/global/layer/mode/HPD; status never treated as physical pixel proof')
+
+# Stage-local candidate reports keep dynamic values and missing coverage explicit.
+a=[row(0,1,8,1,2),row(1,1,0x3800,0xd05f,7)]
+b=[row(0,3,8,1,2),row(1,3,0x3800,0x1c040,7)]
+a[0]['source']=b[0]['source']=1
+a[1]['source']=b[1]['source']=5
+f=M['localization'](a,b)
+lead=next(r for r in f['findings'] if r['category']=='live')
+assert lead['register']=='VD1_HDR2_CTRL' and lead['classification']=='LIVE_VALUE_DIFFERENCE'
+assert not f['coverage']['first']['hdr_submitted']
+assert f['readback_provenance']['replay'][0]['matches_last_selected_write'] is None
+assert f['status']=='CANDIDATES_REQUIRE_AUDIT'
+print('PASS: stage-local differences map to named registers/functions without promoting missing coverage or dynamic state to root cause')

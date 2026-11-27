@@ -1,0 +1,58 @@
+Subject: [DIAGNOSTIC] correlate VD1 DCU and PPS call boundaries with fixed HDR matrix readback
+
+--- a/drivers/amlogic/media/video_sink/video_hw.c
++++ b/drivers/amlogic/media/video_sink/video_hw.c
+@@ -237,7 +237,8 @@
+ 		 */
+ 		static const u32 layout_pps[] = {
+ 			0x1a69, 0x1a6a, 0x1a53, 0x1a54, 0x1a55, 0x1a56,
+-			0x1d19, 0x1d01, 0x1d02, 0x1d13, 0x1d08, 0x1d18, 0x1d0d
++			0x1d19, 0x1d01, 0x1d02, 0x1d13, 0x1d08, 0x1d18, 0x1d0d,
++			0x3802, 0x3804, 0x3806, 0x380e
+ 		};
+ 		unsigned int i;
+ 		u32 hdr_ctrl = READ_VCBUS_REG(0x3800);
+@@ -4890,9 +4891,17 @@
+ 	struct vframe_s *vf)
+ {
+ 	if (layer_id == 0)
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++			0, 0, 11, 0, 0);
++
++	if (layer_id == 0)
+ 		vd1_set_dcu(layer, frame_par, vf);
+ 	else
+ 		vd2_set_dcu(layer, frame_par, vf);
++
++	if (layer_id == 0)
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++			0, 0, 12, 0, 0);
+ }
+ 
+ void vd_mif_setting(
+@@ -4909,13 +4918,24 @@
+ 	u8 layer_id,
+ 	struct scaler_setting_s *setting)
+ {
+-	if (setting && !setting->support)
++	if (layer_id == 0)
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++			0, 0, 13, 0, 0);
++
++	if (setting && !setting->support) {
++		if (layer_id == 0)
++			e900_playback_note(1, 2, e900_hdr_recovery_video_session(), 0, 0, 15, 0, 0);
+ 		return;
++	}
+ 
+ 	if (layer_id == 0)
+ 		vd1_scaler_setting(setting);
+ 	else
+ 		vd2_scaler_setting(setting);
++
++	if (layer_id == 0)
++		e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
++			0, 0, 14, 0, 0);
+ }
+ 
+ void vd_blend_setting(
