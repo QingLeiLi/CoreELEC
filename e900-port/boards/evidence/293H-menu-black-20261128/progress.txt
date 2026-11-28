@@ -1,0 +1,48 @@
+spawn ssh root@192.168.31.11 date; ls /sys/module/*/parameters/gxlx2_playback_scan /sys/module/*/parameters/gxlx2_rdma_state /sys/module/*/parameters/gxlx2_submit_scan; for f in /sys/module/*/parameters/gxlx2_playback_scan /sys/module/*/parameters/gxlx2_rdma_state /sys/module/*/parameters/gxlx2_submit_scan /sys/module/*/parameters/gxlx2_video_hw_state; do if test -r "$f"; then echo "$f"; cat "$f"; fi; done; printf "{\"jsonrpc\":\"2.0\",\"method\":\"Player.GetActivePlayers\",\"id\":1}\n" | nc -w 2 127.0.0.1 9090; printf "{\"jsonrpc\":\"2.0\",\"method\":\"GUI.GetProperties\",\"params\":{\"properties\":[\"currentwindow\",\"screensaveractive\",\"fullscreen\"]},\"id\":2}\n" | nc -w 2 127.0.0.1 9090; top -b -n 1 | head -n 16; dmesg | head -n 12; tail -n 8 /storage/.kodi/temp/kodi.log
+root@192.168.31.11's password: 
+Sat Nov 28 03:24:25 UTC 2026
+ls: /sys/module/*/parameters/gxlx2_rdma_state: No such file or directory
+/sys/module/rdma_mgr/parameters/gxlx2_playback_scan
+/sys/module/rdma_mgr/parameters/gxlx2_submit_scan
+/sys/module/rdma_mgr/parameters/gxlx2_playback_scan
+generation=0 status=0 count=0 capacity=65536 overflow=0 phase=0
+
+/sys/module/rdma_mgr/parameters/gxlx2_submit_scan
+generation=0 status=0 count=0 capacity=4096 overflow=0
+
+{"id":1,"jsonrpc":"2.0","result":[]}{"error":{"code":-32602,"data":{"method":"GUI.GetProperties","stack":{"message":"array element at index 1 does not match","name":"properties","property":{"message":"Received value does not match any of the defined enum values","name":"GUI.Property.Name","type":"string"},"type":"array"}},"message":"Invalid params."},"id":2,"jsonrpc":"2.0"}top - 03:24:25 up  1:16,  0 user,  load average: 0.19, 0.15, 0.10
+Tasks: 134 total,   1 running, 133 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  4.2 us,  0.0 sy,  0.0 ni, 95.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :    975.2 total,    436.5 free,    267.0 used,    349.8 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.    708.2 avail Mem 
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+ 3751 root      20   0  597720 117900  58828 S   8.3  11.8   8:45.99 kodi.bin
+ 4059 root      20   0    4072   3080   1564 R   8.3   0.3   0:00.03 top
+    1 root      20   0    8216   7352   5836 S   0.0   0.7   0:05.87 systemd
+    2 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kthreadd
+    4 root       0 -20       0      0      0 S   0.0   0.0   0:00.04 kworker/0+
+    6 root      20   0       0      0      0 S   0.0   0.0   0:01.90 ksoftirqd+
+    7 root      20   0       0      0      0 S   0.0   0.0   0:01.39 rcu_preem+
+    8 root      20   0       0      0      0 S   0.0   0.0   0:00.04 rcu_sched
+    9 root      20   0       0      0      0 S   0.0   0.0   0:00.00 rcu_bh
+[ 3225.599352@0]h fb: osd rdma restart! 0x0
+[ 3225.932678@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 3225.932690@0]h fb: osd rdma restart! 0x0
+[ 3226.266009@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 3226.266020@0]h fb: osd rdma restart! 0x0
+[ 3226.599342@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 3226.599354@0]h fb: osd rdma restart! 0x0
+[ 3226.932681@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 3226.932691@0]h fb: osd rdma restart! 0x0
+[ 3227.266012@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 3227.266023@0]h fb: osd rdma restart! 0x0
+[ 3227.599345@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+2026-11-28 02:30:23.959 T:3751     info <general>: VideoPlayer: waiting for threads to exit
+2026-11-28 02:30:23.959 T:3751     info <general>: VideoPlayer: finished waiting
+2026-11-28 02:30:23.961 T:3751     info <general>: GLES: Maximum texture width: 4096
+2026-11-28 03:24:25.603 T:3783     info <general>: Skipped 1 duplicate messages..
+2026-11-28 03:24:25.603 T:3783     info <general>: JSONRPC Server: New connection added
+2026-11-28 03:24:25.603 T:3783     info <general>: JSONRPC Server: Disconnection detected
+2026-11-28 03:24:25.607 T:3783     info <general>: JSONRPC Server: New connection added
+2026-11-28 03:24:25.608 T:3783     info <general>: JSONRPC Server: Disconnection detected

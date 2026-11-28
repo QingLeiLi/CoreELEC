@@ -1,0 +1,135 @@
+spawn ssh root@192.168.31.11 date; cat /proc/sys/kernel/random/boot_id; curl -s --max-time 5 -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"method\":\"Player.GetActivePlayers\",\"id\":1}" http://127.0.0.1:8080/jsonrpc; curl -s --max-time 5 -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"method\":\"GUI.GetProperties\",\"params\":{\"properties\":[\"currentwindow\",\"currentcontrol\",\"screensaveractive\",\"fullscreen\",\"stereoscopicmode\"]},\"id\":2}" http://127.0.0.1:8080/jsonrpc; for f in /sys/class/amhdmitx/amhdmitx0/hpd_state /sys/class/amhdmitx/amhdmitx0/config /sys/class/amhdmitx/amhdmitx0/avmute /sys/class/display/mode /sys/class/graphics/fb0/blank /sys/class/video/disable_video /sys/class/video/global_output /sys/module/am_vecm/parameters/hdr_mode /sys/module/am_vecm/parameters/hdr_process_mode /sys/module/am_vecm/parameters/hlg_process_mode /sys/module/am_vecm/parameters/disable_flush_flag /sys/module/amvideo/parameters/gxlx2_hw_init_wait /sys/module/rdma/parameters/gxlx2_playback_scan /sys/module/rdma/parameters/gxlx2_submit_scan; do if test -r "$f"; then echo "$f"; cat "$f"; fi; done; dmesg | tail -n 95
+root@192.168.31.11's password: 
+Sat Nov 28 03:18:02 UTC 2026
+b6444de0-97a3-4293-a642-1339c2be896a
+/sys/class/amhdmitx/amhdmitx0/hpd_state
+1/sys/class/amhdmitx/amhdmitx0/config
+cur_VIC: 16
+cur_video_param->VIC=16
+VIC: 16 1920x1080p60hz
+Colour depth: 8-bit
+Colourspace: YUV444
+Colour range: default
+EOTF: SDR
+YCC colour range: limited
+Colourimetry: BT.709
+PLL clock: 0xc000027b, Vid clock div 0x000a739c
+audio config: on
+audio on/off: on
+audio source: SPDIF
+audio type: L-PCM
+audio channel num: 2 channels
+audio sample rate: 44.1kHz
+audio sample size: 16bit
+3D config: off
+/sys/class/amhdmitx/amhdmitx0/avmute
+0/sys/class/display/mode
+1080p60hz
+/sys/class/graphics/fb0/blank
+/sys/class/video/disable_video
+1
+/sys/module/am_vecm/parameters/hdr_mode
+0
+/sys/module/am_vecm/parameters/hdr_process_mode
+0,0
+/sys/module/am_vecm/parameters/hlg_process_mode
+0,0
+/sys/module/am_vecm/parameters/disable_flush_flag
+0
+/sys/module/amvideo/parameters/gxlx2_hw_init_wait
+Y
+[ 4191.933026@0]h fb: osd rdma restart! 0x0
+[ 4192.266351@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4192.266362@0]h fb: osd rdma restart! 0x0
+[ 4192.599684@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4192.599695@0]h fb: osd rdma restart! 0x0
+[ 4192.933020@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4192.933032@0]h fb: osd rdma restart! 0x0
+[ 4193.266351@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4193.266362@0]h fb: osd rdma restart! 0x0
+[ 4193.599685@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4193.599694@0]h fb: osd rdma restart! 0x0
+[ 4193.933012@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4193.933023@0]h fb: osd rdma restart! 0x0
+[ 4194.266349@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4194.266360@0]h fb: osd rdma restart! 0x0
+[ 4194.599683@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4194.599694@0]h fb: osd rdma restart! 0x0
+[ 4194.933015@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4194.933027@0]h fb: osd rdma restart! 0x0
+[ 4195.266350@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4195.266362@0]h fb: osd rdma restart! 0x0
+[ 4195.599683@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4195.599694@0]h fb: osd rdma restart! 0x0
+[ 4195.933020@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4195.933031@0]h fb: osd rdma restart! 0x0
+[ 4196.266353@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4196.266364@0]h fb: osd rdma restart! 0x0
+[ 4196.599691@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4196.599702@0]h fb: osd rdma restart! 0x0
+[ 4196.933016@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4196.933028@0]h fb: osd rdma restart! 0x0
+[ 4197.266352@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4197.266363@0]h fb: osd rdma restart! 0x0
+[ 4197.599683@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4197.599694@0]h fb: osd rdma restart! 0x0
+[ 4197.933016@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4197.933027@0]h fb: osd rdma restart! 0x0
+[ 4198.266351@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4198.266362@0]h fb: osd rdma restart! 0x0
+[ 4198.599685@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4198.599694@0]h fb: osd rdma restart! 0x0
+[ 4198.933018@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4198.933028@0]h fb: osd rdma restart! 0x0
+[ 4199.266353@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4199.266364@0]h fb: osd rdma restart! 0x0
+[ 4199.599686@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4199.599697@0]h fb: osd rdma restart! 0x0
+[ 4199.933023@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4199.933034@0]h fb: osd rdma restart! 0x0
+[ 4200.266351@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4200.266361@0]h fb: osd rdma restart! 0x0
+[ 4200.599684@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4200.599695@0]h fb: osd rdma restart! 0x0
+[ 4200.933019@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4200.933030@0]h fb: osd rdma restart! 0x0
+[ 4201.266352@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4201.266363@0]h fb: osd rdma restart! 0x0
+[ 4201.599684@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4201.599694@0]h fb: osd rdma restart! 0x0
+[ 4201.933019@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4201.933030@0]h fb: osd rdma restart! 0x0
+[ 4202.266355@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4202.266366@0]h fb: osd rdma restart! 0x0
+[ 4202.599688@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4202.599699@0]h fb: osd rdma restart! 0x0
+[ 4202.933027@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4202.933038@0]h fb: osd rdma restart! 0x0
+[ 4203.266357@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4203.266368@0]h fb: osd rdma restart! 0x0
+[ 4203.599687@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4203.599698@0]h fb: osd rdma restart! 0x0
+[ 4203.933018@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4203.933029@0]h fb: osd rdma restart! 0x0
+[ 4204.266352@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4204.266363@0]h fb: osd rdma restart! 0x0
+[ 4204.599686@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4204.599697@0]h fb: osd rdma restart! 0x0
+[ 4204.933020@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4204.933030@0]h fb: osd rdma restart! 0x0
+[ 4205.266356@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4205.266367@0]h fb: osd rdma restart! 0x0
+[ 4205.599690@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4205.599701@0]h fb: osd rdma restart! 0x0
+[ 4205.933019@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4205.933031@0]h fb: osd rdma restart! 0x0
+[ 4206.266353@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4206.266365@0]h fb: osd rdma restart! 0x0
+[ 4206.599685@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4206.599696@0]h fb: osd rdma restart! 0x0
+[ 4206.933022@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4206.933032@0]h fb: osd rdma restart! 0x0
+[ 4207.266355@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4207.266366@0]h fb: osd rdma restart! 0x0
+[ 4207.599691@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4207.599702@0]h fb: osd rdma restart! 0x0

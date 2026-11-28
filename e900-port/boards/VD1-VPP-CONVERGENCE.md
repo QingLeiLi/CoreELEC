@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**293H整屏黑现场（2026-11-28）**：设备仍旧293H/SYSTEM293、boot b6444de0，新0045/0046未部署。无活动视频，Kodi/Videos窗口响应；HDMI HPD1/AVMUTE0，磁盘未满。用户允许单次Back后屏保从true变false，但用户确认仍全黑。03:25:00→03:26:32 OSD IRQ恒80643、共享RDMA IRQ恒161267，普通RDMA IRQ恒80634/configured增长，VSync277523→283036；watchdog重复reset21且OSD restart0。支持共享RDMA完成链停滞，非单纯屏保；无正常→异常采集，不能定位具体寄存器。暂停性能/实机变更，保存现场后等待用户是否允许重启恢复并建立正常参考。见[完整记录](293H-MENU-BLACK-20261128.md)。
+
 **性能第一轮（2026-11-28）**：基于d47662d38c，默认decoder新增0046，只减少关闭态诊断开销：GEN3 inline地址/预算过滤，debug及playback/submit先看开关再查CPU。保留硬件写入/CSC/RDMA和活动采集语义；未加LUT缓存。主机20万组关闭态调用CPU查询400000→0，活动日志/预算保持，O2内联确认；现有38项+新增1项检查通过。无设备动作，不能宣称实机CPU/流畅度已改善。下一项ARM image构建及全legacy画面回归，再在采集关闭条件建立性能基线。详见[性能记录](PERFORMANCE-20261128.md)。
 
 **全legacy复核（2026-11-28）**：未发现59eaf0b682生产补丁的新错误；纠正主机测试“多输出组合”原为空循环的覆盖表述，改为执行video_process/matrix_update两段真实输出尾部。73728种LCD/HDMI/dummy、帧/格式/路径/range/BS/3DLUT组合在gnu89/gnu99通过：GXLX2无G12尾部调用，其余CPU调用参数与基准相同。生产补丁未改，未操作盒子，完整ARM/颜色验收仍待完成。详见[复核记录](ALL-OUTPUT-LEGACY-BASELINE-20261128.md)。

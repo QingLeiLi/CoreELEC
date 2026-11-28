@@ -1,0 +1,52 @@
+spawn ssh root@192.168.31.11 date; for f in /sys/module/*/parameters/rdma_irq_count /sys/module/*/parameters/vsync_irq_count /sys/module/*/parameters/rdma_lost_count /sys/module/*/parameters/rdma_recovery_count /sys/module/*/parameters/debug_rdma_status /sys/module/*/parameters/item_count /sys/module/*/parameters/rdma_watchdog /sys/module/*/parameters/rdma_watchdog_count /sys/module/*/parameters/rdma_state; do if test -r "$f"; then echo "$f"; cat "$f"; fi; done; cat /proc/interrupts; printf "{\"jsonrpc\":\"2.0\",\"method\":\"GUI.GetProperties\",\"params\":{\"properties\":[\"currentwindow\",\"fullscreen\"]},\"id\":3}\n" | nc -w 2 127.0.0.1 9090; printf "{\"jsonrpc\":\"2.0\",\"method\":\"XBMC.GetInfoBooleans\",\"params\":{\"booleans\":[\"System.ScreenSaverActive\",\"System.DPMSActive\"]},\"id\":4}\n" | nc -w 2 127.0.0.1 9090
+root@192.168.31.11's password: 
+Sat Nov 28 03:25:00 UTC 2026
+/sys/module/fb/parameters/rdma_irq_count
+80643
+/sys/module/fb/parameters/vsync_irq_count
+277523
+/sys/module/fb/parameters/rdma_lost_count
+0
+/sys/module/fb/parameters/rdma_recovery_count
+0
+/sys/module/fb/parameters/debug_rdma_status
+134224640
+/sys/module/fb/parameters/item_count
+2
+/sys/module/rdma_mgr/parameters/rdma_watchdog
+20
+           CPU0       CPU1       CPU2       CPU3       
+  2:          0          0          0          0     GIC-0  29 Level     arch_timer
+  3:     355470     201157    1316588     531836     GIC-0  30 Level     arch_timer
+  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF
+  7:       4300          0          0          0     GIC-0 192 Level     Mali_GP
+  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU
+  9:       2163          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast
+ 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0
+ 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU
+ 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1
+ 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU
+ 16:       4521          0          0          0     GIC-0 241 Edge    
+ 17:          5          0          0          0     GIC-0 242 Edge    
+ 18:         16          0          0          0     GIC-0 225 Edge      meson_uart
+ 19:          0          0          0          0     GIC-0  58 Edge      meson_uart
+ 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes
+ 24:         12          0       1176          0     GIC-0  40 Edge      eth0
+ 25:       5920          0          0       8995     GIC-0  62 Level     xhci-hcd:usb1
+ 27:     277524          0          0          0     GIC-0  35 Edge      osd-vsync, vsync
+ 28:          2          0          0          0     GIC-0  89 Level     hdmitx
+ 29:          0        895          0          0     GIC-0 231 Edge      hdmi_aocec
+ 32:          0      72477          0          0     GIC-0  75 Edge      vdec-0
+ 33:          0          0       1709          0     GIC-0  76 Edge      vdec-1
+ 35:     161267          0          0          0     GIC-0 121 Edge      rdma
+ 36:          0          0          0          0     GIC-0 182 Edge      ge2d
+ 39:          0          0          0          0     GIC-0  78 Edge      pre_di
+ 43:          1          0          0       3280     GIC-0 228 Edge      ir-meson
+IPI0:     33776      65324     189421      60790       Rescheduling interrupts
+IPI1:       401        400        352        370       Function call interrupts
+IPI2:         0          0          0          0       CPU stop interrupts
+IPI3:         0          0          0          0       Timer broadcast interrupts
+IPI4:      9478          7          9          6       IRQ work interrupts
+IPI5:         0          0          0          0       CPU wake-up interrupts
+Err:          0
+{"id":3,"jsonrpc":"2.0","result":{"currentwindow":{"id":10025,"label":"Videos"},"fullscreen":false}}{"id":4,"jsonrpc":"2.0","result":{"System.DPMSActive":false,"System.ScreenSaverActive":true}}

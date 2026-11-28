@@ -1,0 +1,4 @@
+spawn ssh root@192.168.31.11 printf "{\"jsonrpc\":\"2.0\",\"method\":\"Input.Back\",\"id\":5}\n" | nc -w 2 127.0.0.1 9090; printf "{\"jsonrpc\":\"2.0\",\"method\":\"XBMC.GetInfoBooleans\",\"params\":{\"booleans\":[\"System.ScreenSaverActive\",\"System.DPMSActive\"]},\"id\":6}\n" | nc -w 2 127.0.0.1 9090; cat /sys/module/fb/parameters/rdma_irq_count; cat /sys/module/fb/parameters/vsync_irq_count
+root@192.168.31.11's password: 
+{"id":5,"jsonrpc":"2.0","result":"OK"}{"id":6,"jsonrpc":"2.0","result":{"System.DPMSActive":false,"System.ScreenSaverActive":false}}80643
+281187

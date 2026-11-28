@@ -1,0 +1,22 @@
+spawn ssh root@192.168.31.11 date; cat /sys/module/fb/parameters/rdma_irq_count; cat /sys/module/fb/parameters/vsync_irq_count; cat /sys/module/rdma/parameters/gxlx2_debug_state; sed -n "/id=\"screensaver.mode\"/p; /id=\"screensaver.time\"/p" /storage/.kodi/userdata/guisettings.xml; dmesg | tail -n 12
+root@192.168.31.11's password: 
+Sat Nov 28 03:25:37 UTC 2026
+80643
+279740
+channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=0 force=0 irq=80634 configured=90582
+channel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0
+
+    <setting id="screensaver.mode" default="true">screensaver.xbmc.builtin.dim</setting>
+    <setting id="screensaver.time" default="true">3</setting>
+[ 4661.266517@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4661.266528@0]h fb: osd rdma restart! 0x0
+[ 4661.599851@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4661.599862@0]h fb: osd rdma restart! 0x0
+[ 4661.933191@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4661.933202@0]h fb: osd rdma restart! 0x0
+[ 4662.266514@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4662.266524@0]h fb: osd rdma restart! 0x0
+[ 4662.599850@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4662.599861@0]h fb: osd rdma restart! 0x0
+[ 4662.933185@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4662.933198@0]h fb: osd rdma restart! 0x0
