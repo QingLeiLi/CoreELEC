@@ -51,7 +51,7 @@ Kodi通过Requires/After依赖此oneshot，它在graphical.target之后、Kodi�
 
 overlay文件纳入构建状态哈希与本地修改保护；只改这些overlay项时不清理内核或工具链，CE重新打包即带入。43项主机检查全部通过，包括实际CE镜像复制函数、源码契约、保护/回退和缓存保留。**新源码镜像完整构建及实机启动仍待下一轮验收**；构建选择decoder + image。
 
-这是将已验证的启动补偿纳入源码构建，尚未消除内核早期codec dispatcher未发布导致写入丢弃的底层依赖问题。
+这是将已验证的启动补偿纳入源码构建，后续已新增[内核0048依赖修正](OSD-EARLY-REARM-20261128.md)，尚待ARM构建/实测；本补偿继续保留，内核早期恢复健康时应零写跳过。
 
 hwdb后续优化见[预生成与规则重建](HWDB-PREBUILD-20261128.md)，额外安装systemd-hwdb-update条件drop-in，不改变OSD补偿。
 

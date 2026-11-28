@@ -231,6 +231,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-media-install.py"
           python3 "$PORT_ROOT/tests/check-wireless.py"
           python3 "$PORT_ROOT/tests/check-osd-boot-recovery.py"
+          python3 "$PORT_ROOT/tests/check-osd-bus-rearm.py"
           python3 "$PORT_ROOT/tests/check-osd-image-overlay.py"
           python3 "$PORT_ROOT/tests/check-hwdb-image.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"

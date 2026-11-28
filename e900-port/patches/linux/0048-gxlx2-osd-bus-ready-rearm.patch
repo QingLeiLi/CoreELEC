@@ -1,0 +1,258 @@
+Subject: [EXPERIMENTAL] rearm deferred GXLX2 OSD start after codec bus publication
+
+Preserve the live private table and existing manager API; cancel on stop/release,
+run after fixed-video completion and retain the userspace boot fallback.
+No RDMA CTRL/reset, DMA allocation, timeout reduction or arbitrary write queue.
+Full ARM build and physical startup regression remain pending.
+
+diff --git a/drivers/amlogic/media/osd/osd_rdma.c b/drivers/amlogic/media/osd/osd_rdma.c
+--- a/drivers/amlogic/media/osd/osd_rdma.c
++++ b/drivers/amlogic/media/osd/osd_rdma.c
+@@ -44,6 +44,8 @@
+ #include "osd_backup.h"
+ #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
+ #include <linux/amlogic/media/rdma/rdma_mgr.h>
++#include <linux/amlogic/media/registers/register_ops.h>
++#include <linux/notifier.h>
+ #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
+ #include <linux/amlogic/media/amvecm/ve.h>
+ #endif
+@@ -1189,6 +1191,128 @@
+ };
+ #endif
+ 
++#ifdef CONFIG_AMLOGIC_MEDIA_RDMA
++/* GXLX2's codec dispatcher is deliberately published after device init.
++ * START/END use the native OSD accessor and already exist then, but the
++ * manager's trigger RMW used a missing codec dispatcher and was discarded.
++ * Remember only this driver's start intent, not a general MMIO transaction.
++ * rdma_lock serialises start/stop/replay against the private OSD table; the
++ * existing OSD reset path already nests it outside the manager's lock.
++ */
++static bool gxlx2_osd_start_pending;
++static bool gxlx2_osd_bus_subscribed;
++static bool gxlx2_osd_releasing;
++static bool gxlx2_osd_boot_rearm = true;
++static int gxlx2_osd_rearm_status;
++module_param_named(gxlx2_osd_boot_rearm, gxlx2_osd_boot_rearm, bool, 0444);
++module_param_named(gxlx2_osd_rearm_status, gxlx2_osd_rearm_status, int, 0444);
++
++static int gxlx2_osd_bus_ready(struct notifier_block *nb,
++                              unsigned long event, void *data)
++{
++	unsigned long flags;
++	u32 start, end, auto_before, auto_after;
++	int ret;
++
++	(void)nb;
++	(void)event;
++	(void)data;
++	spin_lock_irqsave(&rdma_lock, flags);
++	if (!gxlx2_osd_boot_rearm || gxlx2_osd_releasing ||
++	    !gxlx2_osd_start_pending || !rdma_enable ||
++	    !osd_rdma_init_flag || !codec_reg_bus_ready(IO_VC_BUS))
++		goto out;
++
++	/* Only the audited P291 RDMA-v1 CH3 layout is eligible. Addresses come
++	 * from the live DMA allocation, never from the userspace trial's page.
++	 * A prepared but empty table has END=START-1, as in osd_rdma_enable().
++	 */
++	gxlx2_osd_start_pending = false;
++	if (osd_rdma_handle != 3 || !rdma_table || !table_paddr ||
++	    (dma_addr_t)table_paddr != osd_rdma_table_phy) {
++		gxlx2_osd_rearm_status = -EINVAL;
++		pr_warn("e900-osd-rearm: reject handle=%d table=%x\n",
++			osd_rdma_handle, table_paddr);
++		goto out;
++	}
++	start = osd_reg_read(START_ADDR);
++	end = osd_reg_read(END_ADDR);
++	if (start != table_paddr || (u32)(end - start + 1) > PAGE_SIZE ||
++	    ((end - start + 1) & 7)) {
++		gxlx2_osd_rearm_status = -ERANGE;
++		pr_warn("e900-osd-rearm: reject range=%x..%x expected=%x\n",
++			start, end, table_paddr);
++		goto out;
++	}
++	auto_before = osd_reg_read(RDMA_ACCESS_AUTO);
++	if ((auto_before & 0xff000088) == 0x01000080) {
++		gxlx2_osd_rearm_status = 3; /* already armed; zero writes */
++		goto out;
++	}
++	/* Existing API: no table/reset/CTRL rewrite, only this channel's
++	 * trigger, increment and direction fields, preserving other channels.
++	 */
++	ret = rdma_config(osd_rdma_handle,
++		RDMA_TRIGGER_VSYNC_INPUT | RDMA_AUTO_START_MASK);
++	auto_after = osd_reg_read(RDMA_ACCESS_AUTO);
++	gxlx2_osd_rearm_status = (ret == 1 &&
++		(auto_after & 0xff000088) == 0x01000080) ? 2 : -EIO;
++	pr_info("e900-osd-rearm: replay status=%d handle=%d range=%x..%x auto=%x->%x irq=%u\n",
++		gxlx2_osd_rearm_status, osd_rdma_handle, start, end,
++		auto_before, auto_after, rdma_irq_count);
++out:
++	spin_unlock_irqrestore(&rdma_lock, flags);
++	return NOTIFY_OK;
++}
++
++/* Video's existing bus-ready completion runs first at default priority.
++ * No new initcall/module entry point or dependency on userspace Python.
++ */
++static struct notifier_block gxlx2_osd_bus_notifier = {
++	.notifier_call = gxlx2_osd_bus_ready,
++	.priority = -10,
++};
++
++static int gxlx2_osd_start(char channel)
++{
++	unsigned long flags;
++	int ret = 1;
++
++	spin_lock_irqsave(&rdma_lock, flags);
++	if (gxlx2_osd_releasing) {
++		ret = -ENODEV;
++	} else if (!codec_reg_bus_ready(IO_VC_BUS)) {
++		/* Readiness may change now: publication's callback takes the same
++		 * lock, so it cannot miss an intent recorded at this boundary.
++		 */
++		gxlx2_osd_start_pending = true;
++		gxlx2_osd_rearm_status = 1;
++		pr_info("e900-osd-rearm: defer handle=%d\n", channel);
++	} else {
++		gxlx2_osd_start_pending = false;
++		ret = rdma_config(channel,
++			RDMA_TRIGGER_VSYNC_INPUT | RDMA_AUTO_START_MASK);
++	}
++	spin_unlock_irqrestore(&rdma_lock, flags);
++	return ret;
++}
++
++static void gxlx2_osd_bus_cancel(void)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&rdma_lock, flags);
++	gxlx2_osd_releasing = true;
++	gxlx2_osd_start_pending = false;
++	spin_unlock_irqrestore(&rdma_lock, flags);
++	/* Unregister can sleep and wait for callbacks: never hold rdma_lock. */
++	if (gxlx2_osd_bus_subscribed) {
++		codec_reg_unregister_ready_notifier(&gxlx2_osd_bus_notifier);
++		gxlx2_osd_bus_subscribed = false;
++	}
++}
++#endif
++
+ static int start_osd_rdma(char channel)
+ {
+ #ifndef CONFIG_AMLOGIC_MEDIA_RDMA
+@@ -1236,9 +1360,13 @@
+ 	} else
+ #endif
+ 	{
+-		rdma_config(channel,
++		if (is_meson_gxlx2_cpu() && gxlx2_osd_boot_rearm) {
++			gxlx2_osd_start(channel);
++		} else {
++			rdma_config(channel,
+ 			RDMA_TRIGGER_VSYNC_INPUT
+ 			| RDMA_AUTO_START_MASK);
++		}
+ 		osd_hw.line_n_rdma = 0;
+ 	}
+ #endif
+@@ -1259,9 +1387,23 @@
+ 	 */
+ 	osd_reg_write(RDMA_ACCESS_AUTO, data32);
+ #else
+-	rdma_clear(channel);
+-	if (osd_reset_rdma_handle != -1)
+-		rdma_clear(osd_reset_rdma_handle);
++	unsigned long flags;
++
++	/* Stop wins over deferred publication; do not resurrect a disabled
++	 * channel. Keep the same OSD -> manager lock order as reset/replay.
++	 */
++	if (is_meson_gxlx2_cpu() && gxlx2_osd_boot_rearm) {
++		spin_lock_irqsave(&rdma_lock, flags);
++		gxlx2_osd_start_pending = false;
++		rdma_clear(channel);
++		if (osd_reset_rdma_handle != -1)
++			rdma_clear(osd_reset_rdma_handle);
++		spin_unlock_irqrestore(&rdma_lock, flags);
++	} else {
++		rdma_clear(channel);
++		if (osd_reset_rdma_handle != -1)
++			rdma_clear(osd_reset_rdma_handle);
++	}
+ #endif
+ 	return 0;
+ }
+@@ -1473,6 +1615,10 @@
+ 
+ static void osd_rdma_release(struct device *dev)
+ {
++#ifdef CONFIG_AMLOGIC_MEDIA_RDMA
++	if (is_meson_gxlx2_cpu() && gxlx2_osd_boot_rearm)
++		gxlx2_osd_bus_cancel();
++#endif
+ 	dma_free_coherent(osd_rdma_dev,
+ 		PAGE_SIZE,
+ 		osd_rdma_table_virt,
+@@ -1609,6 +1755,17 @@
+ 	osd_rdma_handle = 3; /* use channel 3 as default */
+ #endif
+ 
++#ifdef CONFIG_AMLOGIC_MEDIA_RDMA
++	if (is_meson_gxlx2_cpu() && gxlx2_osd_boot_rearm) {
++		gxlx2_osd_releasing = false;
++		ret = codec_reg_register_ready_notifier(&gxlx2_osd_bus_notifier);
++		if (!ret)
++			gxlx2_osd_bus_subscribed = true;
++		else
++			pr_warn("e900-osd-rearm: subscribe failed=%d; boot fallback retained\n",
++				ret);
++	}
++#endif
+ 	return 0;
+ 
+ error2:
+diff --git a/drivers/amlogic/media/osd/osd_hw.c b/drivers/amlogic/media/osd/osd_hw.c
+--- a/drivers/amlogic/media/osd/osd_hw.c
++++ b/drivers/amlogic/media/osd/osd_hw.c
+@@ -32,6 +32,8 @@
+ #include <linux/kthread.h>
+ #include <linux/ktime.h>
+ #include <linux/delay.h>
++#include <linux/jiffies.h>
++#include <linux/ratelimit.h>
+ #include <linux/fs.h>
+ #include <linux/sysfs.h>
+ #include <linux/uaccess.h>
+@@ -2706,7 +2708,8 @@
+ 
+ static void osd_wait_vsync_hw_viu1(void)
+ {
+-	unsigned long timeout;
++	unsigned long timeout, wait_start;
++	long waited;
+ 
+ 	if (osd_hw.fb_drvier_probe) {
+ 		vsync_hit[VIU1] = false;
+@@ -2723,8 +2726,15 @@
+ 			} else
+ 				timeout = msecs_to_jiffies(1000);
+ 		}
+-		wait_event_interruptible_timeout
++		wait_start = jiffies;
++		waited = wait_event_interruptible_timeout
+ 			(osd_rdma_vpp0_done_wq, vsync_hit[VIU1], timeout);
++		/* Only timeout diagnostics: no CPU query/logging on healthy frames,
++		 * no change to the wait condition or its 1000ms safety bound.
++		 */
++		if (unlikely(waited == 0) && is_meson_gxlx2_cpu())
++			pr_warn_ratelimited("e900-osd-wait: timeout task=%s elapsed_ms=%u\n",
++				current->comm, jiffies_to_msecs(jiffies - wait_start));
+ 	}
+ }
+ 
