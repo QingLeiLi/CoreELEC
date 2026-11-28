@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**HEVC DMC bit8候选收敛（2026-11-28）**：只读STATUS9b0a/FIFO2020/pending0，按相近GXL文档解为OSD通道3的AXI读请求未服务；RDMA gate位开、表地址在RAM范围。发现media0003只修VLD，HEVC enable/disable仍因CPU>=G12给GXLX2加bit8，而GXL表bit8是VPU读0。实机运行DT基址核对后REQ_CTRL=deef，bit4/8/13均关，与HEVC EOF及共享取表停滞吻合。新增默认media0004仅排除GXLX2 HEVCB、保留bit8，真实C函数及相关主机检查通过；ARM/实际恢复仍待证。下一项准备仅OR bit8（deef→dfef）的恢复试验，尚未获这一写入授权，不重启/播放。见[源码、状态、修正与判据](HEVC-DMC-BIT8-20261128.md)。
+
 **CTRL单次恢复未奏效（2026-11-28，用户已授权这一项）**：同b6444de0/293H，核对CTRL0及burst3/3后只写fc，首次读回fc，但OSD/普通/共享RDMA IRQ均不增；watchdog持续复位使CTRL又回0。约4.81秒VSync+289/reset+14，按预定失败分支显式恢复0、读回0并停止，无重启/播放/Back。只证明单次恢复不足；没有持续保持fc的对照，不能全面排除配置问题。下一步离线追STATUS/AXI及复位重配置，不自行叠加其它位。见[原包与结果](293H-MENU-BLACK-20261128.md)。
 
 **293H无重启续查（2026-11-28）**：故障稳态0.4秒软件窗25行无溢出：CH1/CH3仍准备表、无完成，VSync+25/reset+1，共享IRQ不动。固定RDMA读回CH1/3地址范围和VSync触发已配置，CTRL0、STATUS9b0a（完成位0）；不是配置函数没被调用。fb0 DRAM中有Videos菜单/缩略图/时钟，图偏暗，不能代替新鲜扫描像素或HDMI。源码probe应配CTRLfc，external reset不重配、ISR也有整字写者；没有正常CTRL参考，不认定根因。已准备单次恢复同probe CTRL配置试验，未获寄存器写入授权、未执行，仍不重启。见[被动窗口、读回、图像与试验](293H-MENU-BLACK-20261128.md)。

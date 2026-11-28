@@ -23,6 +23,7 @@ PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-r
                                          "linux/0005-gxlx2-optional-di-clock.patch",
                                          "linux/0006-gxlx2-direct-media-register-buses.patch",
                                          "media/0003-gxlx2-vld-dmc-channel.patch",
+                                         "media/0004-gxlx2-hevc-dmc-vpu-port-isolation.patch",
                                          "linux/0007-gxlx2-post2-matrix-guard.patch",
                                          "linux/0008-gxlx2-legacy-video-pipeline.patch",
                                          "linux/0009-gxlx2-mif-selection-probe.patch",

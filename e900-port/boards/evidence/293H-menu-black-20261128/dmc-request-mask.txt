@@ -1,0 +1,24 @@
+spawn ssh root@192.168.31.11 python3 -c 'import pathlib,struct,json,subprocess
+def rd(p):return pathlib.Path(p).read_text().strip()
+assert rd('\''/proc/sys/kernel/random/boot_id'\'')=='\''b6444de0-97a3-4293-a642-1339c2be896a'\''
+reg=pathlib.Path('\''/sys/firmware/devicetree/base/codec_io/io_dmc_base/reg'\'').read_bytes()
+hi,base,shi,size=struct.unpack('\''>4I'\'',reg)
+assert hi==0 and base==0xc8838000 and shi==0 and size>=0xcc,(hi,base,shi,size)
+def read32(addr):return int(subprocess.check_output(['\''/usr/sbin/devmem'\'',hex(addr),'\''32'\''],text=True).strip(),16)
+req=read32(base);sts=read32(base+0x32*4)
+print(json.dumps({'\''boot_id'\'':rd('\''/proc/sys/kernel/random/boot_id'\''),'\''scope'\'':'\''fixed read-only DMC_REQ_CTRL/DMC_CHAN_STS from verified runtime DT; no writes'\'','\''dmc_base'\'':hex(base),'\''dmc_size'\'':size,'\''req_ctrl'\'':req,'\''req_ctrl_hex'\'':hex(req),'\''chan_sts_hex'\'':hex(sts),'\''bit4_hevc'\'':bool(req&(1<<4)),'\''bit8_legacy_vpu_read0'\'':bool(req&(1<<8)),'\''bit13_vld'\'':bool(req&(1<<13)),'\''uptime'\'':rd('\''/proc/uptime'\'')},indent=2))
+'
+root@192.168.31.11's password: 
+{
+  "boot_id": "b6444de0-97a3-4293-a642-1339c2be896a",
+  "scope": "fixed read-only DMC_REQ_CTRL/DMC_CHAN_STS from verified runtime DT; no writes",
+  "dmc_base": "0xc8838000",
+  "dmc_size": 1024,
+  "req_ctrl": 57071,
+  "req_ctrl_hex": "0xdeef",
+  "chan_sts_hex": "0xfffff",
+  "bit4_hevc": false,
+  "bit8_legacy_vpu_read0": false,
+  "bit13_vld": false,
+  "uptime": "7502.69 29147.60"
+}

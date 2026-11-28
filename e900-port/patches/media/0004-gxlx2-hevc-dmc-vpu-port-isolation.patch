@@ -1,0 +1,33 @@
+Subject: [FIX] preserve the GXLX2 VPU DMC request on HEVC stop/start
+
+The existing VLD exception did not cover HEVC. Its numerical >=G12 gate
+adds bit8 on GXLX2, although the legacy map assigns bit8 to VPU read0.
+Fault evidence: HEVC EOF, DMC_REQ_CTRL=deef (bit8 off), pending RDMA
+read requests and empty read FIFO, with both completion channels stalled.
+Exclude GXLX2 from HEVCB in both directions; preserve all other CPUs.
+Hardware recovery/cause confirmation and full ARM/module build pending.
+
+--- a/drivers/frame_provider/decoder/utils/vdec.c
++++ b/drivers/frame_provider/decoder/utils/vdec.c
+@@ -698,7 +698,9 @@
+ 		mask = vdec_vld_dmc_mask();
+ 	} else if (input->target == VDEC_INPUT_TARGET_HEVC) {
+ 		mask = (1 << 4); /*hevc*/
+-		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
++		/* GXLX2 bit8 is the legacy VPU read port, not HEVCB. */
++		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A &&
++		    get_cpu_major_id() != AM_MESON_CPU_MAJOR_ID_GXLX2)
+ 			mask |= (1 << 8); /*hevcb */
+ 	}
+ 
+@@ -738,7 +740,9 @@
+ 		mask = vdec_vld_dmc_mask();
+ 	} else if (input->target == VDEC_INPUT_TARGET_HEVC) {
+ 		mask = (1 << 4); /*hevc*/
+-		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A)
++		/* GXLX2 bit8 is the legacy VPU read port, not HEVCB. */
++		if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_G12A &&
++		    get_cpu_major_id() != AM_MESON_CPU_MAJOR_ID_GXLX2)
+ 			mask |= (1 << 8); /*hevcb */
+ 	}
+ 

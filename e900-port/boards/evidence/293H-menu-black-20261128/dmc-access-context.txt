@@ -1,0 +1,18 @@
+spawn ssh root@192.168.31.11 ls /sys/kernel/debug/aml_reg; command -v devmem; ls /sys/firmware/devicetree/base/codec_io; od -An -tx4 /sys/firmware/devicetree/base/codec_io/reg
+root@192.168.31.11's password: 
+dump
+paddr
+paddr16
+/usr/sbin/devmem
+#address-cells
+#size-cells
+compatible
+io_aobus_base
+io_cbus_base
+io_dmc_base
+io_dos_base
+io_hiubus_base
+io_vcbus_base
+name
+ranges
+od: /sys/firmware/devicetree/base/codec_io/reg: No such file or directory

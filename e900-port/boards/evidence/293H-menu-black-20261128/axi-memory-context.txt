@@ -1,0 +1,53 @@
+spawn ssh root@192.168.31.11 date; cat /proc/sys/kernel/random/boot_id; cat /proc/iomem; cat /sys/module/fb/parameters/table_paddr; cat /sys/module/rdma_mgr/parameters/reset_count; cat /sys/module/fb/parameters/rdma_irq_count; cat /sys/module/fb/parameters/vsync_irq_count; cat /sys/module/rdma/parameters/gxlx2_debug_state; ls -l /sys/class/vpu
+root@192.168.31.11's password: 
+Sat Nov 28 04:08:19 UTC 2026
+b6444de0-97a3-4293-a642-1339c2be896a
+00100000-0fffffff : System RAM
+  01080000-023fffff : Kernel code
+  029e0000-030eafff : Kernel data
+10200000-3fffffff : System RAM
+c1104404-c1104423 : /soc/cbus@c1100000/reset-controller@4404
+c11084c0-c11084d7 : c11084c0.serial
+c1108680-c11086b7 : /saradc
+c11086c0-c11086db : /pwm@c11086c0
+c8013000-c80137ff : /mhu@c883c400
+c8100014-c810001b : mux
+c8100024-c810002b : gpio
+c810002c-c810002f : pull
+c8100040-c8100043 : /soc/aobus@c8100000/meson-irblaster@c0
+c81000c0-c81000cb : /soc/aobus@c8100000/meson-irblaster@c0
+c81004c0-c81004d7 : c81004c0.serial
+c8100580-c81005c3 : /meson-ir
+c8832000-c8832013 : /t9015
+c8834000-c8834003 : /soc/periphs@c8834000/rng
+c8834430-c883446f : gpio
+c88344b0-c88344d7 : mux
+c88344e8-c88344fb : pull
+c8834520-c8834533 : pull-enable
+c8834540-c8834547 : /ethernet@0xc9410000
+c8834558-c8834563 : /ethernet@0xc9410000
+c8838000-c88383ff : c8838000.canvas
+c883c400-c883c44b : /mhu@c883c400
+c883e000-c883e027 : /aml_dma
+c9000000-c9007fff : /dwc3@c9000000
+  c9000000-c9007fff : /dwc3@c9000000
+c900c100-c90fffff : /dwc3@c9000000
+c9410000-c941ffff : /ethernet@0xc9410000
+d0078000-d007807f : /usb2phy@d0078000
+d0078080-d007809f : /usb3phy@d0078080
+887160832
+17640
+80643
+433452
+channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=0 force=0 irq=80634 configured=98268
+channel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0
+
+total 0
+-rw-r--r--    1 root     root          4096 Nov 28 04:08 clk
+-rw-r--r--    1 root     root          4096 Nov 28 04:08 gate
+-r--r--r--    1 root     root          4096 Nov 28 04:08 help
+-r--r--r--    1 root     root          4096 Nov 28 04:08 info
+-rw-r--r--    1 root     root          4096 Nov 28 04:08 mem
+-rw-r--r--    1 root     root          4096 Nov 28 04:08 print
+-rw-r--r--    1 root     root          4096 Nov 28 04:08 reg
+-rw-r--r--    1 root     root          4096 Nov 28 04:08 test
