@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**293H无重启续查（2026-11-28）**：故障稳态0.4秒软件窗25行无溢出：CH1/CH3仍准备表、无完成，VSync+25/reset+1，共享IRQ不动。固定RDMA读回CH1/3地址范围和VSync触发已配置，CTRL0、STATUS9b0a（完成位0）；不是配置函数没被调用。fb0 DRAM中有Videos菜单/缩略图/时钟，图偏暗，不能代替新鲜扫描像素或HDMI。源码probe应配CTRLfc，external reset不重配、ISR也有整字写者；没有正常CTRL参考，不认定根因。已准备单次恢复同probe CTRL配置试验，未获寄存器写入授权、未执行，仍不重启。见[被动窗口、读回、图像与试验](293H-MENU-BLACK-20261128.md)。
+
 **293H整屏黑现场（2026-11-28）**：设备仍旧293H/SYSTEM293、boot b6444de0，新0045/0046未部署。无活动视频，Kodi/Videos窗口响应；HDMI HPD1/AVMUTE0，磁盘未满。用户允许单次Back后屏保从true变false，但用户确认仍全黑。03:25:00→03:26:32 OSD IRQ恒80643、共享RDMA IRQ恒161267，普通RDMA IRQ恒80634/configured增长，VSync277523→283036；watchdog重复reset21且OSD restart0。支持共享RDMA完成链停滞，非单纯屏保；无正常→异常采集，不能定位具体寄存器。暂停性能/实机变更，保存现场后等待用户是否允许重启恢复并建立正常参考。见[完整记录](293H-MENU-BLACK-20261128.md)。
 
 **性能第一轮（2026-11-28）**：基于d47662d38c，默认decoder新增0046，只减少关闭态诊断开销：GEN3 inline地址/预算过滤，debug及playback/submit先看开关再查CPU。保留硬件写入/CSC/RDMA和活动采集语义；未加LUT缓存。主机20万组关闭态调用CPU查询400000→0，活动日志/预算保持，O2内联确认；现有38项+新增1项检查通过。无设备动作，不能宣称实机CPU/流畅度已改善。下一项ARM image构建及全legacy画面回归，再在采集关闭条件建立性能基线。详见[性能记录](PERFORMANCE-20261128.md)。

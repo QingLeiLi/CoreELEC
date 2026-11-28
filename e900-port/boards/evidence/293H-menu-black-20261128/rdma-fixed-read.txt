@@ -1,0 +1,326 @@
+spawn ssh root@192.168.31.11 python3 -c 'import pathlib,json,subprocess
+r=pathlib.Path('\''/sys/module/rdma_mgr/parameters'\'')
+def rd(p):
+ try:return pathlib.Path(p).read_text().strip()
+ except OSError:return None
+assert rd('\''/proc/sys/kernel/random/boot_id'\'')=='\''b6444de0-97a3-4293-a642-1339c2be896a'\''
+debug=pathlib.Path('\''/sys/class/graphics/fb0/debug'\'')
+assert debug.exists()
+# Fixed RDMA controller registers already read/RMW by this active driver.
+# No video-layer, LUT, arbitrary address, write-register or reset command.
+regs={'\''RDMA_AHB_START_ADDR_1'\'':'\''1102'\'','\''RDMA_AHB_END_ADDR_1'\'':'\''1103'\'','\''RDMA_AHB_START_ADDR_3'\'':'\''1106'\'','\''RDMA_AHB_END_ADDR_3'\'':'\''1107'\'','\''RDMA_ACCESS_AUTO'\'':'\''1110'\'','\''RDMA_CTRL'\'':'\''1114'\'','\''RDMA_STATUS'\'':'\''1115'\''}
+before={'\''reset_count'\'':rd(r/'\''reset_count'\''),'\''vsync'\'':rd('\''/sys/module/fb/parameters/vsync_irq_count'\'')}
+for name,reg in regs.items():
+ debug.write_text('\''r '\''+reg)
+after={'\''reset_count'\'':rd(r/'\''reset_count'\''),'\''vsync'\'':rd('\''/sys/module/fb/parameters/vsync_irq_count'\'')}
+dmesg=subprocess.check_output(['\''dmesg'\''],text=True)
+print(json.dumps({'\''before'\'':before,'\''after'\'':after,'\''registers_requested'\'':regs,'\''scope'\'':'\''fixed existing driver read command only; fault-state data; not atomic; discard reset-spanning snapshot'\''},indent=2))
+print(dmesg[-16000:])
+'
+root@192.168.31.11's password: 
+{
+  "before": {
+    "reset_count": "10941",
+    "vsync": "299467"
+  },
+  "after": {
+    "reset_count": "10941",
+    "vsync": "299467"
+  },
+  "registers_requested": {
+    "RDMA_AHB_START_ADDR_1": "1102",
+    "RDMA_AHB_END_ADDR_1": "1103",
+    "RDMA_AHB_START_ADDR_3": "1106",
+    "RDMA_AHB_END_ADDR_3": "1107",
+    "RDMA_ACCESS_AUTO": "1110",
+    "RDMA_CTRL": "1114",
+    "RDMA_STATUS": "1115"
+  },
+  "scope": "fixed existing driver read command only; fault-state data; not atomic; discard reset-spanning snapshot"
+}
+og_setting rdma reset: 21, force flag:0
+[ 4945.599964@0]h fb: osd rdma restart! 0x0
+[ 4945.933280@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4945.933292@0]h fb: osd rdma restart! 0x0
+[ 4946.266614@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4946.266626@0]h fb: osd rdma restart! 0x0
+[ 4946.599948@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4946.599960@0]h fb: osd rdma restart! 0x0
+[ 4946.933282@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4946.933293@0]h fb: osd rdma restart! 0x0
+[ 4947.266614@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4947.266626@0]h fb: osd rdma restart! 0x0
+[ 4947.599950@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4947.599962@0]h fb: osd rdma restart! 0x0
+[ 4947.933284@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4947.933295@0]h fb: osd rdma restart! 0x0
+[ 4948.266619@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4948.266631@0]h fb: osd rdma restart! 0x0
+[ 4948.599955@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4948.599967@0]h fb: osd rdma restart! 0x0
+[ 4948.933285@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4948.933297@0]h fb: osd rdma restart! 0x0
+[ 4949.266615@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4949.266626@0]h fb: osd rdma restart! 0x0
+[ 4949.599950@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4949.599962@0]h fb: osd rdma restart! 0x0
+[ 4949.933281@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4949.933292@0]h fb: osd rdma restart! 0x0
+[ 4950.266618@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4950.266630@0]h fb: osd rdma restart! 0x0
+[ 4950.599952@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4950.599965@0]h fb: osd rdma restart! 0x0
+[ 4950.933282@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4950.933295@0]h fb: osd rdma restart! 0x0
+[ 4951.266619@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4951.266631@0]h fb: osd rdma restart! 0x0
+[ 4951.599955@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4951.599967@0]h fb: osd rdma restart! 0x0
+[ 4951.933291@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4951.933303@0]h fb: osd rdma restart! 0x0
+[ 4952.266621@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4952.266632@0]h fb: osd rdma restart! 0x0
+[ 4952.599950@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4952.599960@0]h fb: osd rdma restart! 0x0
+[ 4952.933283@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4952.933294@0]h fb: osd rdma restart! 0x0
+[ 4953.266615@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4953.266627@0]h fb: osd rdma restart! 0x0
+[ 4953.599952@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4953.599964@0]h fb: osd rdma restart! 0x0
+[ 4953.933284@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4953.933296@0]h fb: osd rdma restart! 0x0
+[ 4954.266618@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4954.266629@0]h fb: osd rdma restart! 0x0
+[ 4954.599955@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4954.599967@0]h fb: osd rdma restart! 0x0
+[ 4954.933290@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4954.933301@0]h fb: osd rdma restart! 0x0
+[ 4955.266617@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4955.266629@0]h fb: osd rdma restart! 0x0
+[ 4955.599965@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4955.599976@0]h fb: osd rdma restart! 0x0
+[ 4955.933285@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4955.933296@0]h fb: osd rdma restart! 0x0
+[ 4956.266617@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4956.266629@0]h fb: osd rdma restart! 0x0
+[ 4956.599951@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4956.599963@0]h fb: osd rdma restart! 0x0
+[ 4956.933284@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4956.933296@0]h fb: osd rdma restart! 0x0
+[ 4957.266619@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4957.266631@0]h fb: osd rdma restart! 0x0
+[ 4957.599954@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4957.599966@0]h fb: osd rdma restart! 0x0
+[ 4957.933287@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4957.933299@0]h fb: osd rdma restart! 0x0
+[ 4958.266621@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4958.266633@0]h fb: osd rdma restart! 0x0
+[ 4958.599956@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4958.599969@0]h fb: osd rdma restart! 0x0
+[ 4958.933289@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4958.933302@0]h fb: osd rdma restart! 0x0
+[ 4959.266618@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4959.266629@0]h fb: osd rdma restart! 0x0
+[ 4959.599953@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4959.599965@0]h fb: osd rdma restart! 0x0
+[ 4959.933287@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4959.933298@0]h fb: osd rdma restart! 0x0
+[ 4960.266619@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4960.266630@0]h fb: osd rdma restart! 0x0
+[ 4960.599955@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4960.599967@0]h fb: osd rdma restart! 0x0
+[ 4960.933287@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4960.933299@0]h fb: osd rdma restart! 0x0
+[ 4961.266622@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4961.266635@0]h fb: osd rdma restart! 0x0
+[ 4961.599956@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4961.599968@0]h fb: osd rdma restart! 0x0
+[ 4961.933296@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4961.933309@0]h fb: osd rdma restart! 0x0
+[ 4962.266626@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4962.266637@0]h fb: osd rdma restart! 0x0
+[ 4962.599954@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4962.599967@0]h fb: osd rdma restart! 0x0
+[ 4962.933284@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4962.933296@0]h fb: osd rdma restart! 0x0
+[ 4963.266619@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4963.266631@0]h fb: osd rdma restart! 0x0
+[ 4963.599956@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4963.599967@0]h fb: osd rdma restart! 0x0
+[ 4963.933287@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4963.933298@0]h fb: osd rdma restart! 0x0
+[ 4964.266620@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4964.266631@0]h fb: osd rdma restart! 0x0
+[ 4964.599959@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4964.599971@0]h fb: osd rdma restart! 0x0
+[ 4964.933291@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4964.933303@0]h fb: osd rdma restart! 0x0
+[ 4965.266625@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4965.266637@0]h fb: osd rdma restart! 0x0
+[ 4965.599954@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4965.599966@0]h fb: osd rdma restart! 0x0
+[ 4965.933288@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4965.933299@0]h fb: osd rdma restart! 0x0
+[ 4966.266620@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4966.266632@0]h fb: osd rdma restart! 0x0
+[ 4966.599957@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4966.599970@0]h fb: osd rdma restart! 0x0
+[ 4966.933289@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4966.933301@0]h fb: osd rdma restart! 0x0
+[ 4967.266621@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4967.266633@0]h fb: osd rdma restart! 0x0
+[ 4967.599958@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4967.599970@0]h fb: osd rdma restart! 0x0
+[ 4967.933292@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4967.933304@0]h fb: osd rdma restart! 0x0
+[ 4968.266626@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4968.266638@0]h fb: osd rdma restart! 0x0
+[ 4968.599964@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4968.599976@0]h fb: osd rdma restart! 0x0
+[ 4968.933296@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4968.933309@0]h fb: osd rdma restart! 0x0
+[ 4969.266622@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4969.266634@0]h fb: osd rdma restart! 0x0
+[ 4969.599956@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4969.599968@0]h fb: osd rdma restart! 0x0
+[ 4969.933290@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4969.933301@0]h fb: osd rdma restart! 0x0
+[ 4970.266622@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4970.266634@0]h fb: osd rdma restart! 0x0
+[ 4970.599958@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4970.599970@0]h fb: osd rdma restart! 0x0
+[ 4970.933293@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4970.933304@0]h fb: osd rdma restart! 0x0
+[ 4971.266626@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4971.266638@0]h fb: osd rdma restart! 0x0
+[ 4971.599960@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4971.599972@0]h fb: osd rdma restart! 0x0
+[ 4971.933294@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4971.933307@0]h fb: osd rdma restart! 0x0
+[ 4972.266631@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4972.266643@0]h fb: osd rdma restart! 0x0
+[ 4972.599959@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4972.599971@0]h fb: osd rdma restart! 0x0
+[ 4972.933289@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4972.933300@0]h fb: osd rdma restart! 0x0
+[ 4973.266624@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4973.266635@0]h fb: osd rdma restart! 0x0
+[ 4973.599960@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4973.599972@0]h fb: osd rdma restart! 0x0
+[ 4973.933291@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4973.933303@0]h fb: osd rdma restart! 0x0
+[ 4974.266625@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4974.266637@0]h fb: osd rdma restart! 0x0
+[ 4974.599961@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4974.599974@0]h fb: osd rdma restart! 0x0
+[ 4974.933296@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4974.933307@0]h fb: osd rdma restart! 0x0
+[ 4975.266628@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4975.266639@0]h fb: osd rdma restart! 0x0
+[ 4975.599967@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4975.599979@0]h fb: osd rdma restart! 0x0
+[ 4975.933292@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4975.933304@0]h fb: osd rdma restart! 0x0
+[ 4976.266623@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4976.266635@0]h fb: osd rdma restart! 0x0
+[ 4976.599960@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4976.599972@0]h fb: osd rdma restart! 0x0
+[ 4976.933292@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4976.933303@0]h fb: osd rdma restart! 0x0
+[ 4977.266623@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4977.266634@0]h fb: osd rdma restart! 0x0
+[ 4977.599963@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4977.599976@0]h fb: osd rdma restart! 0x0
+[ 4977.933296@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4977.933307@0]h fb: osd rdma restart! 0x0
+[ 4978.266629@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4978.266641@0]h fb: osd rdma restart! 0x0
+[ 4978.599970@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4978.599982@0]h fb: osd rdma restart! 0x0
+[ 4978.933299@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4978.933310@0]h fb: osd rdma restart! 0x0
+[ 4979.266625@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4979.266637@0]h fb: osd rdma restart! 0x0
+[ 4979.599962@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4979.599973@0]h fb: osd rdma restart! 0x0
+[ 4979.933293@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4979.933304@0]h fb: osd rdma restart! 0x0
+[ 4980.266625@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4980.266636@0]h fb: osd rdma restart! 0x0
+[ 4980.599961@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4980.599973@0]h fb: osd rdma restart! 0x0
+[ 4980.933292@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4980.933304@0]h fb: osd rdma restart! 0x0
+[ 4981.266629@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4981.266640@0]h fb: osd rdma restart! 0x0
+[ 4981.599966@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4981.599978@0]h fb: osd rdma restart! 0x0
+[ 4981.933298@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4981.933310@0]h fb: osd rdma restart! 0x0
+[ 4982.266633@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4982.266645@0]h fb: osd rdma restart! 0x0
+[ 4982.599961@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4982.599973@0]h fb: osd rdma restart! 0x0
+[ 4982.933294@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4982.933305@0]h fb: osd rdma restart! 0x0
+[ 4983.266627@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4983.266638@0]h fb: osd rdma restart! 0x0
+[ 4983.599962@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4983.599974@0]h fb: osd rdma restart! 0x0
+[ 4983.933294@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4983.933306@0]h fb: osd rdma restart! 0x0
+[ 4984.266631@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4984.266643@0]h fb: osd rdma restart! 0x0
+[ 4984.599964@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4984.599976@0]h fb: osd rdma restart! 0x0
+[ 4984.933298@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4984.933310@0]h fb: osd rdma restart! 0x0
+[ 4985.266626@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4985.266637@0]h fb: osd rdma restart! 0x0
+[ 4985.599965@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4985.599977@0]h fb: osd rdma restart! 0x0
+[ 4985.933296@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4985.933308@0]h fb: osd rdma restart! 0x0
+[ 4986.266628@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4986.266640@0]h fb: osd rdma restart! 0x0
+[ 4986.599966@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4986.599978@0]h fb: osd rdma restart! 0x0
+[ 4986.933299@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4986.933312@0]h fb: osd rdma restart! 0x0
+[ 4987.266632@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4987.266644@0]h fb: osd rdma restart! 0x0
+[ 4987.599970@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4987.599982@0]h fb: osd rdma restart! 0x0
+[ 4987.933296@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4987.933307@0]h fb: osd rdma restart! 0x0
+[ 4988.266629@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4988.266640@0]h fb: osd rdma restart! 0x0
+[ 4988.599964@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4988.599974@0]h fb: osd rdma restart! 0x0
+[ 4988.933297@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4988.933309@0]h fb: osd rdma restart! 0x0
+[ 4989.266628@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4989.266640@0]h fb: osd rdma restart! 0x0
+[ 4989.599966@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4989.599978@0]h fb: osd rdma restart! 0x0
+[ 4989.933301@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4989.933312@0]h fb: osd rdma restart! 0x0
+[ 4990.266634@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4990.266646@0]h fb: osd rdma restart! 0x0
+[ 4990.599972@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4990.599984@0]h fb: osd rdma restart! 0x0
+[ 4990.933301@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4990.933314@0]h fb: osd rdma restart! 0x0
+[ 4991.266629@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4991.266641@0]h fb: osd rdma restart! 0x0
+[ 4991.599971@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[ 4991.599983@0]h fb: osd rdma restart! 0x0
+[ 4991.808318@3]- fb: reg[0x1102]: 0x34e00000
+[ 4991.808616@3]- fb: reg[0x1103]: 0x34e0009f
+[ 4991.808869@3]- fb: reg[0x1106]: 0x34e10000
+[ 4991.809124@3]- fb: reg[0x1107]: 0x34e1000f
+[ 4991.809370@3]- fb: reg[0x1110]: 0x010001a0
+[ 4991.809611@3]- fb: reg[0x1114]: 0x00000000
+[ 4991.809844@3]- fb: reg[0x1115]: 0x00009b0a
+

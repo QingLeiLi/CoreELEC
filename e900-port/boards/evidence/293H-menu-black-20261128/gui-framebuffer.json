@@ -1,0 +1,49 @@
+{
+  "scope": "CPU framebuffer DRAM at software yoffset; not HDMI capture or proof of scanned buffer",
+  "width": 1920,
+  "height": 1080,
+  "virtual_width": 1920,
+  "virtual_height": 3240,
+  "xoffset": 0,
+  "yoffset": 0,
+  "bits_per_pixel": 32,
+  "stride": 7680,
+  "smem_len": 25165824,
+  "userspace_pointer_bytes": 4,
+  "red": [
+    16,
+    8,
+    0
+  ],
+  "green": [
+    8,
+    8,
+    0
+  ],
+  "blue": [
+    0,
+    8,
+    0
+  ],
+  "alpha": [
+    24,
+    8,
+    0
+  ],
+  "bytes": 8294400,
+  "rgb_extrema": [
+    [
+      0,
+      51
+    ],
+    [
+      0,
+      51
+    ],
+    [
+      0,
+      51
+    ]
+  ],
+  "nonblack_pixels": 2057844
+}

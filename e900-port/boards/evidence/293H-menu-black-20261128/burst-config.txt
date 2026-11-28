@@ -1,0 +1,17 @@
+spawn ssh root@192.168.31.11 date; for f in /sys/module/rdma_mgr/parameters/ctrl_ahb_wr_burst_size /sys/module/rdma_mgr/parameters/ctrl_ahb_rd_burst_size /sys/module/rdma_mgr/parameters/reset_count; do echo "$f"; cat "$f"; done; if test -r /sys/kernel/debug/clk/clk_summary; then grep -Ei "rdma|vpu|vdec" /sys/kernel/debug/clk/clk_summary; fi; printf "{\"jsonrpc\":\"2.0\",\"method\":\"XBMC.GetInfoBooleans\",\"params\":{\"booleans\":[\"System.ScreenSaverActive\"]},\"id\":7}\n" | nc -w 2 127.0.0.1 9090
+root@192.168.31.11's password: 
+Sat Nov 28 03:36:00 UTC 2026
+/sys/module/rdma_mgr/parameters/ctrl_ahb_wr_burst_size
+3
+/sys/module/rdma_mgr/parameters/ctrl_ahb_rd_burst_size
+3
+/sys/module/rdma_mgr/parameters/reset_count
+11823
+          vdec_p1_composite               5            5   498000000          0 0  
+                   gxl_vpu_intr           1            1   166000000          0 0  
+          vdec_p0_composite               5            5   664000000          0 0  
+             vdec_mux                     0            0   664000000          0 0  
+          vpu_p1_composite                0            0   664000000          0 0  
+          vpu_p0_composite                1            1   664000000          0 0  
+             vpu_mux                      2            2   664000000          0 0  
+{"id":7,"jsonrpc":"2.0","result":{"System.ScreenSaverActive":true}}
