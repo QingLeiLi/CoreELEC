@@ -1,0 +1,40 @@
+{
+  "wall": 1795868459.7327049,
+  "rpc": [
+    {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": {
+        "System.DPMSActive": false,
+        "System.ScreenSaverActive": false
+      }
+    },
+    {
+      "id": 2,
+      "jsonrpc": "2.0",
+      "result": {
+        "value": "screensaver.xbmc.builtin.dim"
+      }
+    },
+    {
+      "id": 3,
+      "jsonrpc": "2.0",
+      "result": {
+        "value": 3
+      }
+    },
+    {
+      "id": 4,
+      "jsonrpc": "2.0",
+      "result": {
+        "currentcontrol": {
+          "label": "Movies"
+        },
+        "currentwindow": {
+          "id": 10000,
+          "label": "Home"
+        }
+      }
+    }
+  ]
+}

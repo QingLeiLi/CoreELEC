@@ -1,0 +1,57 @@
+OBSERVED_MENU
+Sat Nov 28 12:20:25 UTC 2026
+234.58 840.45
+0db732f8-7884-4c6d-a82a-d7b1d9fd5b9c
+KODI_TIMELINE
+[   16.963483] CoreELEC systemd[1]: Starting kodi.service...
+[   17.049491] CoreELEC systemd[1]: Started kodi.service.
+[   17.070698] CoreELEC (kodi.sh)[3752]: kodi.service: Referenced but unset environment variable evaluates to an empty string: KODI_DEBUG
+[   17.120378] CoreELEC kodi.sh[3752]: KODI_AE_SINK env variable is deprecated and will be removed in the future.
+[   17.120378] CoreELEC kodi.sh[3752]: Use the --audio-backend command line switch instead.
+[   40.991833] CoreELEC udevadm[3830]: Unknown device "/sys/bus/sdio/devices/*": No such device
+DISPLAY_LOG
+[    1.318763@0]- hdmitx: audio: Audio Type: PCM
+[    1.318768@0]- hdmitx: system: update rx hdr info 0
+[    1.318770@0]- hdmitx: hw: set audio
+[    1.318773@0]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[    1.318783@0]- hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+[    1.318785@0]- hdmitx: hw: aud_n_para = 6144
+[    1.318792@0]- hdmitx: hw: set channel status
+[    1.318805@0]- hdmitx: hw: [0x10e3] = 0x1f
+[    1.318823@0]- hdmitx: audio: Audio Type: PCM
+[    1.385071@1]- fb: malloc_osd_memory, cma:ffffff800acf57f8
+[    1.385081@1]- fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+[    1.385136@1]- fb: malloc_osd_memory, 1255, fb_index=0,fb_rmem_size=25165824
+[    1.385852@1]- fb: malloc_osd_memory, cma mem
+[    1.385922@1]- fb: osd[0] canvas.idx =0x40
+[    1.385924@1]- fb: osd[0] canvas.addr=0x3e400000
+[    1.385926@1]- fb: osd[0] canvas.width=7680
+[    1.385927@1]- fb: osd[0] canvas.height=3240
+[    1.385929@1]- fb: osd[0] frame.width=1920
+[    1.385930@1]- fb: osd[0] frame.height=1080
+[    1.385932@1]- fb: osd[0] out_addr_id =0x0
+[    2.412706@1]- fb: osd_release now.index=0,open_count=1
+[    2.414522@3]- fb: malloc_osd_memory, cma:ffffff800acf57f8
+[    2.414532@3]- fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+[    2.414537@3]- fb: malloc_osd_memory, 1255, fb_index=1,fb_rmem_size=1048576
+[    2.414793@3]- fb: malloc_osd_memory, cma mem
+[    2.415230@3]- fb: osd[1] canvas.idx =0x43
+[    2.415232@3]- fb: osd[1] canvas.addr=0x3fc00000
+[    2.415234@3]- fb: osd[1] canvas.width=128
+[    2.415236@3]- fb: osd[1] canvas.height=32
+[    2.415238@3]- fb: osd[1] frame.width=32
+[    2.415240@3]- fb: osd[1] frame.height=32
+[    2.415242@3]- fb: osd[1] out_addr_id =0x0
+[    3.436700@3]- fb: osd_release now.index=1,open_count=1
+[    4.461016@0]- fb: osd[0] enable: 1 (platform_init)
+[    5.484647@0]- fb: osd[1] enable: 0 (platform_init)
+[   21.871015@1]- fb: osd_release now.index=0,open_count=1
+[   24.163872@2]- hdmitx: hw: set audio
+[   24.163877@2]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[   24.163891@2]- hdmitx: fs = 2, cd = 4, tmds_clk = 148500
+[   24.163895@2]- hdmitx: hw: aud_n_para = 6272
+[   24.163903@2]- hdmitx: hw: set channel status
+[   24.163916@2]- hdmitx: hw: [0x10e3] = 0x1f
+[   24.163935@2]- hdmitx: audio: Audio Type: PCM
+[   24.163937@2]- hdmitx: audio: set audio param
+[  207.066747@0]d fb: update_table_item overflow!vsync_cnt=12382, rdma_cnt=0

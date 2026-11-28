@@ -33,3 +33,11 @@ systemd报告kernel9.005s+userspace11.477s=20.482s，但kodi.target在userspace8
 这些只证明软件在线和显示时序/中断推进，不能证明OSD新鲜像素、图层混合或实际HDMI图像有效。第二轮黑屏不与旧的RDMA中断停滞现场混同；不能以这些参数声称“显示链路全部正常”。未在这次黑屏后继续重启、改寄存器或播放。当前仍保留快速启动现场，尚未执行回退。
 
 [第二轮启动](evidence/boot-speed-20261128/repeat/state.txt)、[黑屏状态及IRQ对照](evidence/boot-speed-20261128/repeat/black-state.txt)、[Kodi状态](evidence/boot-speed-20261128/repeat/kodi-state.json)。
+
+## 第二轮菜单迟到且偏暗
+
+用户随后报告“现在出现菜单了”，再报告“但是很暗，感觉是到了降低亮度的低功耗状态下了”。没有写显示寄存器、重启或恢复配置。收到菜单出现反馈后的采样uptime=234.58s；不是精确的第一帧时间，只能说明17s的Kodi服务/target就绪不能等同于可见菜单就绪。内核207.066747s曾打印 `fb: update_table_item overflow!vsync_cnt=12382, rdma_cnt=0`；尚无原始正常到异常的完整OSD表/独立通道中断对照，不能直接认定该条为迟到/偏暗根因。
+
+偏暗时只读RPC：ScreenSaverActive=false、DPMSActive=false，屏保模式screensaver.xbmc.builtin.dim、超时3分钟。布尔名称已与Kodi官方说明核对。配置了dim与当下处于dim是不同结论；尚未把画面暗归因于省电。已请用户只轻按一次方向键，观察是否立即恢复亮度，等待反馈；不改亮度/寄存器。
+
+[菜单出现后的日志](evidence/boot-speed-20261128/repeat/menu-appeared.txt)、[偏暗时屏保和DPMS状态](evidence/boot-speed-20261128/repeat/dim-state.json)。
