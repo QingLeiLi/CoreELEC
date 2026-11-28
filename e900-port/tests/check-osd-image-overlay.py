@@ -20,12 +20,12 @@ with tempfile.TemporaryDirectory(prefix='e900-osd-overlay-') as tmp:
  root=Path(tmp);checkout=root/'repo';port=root/'port'
  for name in ['scripts','patches','boards','config']:shutil.copytree(PORT/name,port/name,ignore=shutil.ignore_patterns('__pycache__'))
  shutil.copy2(PORT/'pins.json',port/'pins.json');installer.PORT=port
- recipes=['projects/Amlogic-ce/packages/linux/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk','packages/sysutils/keyutils/package.mk','packages/sysutils/usbutils/package.mk','packages/network/connman/package.mk','packages/network/wireguard-linux-compat/package.mk','packages/network/wireguard-tools/package.mk','projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk','packages/tools/megatools/package.mk','config/optimize']
+ recipes=['projects/Amlogic-ce/packages/linux/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk','packages/sysutils/keyutils/package.mk','packages/sysutils/usbutils/package.mk','packages/network/connman/package.mk','packages/network/wireguard-linux-compat/package.mk','packages/network/wireguard-tools/package.mk','projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk','packages/tools/megatools/package.mk','config/optimize','scripts/image']
  for rel in recipes:
   dest=checkout/rel;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(REF/rel,dest)
  with mock.patch.dict(os.environ,{'E900_SOURCE_TRACE':'0','E900_VDIN_CAPTURE':'0','E900_INCREMENTAL_REUSE':'1'}),mock.patch.object(installer.subprocess,'check_output',return_value=installer.PINS['coreelec']):
   installer.install(checkout,'decoder')
-  state=json.loads((checkout/'.e900-profile.json').read_text());assert len(state['image_files'])==5
+  state=json.loads((checkout/'.e900-profile.json').read_text());assert len(state['image_files'])==7
   # Run the pinned CE functions, rather than reimplementing their copy behavior.
   functions=(REF/'config/functions').read_text();a=functions.index('enable_service() {');b=functions.index('### MULTI-THREADED',a)
   image=(REF/'scripts/image').read_text();a=image.index('# Copy DEVICE related files');b=image.index('# Replace placeholders',a)

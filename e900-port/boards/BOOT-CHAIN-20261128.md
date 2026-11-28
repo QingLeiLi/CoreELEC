@@ -50,6 +50,8 @@ Kodi日志从Starting Kodi到initialize done约4.494s；日志使用墙钟且开
 
 ## 第二项：避免每次重建hwdb
 
+用户同意后已接入源码，详见[hwdb预生成与待验边界](HWDB-PREBUILD-20261128.md)。下述内容保留最初候选依据。
+
 现机/run/hwdb.bin为12,297,835字节；SYSTEM内/usr/lib/udev/hwdb.bin不存在。CE固定源码`packages/sysutils/systemd/patches/systemd-0002-move-hwdb.bin-to-run.patch`将默认生成/读取位置改到/run，因此每次启动重建，实测3.15秒。
 
 低风险候选是在镜像组装时生成匹配最终hwdb.d的/usr/lib/udev/hwdb.bin，保留/etc本地覆盖和数据库重建逻辑。需要验证交叉构建的生成工具/格式、hwdb内容与用户覆盖优先级；不能只mask服务，否则可能失去键盘/遥控等硬件规则。预计能移出这3.15秒计算，但整体节省受其它并行服务限制，不能承诺整机正好快3.15秒。新无线镜像规则也必须纳入生成，不能复制build294旧库覆盖。

@@ -1,0 +1,21 @@
+python3 - <<'PY'
+> import tempfile,subprocess
+> from pathlib import Path
+> with tempfile.TemporaryDirectory(prefix='e900-hwdb-condition-') as tmp:
+>  r=Path(tmp);db=r/'usr/lib/udev/hwdb.bin';db.parent.mkdir(parents=True);user=r/'etc/udev/hwdb.d';user.mkdir(parents=True);(user/'README').write_text('documentation')
+>  def check():
+>   return subprocess.run(['systemd-analyze','condition','ConditionPathExists=|!'+str(db),'ConditionPathExists=|'+str(r/'run/hwdb.bin'),'ConditionPathExistsGlob=|'+str(user/'*.hwdb')],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+>  assert check();print('PASS missing database: rebuild')
+>  db.write_text('fixture');assert not check();print('PASS database plus README only: skip')
+>  (user/'99-user.hwdb').write_text('fixture');assert check();print('PASS actual rule: rebuild')
+>  (user/'99-user.hwdb').unlink();(r/'run').mkdir();(r/'run/hwdb.bin').write_text('fixture');assert check();print('PASS existing runtime database: rebuild')
+> print('PASS all temporary files cleaned')
+> PY
+PASS missing database: rebuild
+PASS database plus README only: skip
+PASS actual rule: rebuild
+PASS existing runtime database: rebuild
+PASS all temporary files cleaned
+CoreELEC:~ # exit
+logout
+Connection to 192.168.31.11 closed.

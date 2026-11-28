@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
   subprocess.run([sys.executable,str(PORT/'tests/vdin'/check)],env=env,check=True)
  # Real installer transitions and compatible-cache retention.
  repo=root/'repo';repo.mkdir()
- paths=['projects/Amlogic-ce/packages/linux/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk','packages/sysutils/keyutils/package.mk','packages/sysutils/usbutils/package.mk','packages/network/connman/package.mk','packages/network/wireguard-linux-compat/package.mk','packages/network/wireguard-tools/package.mk','projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk','packages/tools/megatools/package.mk','config/optimize']
+ paths=['projects/Amlogic-ce/packages/linux/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk','packages/sysutils/keyutils/package.mk','packages/sysutils/usbutils/package.mk','packages/network/connman/package.mk','packages/network/wireguard-linux-compat/package.mk','packages/network/wireguard-tools/package.mk','projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk','packages/tools/megatools/package.mk','config/optimize','scripts/image']
  for path in paths:
   dest=repo/path;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(REFERENCE/path,dest)
  baseline=installer.capture_config_fix(REFERENCE,False)[1]

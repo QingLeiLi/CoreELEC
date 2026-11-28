@@ -166,7 +166,7 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
                      "packages/network/wireguard-tools/package.mk",
                      "projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk",
                      "packages/tools/megatools/package.mk",
-                     "config/optimize"]:
+                     "config/optimize", "scripts/image"]:
         dest = checkout / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REFERENCE / relative, dest)

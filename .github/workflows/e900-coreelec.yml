@@ -89,6 +89,12 @@ jobs:
       - name: Install native build dependencies
         run: bash "$PORT_ROOT/scripts/ci-dependencies.sh"
 
+      # Image-only host tool; keep compiler/setup cache identities unchanged.
+      - name: Install hardware database generator
+        run: |
+          sudo apt-get install -y --no-install-recommends systemd udev
+          command -v systemd-hwdb
+
       - name: Compute host and patch cache identities
         id: cache-keys
         run: python3 "$PORT_ROOT/scripts/build-cache.py" keys
@@ -226,6 +232,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-wireless.py"
           python3 "$PORT_ROOT/tests/check-osd-boot-recovery.py"
           python3 "$PORT_ROOT/tests/check-osd-image-overlay.py"
+          python3 "$PORT_ROOT/tests/check-hwdb-image.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"
           python3 "$PORT_ROOT/tests/check-usb-image.py"
 

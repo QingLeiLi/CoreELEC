@@ -413,8 +413,31 @@ def uwe_module_install_fix(repo):
     return relative, content, metadata
 
 
+IMAGE_SCRIPT_SHA256 = "2bbd3ecc28388562360b20eaa86527a91f601eb731d1de59689c688b179d22ee"
+HWDB_IMAGE_HOOK = ('# E900: precompile final vendor hardware rules before SquashFS assembly.\n'
+                   'python3 "${ROOT}/scripts/e900-prebuild-hwdb.py" "${INSTALL}"\n\n')
+
+
+def image_build_fix(repo, enabled, previous):
+    relative = "scripts/image"
+    if not enabled and not previous:
+        return None
+    original = (repo / relative).read_text()
+    digest = hashlib.sha256(original.encode()).hexdigest()
+    if previous and digest != previous["sha256"]:
+        raise RuntimeError("Locally edited image assembly script")
+    base = original.replace(HWDB_IMAGE_HOOK, "", 1)
+    if hashlib.sha256(base.encode()).hexdigest() != IMAGE_SCRIPT_SHA256:
+        raise RuntimeError("Unknown CoreELEC image assembly script")
+    anchor = "# Create squashfs file, default to gzip if no compression configured\n"
+    if base.count(anchor) != 1:
+        raise RuntimeError("Missing image assembly hook")
+    content = base.replace(anchor, HWDB_IMAGE_HOOK + anchor) if enabled else base
+    return relative, content, dict(destination=relative, sha256=hashlib.sha256(content.encode()).hexdigest()) if enabled else None
+
+
 def image_overlay_files(profile):
-    """CE copies the device filesystem overlay on every image assembly."""
+    """Managed image overlay and build-only helper; no compiler invalidation."""
     if profile != "decoder":
         return {}
     spec = importlib.util.spec_from_file_location("e900_boot_image", PORT / "scripts/e900-osd-rdma-boot.py")
@@ -430,8 +453,10 @@ def image_overlay_files(profile):
         "usr/lib/systemd/system/e900-osd-rdma-image.service": (PORT / "config/e900-osd-rdma-image.service").read_bytes(),
         "usr/lib/systemd/system/kodi-waitonnetwork.service.d/20-e900-fast-boot.conf": (PORT / "config/20-e900-fast-boot.conf").read_bytes(),
         "usr/lib/systemd/system/kodi.service.d/30-e900-osd-rdma-image.conf": (PORT / "config/30-e900-osd-rdma-image.conf").read_bytes(),
+        "usr/lib/systemd/system/systemd-hwdb-update.service.d/20-e900-hwdb-prebuilt.conf": (PORT / "config/20-e900-hwdb-prebuilt.conf").read_bytes(),
     }
-    return {prefix + name: data for name, data in files.items()}
+    return {**{prefix + name: data for name, data in files.items()},
+            "scripts/e900-prebuild-hwdb.py": (PORT / "scripts/prebuild-hwdb.py").read_bytes()}
 
 
 def image_overlay_metadata(profile):
@@ -449,6 +474,7 @@ def install(repo, profile):
     image_files = image_overlay_files(profile)
     marker = repo / ".e900-profile.json"
     previous = json.loads(marker.read_text()) if marker.exists() else None
+    image_fix = image_build_fix(repo, profile == "decoder", (previous or {}).get("image_builder"))
     capture_enabled = os.environ.get("E900_VDIN_CAPTURE", "0") == "1"
     capture_fix = capture_config_fix(repo, capture_enabled) if capture_enabled or (previous or {}).get("capture_config") else None
     validate_packages(repo)
@@ -476,6 +502,7 @@ def install(repo, profile):
                  host_codegen=host_metadata,
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
                  image_files=image_overlay_metadata(profile),
+                 image_builder=image_fix[2] if image_fix else None,
                  status="experimental-unvalidated")
 
     old_host = (previous or {}).get("host_codegen")
@@ -525,6 +552,8 @@ def install(repo, profile):
         dest = repo / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
+    if image_fix:
+        (repo / image_fix[0]).write_text(image_fix[1])
     for source_path, source_content, _ in source_fixes:
         (repo / source_path).write_text(source_content)
     (repo / host_path).write_text(host_content)
