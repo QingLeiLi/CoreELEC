@@ -6,7 +6,7 @@
 
 ## 当前状态与下一项
 
-**TF卡启用（2026-11-28，用户另行要求）**：源码启用SD_EMMC_B，核对P291 CARD_6检测/3.3V配置；现机旧293H仅改原DTB status，备份后软件重启。新boot91eb4cd5，status=okay、meson_mmc_probe成功且driver绑定，SSH恢复；没有mmc卡枚举，待用户确认插卡后做文件读写。未升级内核/SYSTEM、未改显示寄存器、未写eMMC。详见[配置与原始证据](TF-CARD-20261128.md)。
+**TF卡启用（2026-11-28，用户另行要求）**：源码启用SD_EMMC_B，核对P291 CARD_6检测/3.3V配置；现机旧293H仅改原DTB status，备份后软件重启。新boot91eb4cd5，status=okay、meson_mmc_probe成功且driver绑定，SSH恢复；随后用户插卡，1.89GiB SD卡热插枚举、vfat自动rw挂载通过；8MiB随机数据O_DIRECT写+fsync/直接读回SHA256一致，临时文件已清理，无新增I/O错误。仅验该卡基础读写，未覆盖其它卡或长期压力。未升级内核/SYSTEM、未改显示寄存器、未写eMMC。详见[配置与原始证据](TF-CARD-20261128.md)。
 
 **无线接入（2026-11-28，用户另行要求）**：基于491fb30742复用CE pinned UWE5621 SDIO Wi-Fi/BT包，启用本板SDIO A及参考GPIO，配套修复可选BT host-wake和隐藏构建目录漏装模块，未操作设备网络/电源。主机与DTB检查通过，ARM构建/无线实测待验；不改变HEVC DMC/legacy显示基准结论。见[无线接入及待验项](UWE5621-WIRELESS-20261128.md)。
 

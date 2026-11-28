@@ -1,0 +1,34 @@
+BOOT 91eb4cd5-4503-414a-aaad-97c041639c8b
+CID 1a5051202020202010000192e600bc00
+TEST_DIR /var/media/mmcblk0p1-FAAC-E128/.e900-tf-test.peBsyu
+WRITE_DIRECT_FSYNC_8MiB
+2048+0 records in
+2048+0 records out
+8388608 bytes (8.0MB) copied, 23.027060 seconds, 355.8KB/s
+READ_DIRECT_8MiB
+2048+0 records in
+2048+0 records out
+8388608 bytes (8.0MB) copied, 1.666267 seconds, 4.8MB/s
+d2e5ed0276c50f80231dd38f7afb210b4c53178a5292dddbe2ef8fe14f5aa315  /tmp/e900-tf-source.AjWD05
+d2e5ed0276c50f80231dd38f7afb210b4c53178a5292dddbe2ef8fe14f5aa315  /tmp/e900-tf-read.YzFOmc
+-sh: cmp: command not found
+PASS_DIRECT_WRITE_READ_8MiB_SHA256 (cmp unavailable; SHA256 equality verified)
+PASS_TEMP_FILE_CLEANUP
+POST_TEST_MOUNTS
+/dev/mmcblk0p1 /var/media/mmcblk0p1-FAAC-E128 vfat rw,nosuid,nodev,noexec,noatime,fmask=0133,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 0
+POST_TEST_LOG
+[    0.000000@0]d amlogic_init_sdemmc: register amlogic sdemmc clk
+[    0.000000@0]d amlogic_init_sdemmc: register amlogic sdemmc clk
+[    3.394533@2]- meson-mmc: mmc driver version: 3.02, 2017-05-15: New Emmc Host Controller
+[    3.401572@2]- meson-mmc: gpio_cd = 1c1
+[    3.442171@2]- meson-mmc: meson_mmc_probe() : success!
+[  207.478248@2]- meson-mmc: card IN
+[  207.583050@2]- meson-mmc: normal card in
+[  207.584237@2]- meson-mmc: card OUT
+[  207.584239@2]- meson-mmc: card out
+[  210.234252@2]- meson-mmc: card IN
+[  210.337843@2]- meson-mmc: normal card in
+[  210.802093@2]- meson-aml-mmc d0072000.sd: divider requested rate 50000000 != actual rate 49800000: ret=0
+[  210.803401@2]- meson-aml-mmc d0072000.sd: divider requested rate 50000000 != actual rate 49800000: ret=0
+[  210.814466@2]- mmcblk0: sd:0260       1.89 GiB 
+[  210.816970@2]-  mmcblk0: p1
