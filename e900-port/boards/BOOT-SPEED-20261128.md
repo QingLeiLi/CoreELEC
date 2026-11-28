@@ -1,4 +1,4 @@
-# 启动速度优化：当前试验未通过
+# 启动速度优化：画面仍待通过
 
 基准build294/d94c005b，用户确认菜单正常。用户随后要求优化启动速度，并确认方便观察重启。
 
@@ -23,3 +23,13 @@ systemd报告kernel9.005s+userspace11.477s=20.482s，但kodi.target在userspace8
 后续先恢复已知正常菜单；若用户仍需优化，再逐项验证：保持诊断wait=1/log7，只隔离网络等待；自动初始化必须验证合适的软件阶段，不能仅把它前移到bus-ready就宣布安全。hardware-db服务不盲目禁用，现有3.3秒工作生成/run/hwdb.bin（约11.7MiB），缓存是否划算及失效条件尚未测。
 
 [基准](evidence/boot-speed-20261128/before.txt)、[失败状态](evidence/boot-speed-20261128/failed-fast/state.txt)、[内核日志](evidence/boot-speed-20261128/failed-fast/dmesg.txt)、[Kodi日志](evidence/boot-speed-20261128/failed-fast/kodi.log)、[回退脚本](evidence/boot-speed-20261128/rollback.sh)。
+
+## 同配置复测及当前现场
+
+用户随后报告首次快速启动的画面已恢复，并明确要求“软重启一下，我再看下”。未回退、未改配置，按原wait0/log4+不阻塞网络再次软件重启，boot `0db732f8-7884-4c6d-a82a-d7b1d9fd5b9c`。该事实纠正“首次一直黑”的理解；首次恢复时间/触发条件未采到，不据此认定永久初始化失败或已解决。
+
+第二轮：自动初始化1.329985s complete；kernel8.875s/userspace11.711s，总体20.587s；kodi.target为userspace8.186s（内核起算约17.061s）。用户报告“目前是黑屏”，随后只读检查：HPD=1、1080p60、AVMUTE=0，无活动vdec；OSD/VSync合并IRQ7062→7123、RDMA IRQ7020→7081（约1秒）；fb0虚拟1920×3240/32bpp；Kodi Home/Movies、屏保与DPMS均false。
+
+这些只证明软件在线和显示时序/中断推进，不能证明OSD新鲜像素、图层混合或实际HDMI图像有效。第二轮黑屏不与旧的RDMA中断停滞现场混同；不能以这些参数声称“显示链路全部正常”。未在这次黑屏后继续重启、改寄存器或播放。当前仍保留快速启动现场，尚未执行回退。
+
+[第二轮启动](evidence/boot-speed-20261128/repeat/state.txt)、[黑屏状态及IRQ对照](evidence/boot-speed-20261128/repeat/black-state.txt)、[Kodi状态](evidence/boot-speed-20261128/repeat/kodi-state.json)。

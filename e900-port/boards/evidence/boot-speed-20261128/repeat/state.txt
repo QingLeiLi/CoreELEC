@@ -1,0 +1,33 @@
+0db732f8-7884-4c6d-a82a-d7b1d9fd5b9c
+boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=0 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=4 systemd.show_status=auto
+Startup finished in 8.875s (kernel) + 11.711s (userspace) = 20.587s 
+kodi.target reached after 8.186s in userspace.
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+kodi.service +87ms
+└─smp-affinity.service @7.864s +187ms
+  └─graphical.target @7.821s
+    └─multi-user.target @7.724s
+      └─smbd.service @7.388s +332ms
+        └─nmbd.service @6.937s +428ms
+          └─network-online.target @6.887s
+            └─network.target @6.874s
+              └─wpa_supplicant.service @7.206s +98ms
+                └─dbus.service @4.329s +442ms
+                  └─basic.target @4.241s
+                    └─sockets.target @4.241s
+                      └─lircd.socket @4.241s
+                        └─sysinit.target @4.237s
+                          └─systemd-udevd.service @4.104s +132ms
+                            └─systemd-hwdb-update.service @829ms +3.266s
+                              └─systemd-journald.socket @710ms
+                                └─system.slice @585ms
+                                  └─-.slice @584ms
+INIT
+[    1.329980@1]- e900-hw-init: step=13 read.begin reg=1d1e
+[    1.329982@1]- e900-hw-init: step=13 read.end reg=1d1e value=1000
+[    1.329985@1]- e900-hw-init: complete fifo=fff00fff vd1=1000 vd2=1000 hold=8
+[    1.329987@1]- e900-hw-init: notify.exit ret=0
+KODI
+active

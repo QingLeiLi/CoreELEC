@@ -1,0 +1,14 @@
+HDMI
+1
+1080p60hz
+0VIDEO
+No vdec.
+FRAMEBUFFER
+1920,3240
+32
+IRQ1
+ 28:       7062          0          0          0     GIC-0  35 Edge      osd-vsync, vsync
+ 36:       7020          0          0          0     GIC-0 121 Edge      rdma
+IRQ2
+ 28:       7123          0          0          0     GIC-0  35 Edge      osd-vsync, vsync
+ 36:       7081          0          0          0     GIC-0 121 Edge      rdma
