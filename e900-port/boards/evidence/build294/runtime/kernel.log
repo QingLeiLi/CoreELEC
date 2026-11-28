@@ -1,0 +1,1718 @@
+E900_BUILD294_KMSG_READY 86.47314379
+6,0,0,-;Booting Linux on physical CPU 0x0
+5,1,0,-;Linux version 4.9.269 (runner@runnervm9f4oe) (gcc version 13.2.0 (GCC) ) #1 SMP PREEMPT Sat Nov 28 08:59:14 UTC 2026
+6,2,0,-;Boot CPU: AArch64 Processor [410fd034]
+6,3,0,-;CoreELEC dt-id: gxlx2_p291_1g_e900v21c
+6,4,0,-;Machine model: Skyworth E900V21C (GXLX2, experimental USB)
+0,5,0,-;\x093dc00000 - 40000000,    36864 KB, linux,meson-fb
+0,6,0,-;\x0907400000 - 07500000,     1024 KB, ramoops@0x07400000
+0,7,0,-;\x0910000000 - 10200000,     2048 KB, firmware_secmon@10000000
+0,8,0,-;\x0939000000 - 3dc00000,    77824 KB, linux,ion-dev
+0,9,0,-;\x0936800000 - 39000000,    40960 KB, linux,di_cma
+6,10,0,-;Reserved memory: created DMA memory pool at 0x0000000036800000, size 0 MiB
+0,11,0,-;\x0936800000 - 36800000,        0 KB, linux,ppmgr
+6,12,0,-;__reserved_mem_alloc_size, start:0x0000000005000000, end:0x0000000005400000, len:4 MiB
+0,13,0,-;\x0905000000 - 05400000,     4096 KB, linux,secmon
+0,14,0,-;\x0926800000 - 33800000,   212992 KB, linux,codec_mm_cma
+0,15,0,-;\x0936800000 - 36800000,        0 KB, linux,codec_mm_reserved
+0,16,0,-;\x0935400000 - 36800000,    20480 KB, linux,vdin1_cma
+0,17,0,-;\x093dc00000 - 40000000,    36864 KB, linux,meson-fb
+6,18,0,-;cma: Reserved 8 MiB at 0x0000000034c00000
+7,19,0,-;On node 0 totalpages: 261376
+7,20,0,-;  DMA zone: 4092 pages used for memmap
+7,21,0,-;  DMA zone: 0 pages reserved
+7,22,0,-;  DMA zone: 261376 pages, LIFO batch:31
+6,23,0,-;psci: probing for conduit method from DT.
+6,24,0,-;psci: PSCIv0.2 detected in firmware.
+6,25,0,-;psci: Using standard PSCI v0.2 function IDs
+6,26,0,-;psci: Trusted OS migration not required
+6,27,0,-;percpu: Embedded 21 pages/cpu s47576 r8192 d30248 u86016
+7,28,0,-;pcpu-alloc: s47576 r8192 d30248 u86016 alloc=21*4096
+7,29,0,-;pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3 
+6,30,0,-;Detected VIPT I-cache on CPU0
+6,31,0,-;CPU features: enabling workaround for ARM erratum 845719
+6,32,0,-;Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 257284
+5,33,0,-;Kernel command line: boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=1 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=7 systemd.show_status=auto
+6,34,0,-;vout: 1080p60hz
+6,35,0,-;vout: en: 1
+6,36,0,-;fb: osd0
+6,37,0,-;fb: loaded
+6,38,0,-;fb: 0x3dc00000
+6,39,0,-;am_vecm: boot hdr_policy: 1
+6,40,0,-;PID hash table entries: 4096 (order: 3, 32768 bytes)
+6,41,0,-;Dentry cache hash table entries: 131072 (order: 8, 1048576 bytes)
+6,42,0,-;Inode-cache hash table entries: 65536 (order: 7, 524288 bytes)
+6,43,0,-;Memory: 587384K/1045504K available (13822K kernel code, 2408K rwdata, 6076K rodata, 6016K init, 4781K bss, 56712K reserved, 401408K cma-reserved)
+5,44,0,-;Virtual kernel memory layout:
+5,45,0,-;    modules : 0xffffff8000000000 - 0xffffff8008000000   (   128 MB)
+5,46,0,-;    vmalloc : 0xffffff8008000000 - 0xffffffbebfff0000   (   250 GB)
+5,47,0,-;      .text : 0xffffff8009080000 - 0xffffff8009e00000   ( 13824 KB)
+5,48,0,-;    .rodata : 0xffffff8009e00000 - 0xffffff800a400000   (  6144 KB)
+5,49,0,-;      .init : 0xffffff800a400000 - 0xffffff800a9e0000   (  6016 KB)
+5,50,0,-;      .data : 0xffffff800a9e0000 - 0xffffff800ac3a008   (  2409 KB)
+5,51,0,-;       .bss : 0xffffff800ac3a008 - 0xffffff800b0e5624   (  4782 KB)
+5,52,0,-;    fixed   : 0xffffffbefe7fd000 - 0xffffffbefec00000   (  4108 KB)
+5,53,0,-;    PCI I/O : 0xffffffbefee00000 - 0xffffffbeffe00000   (    16 MB)
+5,54,0,-;    vmemmap : 0xffffffbf00000000 - 0xffffffc000000000   (     4 GB maximum)
+5,55,0,-;              0xffffffbf00004000 - 0xffffffbf01000000   (    15 MB actual)
+5,56,0,-;    memory  : 0xffffffc000100000 - 0xffffffc040000000   (  1023 MB)
+6,57,0,-;SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+6,58,0,-;Preemptible hierarchical RCU implementation.
+6,59,0,-;\x09Build-time adjustment of leaf fanout to 64.
+6,60,0,-;\x09RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=4.
+6,61,0,-;RCU: Adjusting geometry for rcu_fanout_leaf=64, nr_cpu_ids=4
+6,62,0,-;NR_IRQS:64 nr_irqs:64 0
+6,63,0,-;irq_meson_gpio: 110 to 8 gpio interrupt mux initialized
+6,64,0,-;amlogic_init_sdemmc: register amlogic sdemmc clk
+6,65,0,-;amlogic_init_sdemmc: register amlogic sdemmc clk
+6,66,0,-;amlogic_init_gpu: register meson gpu clk
+6,67,0,-;amlogic_init_media: register meson media clk
+6,68,0,-;amlogic_init_misc: register meson misc clk
+6,69,0,-;gxl_clkc_init initialization complete
+6,70,0,-;arm_arch_timer: Architected cp15 timer(s) running at 24.00MHz (phys).
+6,71,0,-;clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+6,72,3,-;sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+6,73,42,-;meson_bc_timer: mclk->mux_reg =        (ptrval),mclk->reg =        (ptrval)
+6,74,515,-;Console: colour dummy device 80x25
+6,75,1676,-;console [tty0] enabled
+6,76,1703,-;Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+6,77,1738,-;pid_max: default: 32768 minimum: 301
+6,78,1849,-;Security Framework initialized
+6,79,1872,-;SELinux:  Initializing.
+7,80,1917,-;SELinux:  Starting in permissive mode
+6,81,1946,-;Mount-cache hash table entries: 2048 (order: 2, 16384 bytes)
+6,82,1967,-;Mountpoint-cache hash table entries: 2048 (order: 2, 16384 bytes)
+6,83,2611,-;ftrace: allocating 43711 entries in 171 pages
+4,84,77171,-;sched-energy: CPU device node has no sched-energy-costs
+6,85,88887,-;ASID allocator initialised with 65536 entries
+6,86,118000,-;secmon: can't fine clear_range
+6,87,120042,-;chip version = 2A:E - C5:0
+6,88,165289,-;Detected VIPT I-cache on CPU1
+6,89,165345,-;CPU1: Booted secondary processor [410fd034]
+6,90,197348,-;Detected VIPT I-cache on CPU2
+6,91,197391,-;CPU2: Booted secondary processor [410fd034]
+6,92,229396,-;Detected VIPT I-cache on CPU3
+6,93,229439,-;CPU3: Booted secondary processor [410fd034]
+6,94,229519,-;Brought up 4 CPUs
+6,95,229634,-;SMP: Total of 4 processors activated.
+6,96,229655,-;CPU features: detected feature: 32-bit EL0 Support
+6,97,229746,-;CPU: All CPU(s) started at EL2
+6,98,229785,-;alternatives: patching kernel code
+6,99,230499,-;devtmpfs: initialized
+6,100,242017,-;clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+6,101,242069,-;futex hash table entries: 1024 (order: 4, 65536 bytes)
+6,102,242219,-;pinctrl core: initialized pinctrl subsystem
+6,103,243290,-;NET: Registered protocol family 16
+6,104,243875,-;schedtune: init normalization constants...
+6,105,243908,-;schedtune: no energy model data
+4,106,243924,-;schedtune: disabled!
+6,107,261593,-;cpuidle: using governor menu
+6,108,261713,-;register canvas platform driver
+6,109,261775,-;register rdma platform driver
+6,110,262428,-;vdso: 2 pages (1 code @         (ptrval), 1 data @         (ptrval))
+6,111,262480,-;hw-breakpoint: found 6 breakpoint and 4 watchpoint registers.
+6,112,263446,-;DMA: preallocated 2048 KiB pool for atomic allocations
+6,113,263672,-;clkmsr: clkmsr: driver init
+3,114,263698,-;codec_mm_module_init
+6,115,263736,-;media_configs_system_init
+6,116,264728,-;pstore: using zlib compression
+6,117,265132,-;console [pstore-1] enabled
+6,118,265150,-;pstore: Registered ramoops as persistent store backend
+6,119,265170,-;ramoops: attached 0x100000@0x7400000, ecc: 0/0
+6,120,266954,-;aml_iomap: amlogic iomap probe done
+6,121,267697,-;meson_mhu: mhu ffffffc00038f410 to scp done 0x1
+6,122,270265,-;vpu: driver version: v20210916(2-gxl)
+6,123,270305,-;vpu: load vpu_clk: 666666667Hz(7)
+6,124,270472,-;vpu: clktree_init
+6,125,270653,-;vpu: set vpu clk: 666666667Hz(7), readback: 664000000Hz(0x2000300)
+6,126,270788,-;vpu: vpu_probe OK
+6,127,274226,-;clkmsr: msr_clk_reg0=        (ptrval),msr_clk_reg2=        (ptrval)
+3,128,274279,-;clkmsr c110875c.meson_clk_msr: failed to get msr ring reg0
+ SUBSYSTEM=platform
+ DEVICE=+platform:c110875c.meson_clk_msr
+6,129,275569,-;aml_vdac_config_probe: cpu_id:0, name:meson-gx_l_m-vdac
+6,130,275799,-;aml_vdac_probe: ok
+6,131,279553,-;cvbs_out: cvbsout_probe, cpu_id:0,name:meson-gxl-cvbsout
+6,132,279691,-;cvbs_out: find performance_pal config
+6,133,279720,-;cvbs_out: register cvbs module server ok
+6,134,279739,-;cvbs_out: register cvbs module vout2 server ok
+3,135,279760,-;cvbs_out: chrdev devno 264241152 for disp
+6,136,279984,-;cvbs_out: create cdev cvbs
+6,137,280015,-;cvbs_out: cvbsout_probe OK
+6,138,280965,-;codec_mm codec_mm: assigned reserved memory node linux,codec_mm_cma
+ SUBSYSTEM=platform
+ DEVICE=+platform:codec_mm
+6,139,281087,-;codec_mm codec_mm: assigned reserved memory node linux,codec_mm_cma
+ SUBSYSTEM=platform
+ DEVICE=+platform:codec_mm
+6,140,281118,-;codec_mm_probe ok
+6,141,281350,-;canvas_probe reg=        (ptrval),size=400
+6,142,281388,-;canvas maped reg_base =        (ptrval)
+6,143,283762,-;rdma_probe,cpu_type:0, ver:0, len:8,rdma_table_size:65536
+6,144,283801,-;vpu: switch_vpu_mem_pd: unsupport vpu mod: 57
+6,145,284100,-;rdma_register, rdma_table_addr         (ptrval) rdma_table_addr_phy 34e00000 reg_buf         (ptrval)
+6,146,284142,-;rdma_register success, handle 1 table_size 65536
+6,147,284162,-;set_rdma_handle video rdma handle = 1.
+6,148,284223,-;classs created ok
+6,149,284249,-;classs file created ok
+5,150,508471,-;SCSI subsystem initialized
+7,151,508686,-;libata version 3.00 loaded.
+6,152,508952,-;usbcore: registered new interface driver usbfs
+6,153,509046,-;usbcore: registered new interface driver hub
+6,154,509110,-;usbcore: registered new device driver usb
+6,155,509247,-;media: Linux media interface: v0.10
+6,156,509310,-;Linux video capture interface: v2.00
+6,157,509431,-;pps_core: LinuxPPS API ver. 1 registered
+6,158,509457,-;pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+6,159,509513,-;PTP clock support registered
+6,160,510036,-;secmon: reserve_mem_size:0x300000
+6,161,510138,-;secmon secmon: assigned reserved memory node linux,secmon
+ SUBSYSTEM=platform
+ DEVICE=+platform:secmon
+6,162,510365,-;secmon: get page:        (ptrval), 5000
+6,163,510410,-;secmon: share in base: 0xffffff8008378000, share out base: 0xffffff8008374000
+6,164,510440,-;secmon: phy_in_base: 0x100fe000, phy_out_base: 0x100ff000
+6,165,510732,-;fb: osd_init_module
+6,166,511200,-;fb: viu vsync irq: 28
+6,167,511236,-;fb: rdma irq: 36
+6,168,511489,-;fb: osd_rdma_init: rdma_table p=0x34e10000,op=0x34e10000 , v=0x        (ptrval)
+6,169,511550,-;rdma_register, rdma_table_addr         (ptrval) rdma_table_addr_phy 34e11000 reg_buf         (ptrval)
+6,170,511583,-;rdma_register success, handle 2 table_size 4096
+6,171,511603,-;fb: osd_rdma_init:osd reset rdma handle = 2.
+6,172,511643,-;rdma_register, rdma_table_addr         (ptrval) rdma_table_addr_phy 34e12000 reg_buf         (ptrval)
+6,173,511675,-;rdma_register success, handle 3 table_size 4096
+6,174,511694,-;fb: osd_rdma_init:osd rdma handle = 3.
+6,175,511722,-;fb: mem_size: 0x800000
+6,176,511739,-;fb: mem_size: 0x1800000
+6,177,511755,-;fb: mem_size: 0x100000
+6,178,511772,-;fb: mem_size: 0x0
+6,179,511788,-;fb: mem_size: 0x0
+6,180,511868,-;meson-fb meson-fb: assigned reserved memory node linux,meson-fb
+ SUBSYSTEM=platform
+ DEVICE=+platform:meson-fb
+6,181,511899,-;fb: reserved memory base:0x000000003dc00000, size:2400000
+6,182,512086,-;fb: init fbdev bpp is:32
+6,183,512863,-;fb: set osd0 reverse as NONE
+6,184,518829,-;fb: osd probe OK
+6,185,519378,-;hdmitx: system: Ver: 20210902
+6,186,519502,-;hdmitx: system: hdmitx_device.drm_feature : 0
+6,187,519544,-;hdmitx: system: hpd irq = 29, viu1_vsync = -6
+4,188,519570,-;amhdmitx amhdmitx: experimental GXLX2 HDMI register transport; GXL PHY retained
+ SUBSYSTEM=platform
+ DEVICE=+platform:amhdmitx
+6,189,520235,-;vpu: switch_vpu_mem_pd: unsupport vpu mod: 63
+6,190,520269,-;hdmitx: hw: alread display in uboot 0x1f
+6,191,520317,-;hdmitx: hw: avmute set to 1
+6,192,520410,-;hdmitx: hdmitx_uboot_audio_en[604] data = 0xf
+3,193,522042,-;vout: error: dummy_venc_clktree_probe: get enci_top_gate error
+6,194,522242,-;vout: dummy_venc_probe OK
+6,195,523016,-;hdmitx: hdmitx_set_current_vmode[5644]
+6,196,523051,-;hdmitx: system: recalc before 1080p60hz 60 1, frac 0
+6,197,523073,-;hdmitx: system: recalc after 1080p60hz 60 1, frac 0
+6,198,523092,-;hdmitx: alread display in uboot
+6,199,523122,-;hdmitx: system: update rx hdr info 0
+6,200,523141,-;vout: init mode 1080p60hz set ok
+6,201,523161,-;fb: current vmode=1080p60hz, cmd: 0x60000
+6,202,523180,-;vout: aml_vout_probe OK
+6,203,523717,-;chip type:0x2a
+3,204,523751,-;can't find port descriptor,cpu:42
+6,205,523811,-;bytes_per_cycle:16, reg:5b
+6,206,524285,-;MEMORY:[100000+3ff00000]
+6,207,524320,-;ramdump_probe, storage device:data
+6,208,524338,-;NO valid ramdump args:0 0
+6,209,524374,-;ramdump_probe, set sticky to 8400
+6,210,524657,-;Advanced Linux Sound Architecture Driver Initialized.
+6,211,525628,-;NetLabel: Initializing
+6,212,525662,-;NetLabel:  domain hash size = 128
+6,213,525680,-;NetLabel:  protocols = UNLABELED CIPSOv4
+6,214,525760,-;NetLabel:  unlabeled traffic allowed by default
+6,215,526615,-;clocksource: Switched to clocksource arch_sys_counter
+5,216,592885,-;VFS: Disk quotas dquot_6.6.0
+6,217,593049,-;VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+5,218,593195,-;FS-Cache: Loaded
+6,219,595266,-;hdmitx: edid: EDID Parser:
+6,220,595364,-;hdmitx: edid: get dtd0 vic: 16
+6,221,595392,-;hdmitx: edid: get dtd1 vic: 4
+6,222,595413,-;hdmitx: edid: get dtd2 vic: 3
+6,223,595435,-;hdmitx: edid: get dtd3 vic: 18
+6,224,595493,-;hdmitx: edid: find IEEEOUT
+6,225,595542,-;hdmitx: edid: blk0 raw data
+6,226,595597,-;hdmitx: edid: \x0a00ffffffffffff0005e3012764c900000b1d0103803c22782a8671a355539d25\x0a0d5054bfef00d1c0b30095008180814081c001010101565e00a0a0a029503020\x0a350055502100001e000000ff00474e584b334841303531353536000000fc0051\x0a32375031420a202020202020000000fd00324c1e631e000a2020202020200113\x0a\x0a
+6,227,595734,-;hdmitx: edid: blk1 raw data
+6,228,595787,-;hdmitx: edid: \x0a02031ef14b101f051404130312021101230907078301000065030c002000023a\x0a801871382d40582c450055502100001e011d007251d01e206e28550055502100\x0a001e8c0ad08a20e02d10103e96005550210000188c0ad090204031200c405500\x0a555021000018f03c00d051a0355060883a0055502100001c00000000000000e7\x0a\x0a
+6,229,595927,-;hdmitx: system: update rx hdr info 0
+6,230,596382,-;hdmitx: system: can't request viu1_vsync irq
+6,231,596450,-;hdmitx: hdmitx: get vic 31 cscd 
+6,232,596477,-;hdmitx: hdmitx: mode name 1920x1080p50hz
+6,233,596514,-;hdmitx: hdmitx: tmds clock 148
+6,234,596534,-;hdmitx: hdmitx: act clock: 148
+6,235,596563,-;hdmitx: system: irq 80000002 0
+6,236,603286,-;hdmitx: system: irq 80000002 0
+6,237,609287,-;NET: Registered protocol family 2
+6,238,630965,-;TCP established hash table entries: 8192 (order: 4, 65536 bytes)
+6,239,631088,-;TCP bind hash table entries: 8192 (order: 5, 131072 bytes)
+6,240,631292,-;TCP: Hash tables configured (established 8192 bind 8192)
+6,241,631441,-;UDP hash table entries: 512 (order: 2, 16384 bytes)
+6,242,631480,-;UDP-Lite hash table entries: 512 (order: 2, 16384 bytes)
+6,243,631764,-;NET: Registered protocol family 1
+6,244,632453,-;RPC: Registered named UNIX socket transport module.
+6,245,632491,-;RPC: Registered udp transport module.
+6,246,632510,-;RPC: Registered tcp transport module.
+6,247,632529,-;RPC: Registered tcp NFSv4.1 backchannel transport module.
+7,248,632557,-;PCI: CLS 0 bytes, default 64
+6,249,635638,-;Unpacking initramfs...
+6,250,664186,-;clear:21800000, free:21800000, tick:124106 us
+6,251,757897,-;Freeing initrd memory: 3804K
+6,252,758487,-;efusekeynum: 4
+6,253,758533,-;efusekeyname:             mac\x09offset:     0\x09size:     6
+6,254,758564,-;efusekeyname:          mac_bt\x09offset:     6\x09size:     6
+6,255,758593,-;efusekeyname:        mac_wifi\x09offset:    12\x09size:     6
+6,256,758729,-;efusekeyname:            usid\x09offset:    18\x09size:    16
+6,257,758986,-;efuse efuse: probe OK!
+ SUBSYSTEM=platform
+ DEVICE=+platform:efuse
+6,258,759905,-;unifykey: no efuse-version set, use default value: -1
+6,259,760295,-;unifykey: aml_unifykeys_init done!
+6,260,760878,-;hw perfevents: clusterb_enabled = 0
+6,261,760913,-;hw perfevents: cpumasks 0xf, 0x0
+6,262,760955,-;hw perfevents: cluster A irq = 15
+6,263,761061,-;hw perfevents: enabled with armv8_pmuv3 PMU driver, 7 counters available
+6,264,763296,-;audit: initializing netlink subsys (disabled)
+5,265,763377,-;audit: type=2000 audit(0.712:1): initialized
+6,266,764220,-;workingset: timestamp_bits=45 max_order=18 bucket_order=0
+6,267,772766,-;squashfs: version 4.0 (2009/01/31) Phillip Lougher
+5,268,773482,-;FS-Cache: Netfs 'nfs' registered for caching
+5,269,774149,-;NFS: Registering the id_resolver key type
+5,270,774200,-;Key type id_resolver registered
+5,271,774219,-;Key type id_legacy registered
+6,272,774244,-;nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+6,273,774266,-;nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+5,274,774500,-;FS-Cache: Netfs 'cifs' registered for caching
+7,275,775435,-;SELinux:  Registering netfilter hooks
+6,276,778573,-;NET: Registered protocol family 38
+5,277,778639,-;Key type asymmetric registered
+5,278,778663,-;Asymmetric key parser 'x509' registered
+6,279,778912,-;Block layer SCSI generic (bsg) driver version 0.4 loaded (major 241)
+6,280,778951,-;io scheduler noop registered (default)
+6,281,778971,-;io scheduler deadline registered
+6,282,779143,-;io scheduler cfq registered
+5,283,781509,-;random: fast init done
+5,284,781573,-;random: crng init done
+6,285,781738,-;[drm] Initialized
+4,286,781866,-;Unable to detect cache hierarchy for CPU 0
+6,287,787304,-;loop: module loaded
+3,288,788581,-;mtdoops: mtd device (mtddev=name/number) must be supplied
+6,289,789362,-;libphy: Fixed MDIO Bus: probed
+6,290,790559,-; ee eth reset:Addr = 000000008a041f93
+6,291,790860,-;meson6-dwmac c9410000.ethernet: no reset control found
+ SUBSYSTEM=platform
+ DEVICE=+platform:c9410000.ethernet
+6,292,790894,-;stmmac - user ID: 0x11, Synopsys ID: 0x37
+6,293,790912,-; Ring mode enabled
+6,294,790930,-; DMA HW capability register supported
+6,295,790940,-; Normal descriptors
+6,296,790965,-; RX Checksum Offload Engine supported
+6,297,790982,-;\x09COE Type 2
+6,298,790998,-; TX Checksum insertion supported
+6,299,791015,-; Wake-Up On Lan supported
+6,300,791074,-;eth%d: device MAC address 02:c9:28:d4:bc:8f
+6,301,791094,-; Enable RX Mitigation via HW Watchdog Timer
+6,302,791936,-;libphy: yzhang..read phyaddr=8, phyid=01814400
+6,303,794069,-;libphy: stmmac: probed
+6,304,794099,-;eth%d: PHY ID 01814400 at 8 IRQ POLL (stmmac-0:08) active
+6,305,795906,-;ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+6,306,795967,-;ehci-pci: EHCI PCI platform driver
+6,307,796064,-;ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+6,308,796096,-;ohci-pci: OHCI PCI platform driver
+6,309,796651,-;usbcore: registered new interface driver cdc_acm
+6,310,796684,-;cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
+6,311,796772,-;usbcore: registered new interface driver usb-storage
+6,312,796899,-;usbcore: registered new interface driver usbserial
+6,313,796964,-;usbcore: registered new interface driver usbserial_generic
+6,314,797012,-;usbserial: USB Serial support registered for generic
+6,315,797404,-;mousedev: PS/2 mouse device common for all mice
+6,316,797828,-;i2c /dev entries driver
+6,317,799087,-;cpu cpu0: bL_cpufreq_init: CPU 0 initialized
+ SUBSYSTEM=cpu
+ DEVICE=+cpu:cpu0
+6,318,800297,-;arm_big_little: bL_cpufreq_register: Registered platform driver: scpi
+6,319,801788,-;ledtrig-cpu: registered to indicate activity on CPUs
+6,320,802289,-;hidraw: raw HID events driver (C) Jiri Kosina
+6,321,802717,-;usbcore: registered new interface driver usbhid
+6,322,802757,-;usbhid: USB HID core driver
+3,323,803200,-;c81004c0.serial: clock gate not found
+6,324,803283,-;meson_uart c81004c0.serial: ==uart0 reg addr = 000000001527e96e
+ SUBSYSTEM=platform
+ DEVICE=+platform:c81004c0.serial
+6,325,803372,-;c81004c0.serial: ttyS0 at MMIO 0xc81004c0 (irq = 18, base_baud = 1500000) is a meson_uart
+6,326,803416,-;meson_uart c81004c0.serial: ttyS0 use xtal(8M) 24000000 change 0 to 115200
+ SUBSYSTEM=platform
+ DEVICE=+platform:c81004c0.serial
+6,327,925855,-;rdma_watchdog_setting rdma reset: 21, force flag:-1
+6,328,925862,-;fb: osd rdma restart! 0x0
+6,329,1120031,-;hdmitx: system: plugin
+6,330,1257696,-;hdmitx: edid: EDID Parser:
+6,331,1257723,-;hdmitx: edid: get dtd0 vic: 16
+6,332,1257728,-;hdmitx: edid: get dtd1 vic: 4
+6,333,1257731,-;hdmitx: edid: get dtd2 vic: 3
+6,334,1257734,-;hdmitx: edid: get dtd3 vic: 18
+6,335,1257763,-;hdmitx: edid: find IEEEOUT
+6,336,1257791,-;hdmitx: edid: blk0 raw data
+6,337,1257827,-;hdmitx: edid: \x0a00ffffffffffff0005e3012764c900000b1d0103803c22782a8671a355539d25\x0a0d5054bfef00d1c0b30095008180814081c001010101565e00a0a0a029503020\x0a350055502100001e000000ff00474e584b334841303531353536000000fc0051\x0a32375031420a202020202020000000fd00324c1e631e000a2020202020200113\x0a\x0a
+6,338,1257829,-;hdmitx: edid: blk1 raw data
+6,339,1257863,-;hdmitx: edid: \x0a02031ef14b101f051404130312021101230907078301000065030c002000023a\x0a801871382d40582c450055502100001e011d007251d01e206e28550055502100\x0a001e8c0ad08a20e02d10103e96005550210000188c0ad090204031200c405500\x0a555021000018f03c00d051a0355060883a0055502100001c00000000000000e7\x0a\x0a
+6,340,1257866,-;hdmitx: system: update physical size: 600 340
+6,341,1259895,-;hdmitx: E: ddc rd8b 0x50 0x00 0x00
+6,342,1264922,-;hdmitx: system: get current mode: 1080p60hz
+6,343,1264924,-;hdmitx: system: update physical size: 600 340
+6,344,1264951,-;hdmitx: hdmitx: display colourdepth is auto set to 8 bits (VIC: 16)
+6,345,1264972,-;hdmitx: video: already init VIC = 0  Now VIC = 16
+6,346,1264977,-;hdmitx: hw: div40: 0
+6,347,1288624,-;hdmitx: E: ddc w1b 0x54 0x20 0x00
+6,348,1288630,-;hdmitx: frac_rate = 0
+6,349,1288635,-;hdmitx: config HPLL = 5940000 frac_rate = 0
+6,350,1288691,-;hdmitx: HPLL: 0xc000027b
+6,351,1288692,-;hdmitx: config HPLL done
+6,352,1288700,-;hdmitx: set_hpll_od3_clk_div[687] div = 6
+6,353,1288706,-;hdmitx: j = 4  vid_clk_div = 1
+6,354,1288728,-;hdmitx: set enc for VIC: 16
+6,355,1326623,-;hdmitx: hw:  config hdmitx IP vic = 16 cd:4 cs: 2
+6,356,1336718,-;hdmitx: video: Sink is HDMI device
+6,357,1336757,-;hdmitx: hw: set audio
+6,358,1336764,-;hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+6,359,1336776,-;hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+6,360,1336779,-;hdmitx: hw: aud_n_para = 6144
+6,361,1336787,-;hdmitx: hw: set channel status
+6,362,1336800,-;hdmitx: hw: [0x10e3] = 0x1f
+6,363,1336819,-;hdmitx: audio: Audio Type: PCM
+6,364,1336824,-;hdmitx: system: update rx hdr info 0
+6,365,1336825,-;hdmitx: hw: set audio
+6,366,1336827,-;hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+6,367,1336838,-;hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+6,368,1336839,-;hdmitx: hw: aud_n_para = 6144
+6,369,1336846,-;hdmitx: hw: set channel status
+6,370,1336859,-;hdmitx: hw: [0x10e3] = 0x1f
+6,371,1336877,-;hdmitx: audio: Audio Type: PCM
+6,372,1370073,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,373,1370081,-;fb: osd rdma restart! 0x0
+6,374,1720069,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,375,1720071,-;fb: osd rdma restart! 0x0
+6,376,2070067,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,377,2070069,-;fb: osd rdma restart! 0x0
+6,378,2420068,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,379,2420069,-;fb: osd rdma restart! 0x0
+6,380,2770068,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,381,2770069,-;fb: osd rdma restart! 0x0
+6,382,2946028,-;console [ttyS0] enabled
+3,383,2950218,-;c11084c0.serial: clock gate not found
+6,384,2954732,-;meson_uart c11084c0.serial: ==uart1 reg addr = 000000001364cbba
+ SUBSYSTEM=platform
+ DEVICE=+platform:c11084c0.serial
+6,385,2961841,-;c11084c0.serial: ttyS1 at MMIO 0xc11084c0 (irq = 19, base_baud = 10375000) is a meson_uart
+6,386,2972441,-;amlogic-new-usb2 d0078000.usb2phy: USB2 phy probe:phy_mem:0xd0078000, iomap phy_base:0xffffff8008529000
+ SUBSYSTEM=platform
+ DEVICE=+platform:d0078000.usb2phy
+3,387,2982193,-;amlogic-new-usb3 d0078080.usb3phy: This phy has no usb port
+ SUBSYSTEM=platform
+ DEVICE=+platform:d0078080.usb3phy
+6,388,2988744,-;amlogic-new-usb3 d0078080.usb3phy: USB3 phy probe:phy_mem:0xd0078080, iomap phy_base:0xffffff800852d080
+ SUBSYSTEM=platform
+ DEVICE=+platform:d0078080.usb3phy
+6,389,3001499,-;aml_dma c883e000.aml_dma: Aml dma
+ SUBSYSTEM=platform
+ DEVICE=+platform:c883e000.aml_dma
+6,390,3005435,-;aml_aes_dma c883e000.aml_dma:aml_aes: Aml AES_dma
+ SUBSYSTEM=platform
+ DEVICE=+platform:c883e000.aml_dma:aml_aes
+6,391,3010894,-;aml_tdes_dma c883e000.aml_dma:aml_tdes: Aml TDES_dma
+ SUBSYSTEM=platform
+ DEVICE=+platform:c883e000.aml_dma:aml_tdes
+6,392,3019151,-;ion_dev ion_dev: assigned reserved memory node linux,ion-dev
+ SUBSYSTEM=platform
+ DEVICE=+platform:ion_dev
+6,393,3022989,-;ion-dev: failed get fb memory
+6,394,3027176,-;ion-dev: failed get secure memory
+6,395,3032071,-;ion-dev: add heap type:0 id:0
+6,396,3036104,-;ion-dev: add heap type:5 id:5
+6,397,3040269,-;ion-dev: add heap type:4 id:4
+6,398,3044416,-;ion-dev: dev_ion_probe, create 3 heaps
+6,399,3049597,-;ge2d: ge2d_init_module
+6,400,3053863,-;ge2d: ge2d clock is 398 MHZ
+3,401,3057125,-;ge2d: register address resource is not found
+6,402,3062616,-;ge2d: reserved mem is not used
+6,403,3066967,-;ge2d: ge2d start monitor
+6,404,3071368,-;new arch is :0.
+6,405,3073666,-;[tsync_pcr_init]init success.
+6,406,3078103,-;e900-video: legacy_blend=1 mif=legacy vd1_gen=0x1a50 vd1_canvas=0x1a51 vd1_fmt=0x1a68
+6,407,3086883,-;e900-hw-init: queued fixed register init; early probe retained
+6,408,3093957,-;amvideom vsync irq: 28, cpu_type:1
+6,409,3098626,-;create_ge2d_work_queue video task ok
+6,410,3103409,-;e900-hw-init: probe.complete
+6,411,3108381,-;create_video_receiver video_render.0  0000000079c2560b, path_id:2 success
+6,412,3115605,-;create_video_receiver video_render.1  00000000d775ab77, path_id:3 success
+6,413,3120076,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,414,3120083,-;fb: osd rdma restart! 0x0
+6,415,3133582,-;e900-hw-init: video_init.complete subscribe.begin
+6,416,3139467,-;e900-hw-init: notify.enter
+6,417,3143429,-;e900-hw-init: notify.locked ready_vc=0 ready_hhi=0 ready_dmc=0
+6,418,3150505,-;e900-hw-init: notify.exit ret=-11
+3,419,3153440,-;dil:err:DI_POST_REG_RD:not attach
+6,420,3159648,-;e900-hw-init: subscribe.end ret=0
+3,421,3164560,-;amvideocap_probe,amvideocap
+3,422,3168278,-;use cma buf.
+3,423,3170096,-;dil:err:DI_POST_REG_RD:not attach
+6,424,3175874,-;hdmitx: hdcp: hdmitx_hdcp_init
+6,425,3180680,-;DI: di_module_init ok.
+6,426,3183817,-;DI: di_probe:
+6,427,3186378,-;DI: di_probe: major 508
+3,428,3186789,-;dil:err:DI_POST_REG_RD:not attach
+6,429,3194911,-;match name: di_deinterlace:id[255]
+6,430,3199405,-;deinterlace deinterlace: assigned reserved memory node linux,di_cma
+ SUBSYSTEM=platform
+ DEVICE=+platform:deinterlace
+3,431,3203453,-;dil:err:DI_POST_REG_RD:not attach
+6,432,3211399,-;di:flag_cma=1
+6,433,3214229,-;DI: CMA size 0x2800000.
+6,434,3217973,-;pre_irq:40
+3,435,3220081,-;dil:err:DI_POST_REG_RD:not attach
+6,436,3225118,-;post_irq:41
+6,437,3227780,-;DI: di_probe allocate rdma channel 0.
+3,438,3232704,-;di_get_vpu_clkb: get clk vpu error.
+3,439,3236743,-;dil:err:DI_POST_REG_RD:not attach
+6,440,3242016,-;DI: vpu clkb <250000000, 500000000>
+3,441,3246758,-;di_get_vpu_clkb: get vpu clkb gate error.
+6,442,3252017,-;DI:enable vpu clkb.
+3,443,3253405,-;dil:err:DI_POST_REG_RD:not attach
+6,444,3259964,-;DI: support multi decoding 219~220~221.
+6,445,3265216,-;DI: ic_id:0x11 [b]0
+6,446,3268417,-;DI: di_probe:Di use HRTIMER
+3,447,3270077,-;dil:err:DI_POST_REG_RD:not attach
+6,448,3277233,-;DI: di_probe:ok
+6,449,3280169,-;dim:dim_module_init
+6,450,3284100,-;dim:dim_module_init finish
+6,451,3287403,-;dil:dil_init.
+6,452,3290510,-;dil:dil_init ok.
+6,453,3293851,-;vdin_drv_init: vdin driver init done
+6,454,3298667,-;[viuin..]viuin_init_module done
+3,455,3302897,-;Reserved memory: failed to init DMA memory pool at 0x0000000036800000, size 0 MiB
+6,456,3311323,-;PPMGRDRV: info: ppmgr_dev major:506
+6,457,3316389,-;aml_vecm_init:module init
+6,458,3320293,-;VECM probe start
+6,459,3323381,-;Can't find  tv_mode.
+6,460,3326446,-;Can't find  lut3d_en.
+6,461,3330021,-;Can't find  blue stretch en.
+3,462,3334174,-;vlock clk not cfg
+6,463,3336745,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,464,3336752,-;fb: osd rdma restart! 0x0
+6,465,3358630,-;vlock_status_init vlock_en:1
+6,466,3358872,-;aml_vecm_probe: ok
+6,467,3360568,-;amdolby_vision_init:module init
+6,468,3366986,-;meson-mmc: mmc driver version: 3.02, 2017-05-15: New Emmc Host Controller
+6,469,3373990,-;meson-mmc: gpio_cd = 1c1
+6,470,3414640,-;meson-mmc: meson_mmc_probe() : success!
+6,471,3416642,-;aml_vrtc rtc: rtc core: registered aml_vrtc as rtc0
+ SUBSYSTEM=platform
+ DEVICE=+platform:rtc
+6,472,3421548,-;input: aml_vkeypad as /devices/platform/rtc/input/input0
+6,473,3430039,-;input: cec_input as /devices/virtual/input/input1
+3,474,3434043,-;cectx c810023c.aocec: not find 'port_num'
+ SUBSYSTEM=aocec
+ DEVICE=+aocec:c810023c.aocec
+6,475,3439117,-;get sleep state error!
+6,476,3442713,-;get A default state
+3,477,3446082,-;cectx c810023c.aocec: no clock regs
+ SUBSYSTEM=aocec
+ DEVICE=+aocec:c810023c.aocec
+3,478,3454022,-;cectx c810023c.aocec: wakeup_reason:0x0
+ SUBSYSTEM=aocec
+ DEVICE=+aocec:c810023c.aocec
+3,479,3456056,-;cectx c810023c.aocec: wakeup_data: 0x0 0x0
+ SUBSYSTEM=aocec
+ DEVICE=+aocec:c810023c.aocec
+6,480,3461798,-;audio_dsp: [dsp]register dsp to char divece(257)
+6,481,3467360,-;amaudio: amaudio: driver amaudio init!
+6,482,3472637,-;amaudio: amaudio_init - amaudio: driver amaudio succuess!
+6,483,3479795,-;sysled: module init
+6,484,3482565,-;meson_wdt c11098d0.watchdog: start watchdog
+ SUBSYSTEM=platform
+ DEVICE=+platform:c11098d0.watchdog
+6,485,3487621,-;meson_wdt c11098d0.watchdog: create hrtimer for watch dog
+ SUBSYSTEM=platform
+ DEVICE=+platform:c11098d0.watchdog
+6,486,3494570,-;meson_wdt c11098d0.watchdog: AML Watchdog Timer probed done
+ SUBSYSTEM=platform
+ DEVICE=+platform:c11098d0.watchdog
+6,487,3504025,-;can't get port desc
+3,488,3505071,-;defendkey c8834500.defendkey: Reserved memory is not enough!
+ SUBSYSTEM=platform
+ DEVICE=+platform:c8834500.defendkey
+4,489,3511329,-;defendkey: probe of c8834500.defendkey failed with error -22
+6,490,3519426,-;bl301_manager: driver init
+6,491,3522728,-;usbcore: registered new interface driver snd-usb-audio
+6,492,3530128,-;aml_codec_T9015 c8832000.t9015: aml_T9015_audio_codec_probe
+ SUBSYSTEM=platform
+ DEVICE=+platform:c8832000.t9015
+6,493,3535399,-;T9015 acodec used by meson, tdmout:0
+6,494,3541852,-;snd_i2s_dai: clock source gate top_glue : 00000000ad74611f
+6,495,3546970,-;snd_i2s_dai: clock source gate aud_buf : 00000000f7e70b3e
+6,496,3553586,-;snd_i2s_dai: clock source gate i2s_out : 00000000f2d96add
+6,497,3560254,-;snd_i2s_dai: clock source gate amclk_measure : 0000000049c626a2
+6,498,3567377,-;snd_i2s_dai: clock source gate aififo2 : 000000004187105c
+6,499,3574030,-;snd_i2s_dai: clock source gate aud_mixer : 0000000081855909
+6,500,3580837,-;snd_i2s_dai: clock source gate mixer_reg : 0000000034aad958
+6,501,3587661,-;snd_i2s_dai: clock source gate adc : 000000007e87c284
+6,502,3593953,-;snd_i2s_dai: clock source gate top_level : 00000000f3fe9f90
+6,503,3600813,-;snd_i2s_dai: clock source gate aoclk : 00000000d0295986
+6,504,3607247,-;snd_i2s_dai: clock source gate aud_in : 00000000e8b08c17
+6,505,3613750,-;snd_i2s_dai: ignore aud_buf/vdac_clk gate
+3,506,3619082,-;meson-mmc: card IN
+6,507,3622537,-;aml-i2s-dai I2S: I2S Mic is in platform!
+ SUBSYSTEM=platform
+ DEVICE=+platform:I2S
+6,508,3628385,-;snd_pcm_dai: pcm mode detection =1
+6,509,3632332,-;snd_pcm_dai: tdm config: 0x1, 0x1, 2, 16
+6,510,3637973,-;snd_spdif_dai: enterd aml_spdif_play,set_clock:-1,sample_rate=4
+6,511,3644579,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,512,3649460,-;snd_spdif_dai: set 958 audio clk div 4
+3,513,3655367,-;spdif-dit spdif_codec: audio_spdif_out_mute can't get pinctrl
+ SUBSYSTEM=platform
+ DEVICE=+platform:spdif_codec
+3,514,3661528,-;spdif-dit spdif_codec: audio_spdif_in_mute can't get pinctrl
+ SUBSYSTEM=platform
+ DEVICE=+platform:spdif_codec
+3,515,3668353,-;spdif-dit spdif_codec: audio_spdif_in can't get pinctrl
+ SUBSYSTEM=platform
+ DEVICE=+platform:spdif_codec
+6,516,3674813,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,517,3674818,-;fb: osd rdma restart! 0x0
+6,518,3685426,-;snd_card_meson: aml_card_dai_parse_of codec_node count:1
+6,519,3691522,-;snd_card_meson: aml_card_dai_parse_of codec_node count:1
+6,520,3697945,-;snd_card_meson: aml_card_dai_parse_of codec_node count:1
+6,521,3723826,-;meson-mmc: normal card in
+4,522,3910516,-;meson-aml-mmc d0072000.sd: divider requested rate 50000000 != actual rate 49800000: ret=0
+ SUBSYSTEM=platform
+ DEVICE=+platform:d0072000.sd
+6,523,3911004,-;snd_card_meson: headphone detection disable=1
+6,524,3911009,-;snd_card_meson: no spk event delay time set
+6,525,3915149,-;aml_meson_snd_card aml_sound_meson: T9015-audio-hifi <-> I2S mapping ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+6,526,3915841,-;aml_meson_snd_card aml_sound_meson: dit-hifi <-> SPDIF mapping ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+6,527,3915949,-;snd_pcm: enter aml_pcm_new dai->name: PCM dai->id: 0
+6,528,3916342,-;aml_meson_snd_card aml_sound_meson: pcm2bt-pcm <-> PCM mapping ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+3,529,3916386,-;aml_meson_snd_card aml_sound_meson: ASoC: no source widget found for LOUTL
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+3,530,3916391,-;aml_meson_snd_card aml_sound_meson: ASoC: Failed to add route LOUTL -> direct -> Ext Spk
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+3,531,3916396,-;aml_meson_snd_card aml_sound_meson: ASoC: no source widget found for LOUTR
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+3,532,3916399,-;aml_meson_snd_card aml_sound_meson: ASoC: Failed to add route LOUTR -> direct -> Ext Spk
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_sound_meson
+4,533,3916581,-;aml-spdif-dai SPDIF: ASoC: Failed to create S/PDIF Playback debugfs file
+ SUBSYSTEM=platform
+ DEVICE=+platform:SPDIF
+4,534,3916585,-;aml-spdif-dai SPDIF: ASoC: Failed to create S/PDIF Capture debugfs file
+ SUBSYSTEM=platform
+ DEVICE=+platform:SPDIF
+6,535,3918376,-;snd_card_meson: enable i2sclk in startup
+6,536,3924780,-;Register vad
+6,537,3925499,-;Initializing XFRM netlink socket
+6,538,3925522,-;IPsec XFRM device driver
+6,539,3926110,-;NET: Registered protocol family 10
+6,540,3927514,-;NET: Registered protocol family 17
+5,541,3927600,-;Key type dns_resolver registered
+5,542,3928066,-;Registered swp emulation handler
+5,543,3933259,-;Registered cp15_barrier emulation handler
+5,544,3933270,-;Registered setend emulation handler
+6,545,3933327,-;disable EAS feature
+6,546,3947689,-;registered taskstats version 1
+4,547,3955412,-;dwc3 c9000000.dwc3: Configuration mismatch. dr_mode forced to host
+ SUBSYSTEM=platform
+ DEVICE=+platform:c9000000.dwc3
+6,548,3959028,-;xhci-hcd xhci-hcd.0.auto: xHCI Host Controller
+ SUBSYSTEM=platform
+ DEVICE=+platform:xhci-hcd.0.auto
+6,549,3959057,-;xhci-hcd xhci-hcd.0.auto: new USB bus registered, assigned bus number 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:xhci-hcd.0.auto
+6,550,3959534,-;xhci-hcd xhci-hcd.0.auto: hcc params 0x0228f664 hci version 0x100 quirks 0x02010010
+ SUBSYSTEM=platform
+ DEVICE=+platform:xhci-hcd.0.auto
+6,551,3959601,-;xhci-hcd xhci-hcd.0.auto: irq 26, io mem 0xc9000000
+ SUBSYSTEM=platform
+ DEVICE=+platform:xhci-hcd.0.auto
+6,552,3959803,-;usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+ SUBSYSTEM=usb
+ DEVICE=c189:0
+6,553,3959807,-;usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ SUBSYSTEM=usb
+ DEVICE=c189:0
+6,554,3959810,-;usb usb1: Product: xHCI Host Controller
+ SUBSYSTEM=usb
+ DEVICE=c189:0
+6,555,3959814,-;usb usb1: Manufacturer: Linux 4.9.269 xhci-hcd
+ SUBSYSTEM=usb
+ DEVICE=c189:0
+6,556,3959817,-;usb usb1: SerialNumber: xhci-hcd.0.auto
+ SUBSYSTEM=usb
+ DEVICE=c189:0
+6,557,3960641,-;hub 1-0:1.0: USB hub found
+ SUBSYSTEM=usb
+ DEVICE=+usb:1-0:1.0
+6,558,3960684,-;hub 1-0:1.0: 2 ports detected
+ SUBSYSTEM=usb
+ DEVICE=+usb:1-0:1.0
+6,559,3961078,-;xhci-hcd xhci-hcd.0.auto: xHCI Host Controller
+ SUBSYSTEM=platform
+ DEVICE=+platform:xhci-hcd.0.auto
+6,560,3961100,-;xhci-hcd xhci-hcd.0.auto: new USB bus registered, assigned bus number 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:xhci-hcd.0.auto
+6,561,3961171,-;usb usb2: We don't know the algorithms for LPM for this host, disabling LPM.
+ SUBSYSTEM=usb
+ DEVICE=+usb:usb2
+6,562,3961275,-;usb usb2: New USB device found, idVendor=1d6b, idProduct=0003
+ SUBSYSTEM=usb
+ DEVICE=c189:128
+6,563,3961279,-;usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ SUBSYSTEM=usb
+ DEVICE=c189:128
+6,564,3961283,-;usb usb2: Product: xHCI Host Controller
+ SUBSYSTEM=usb
+ DEVICE=c189:128
+6,565,3961286,-;usb usb2: Manufacturer: Linux 4.9.269 xhci-hcd
+ SUBSYSTEM=usb
+ DEVICE=c189:128
+6,566,3961289,-;usb usb2: SerialNumber: xhci-hcd.0.auto
+ SUBSYSTEM=usb
+ DEVICE=c189:128
+6,567,3962032,-;hub 2-0:1.0: USB hub found
+ SUBSYSTEM=usb
+ DEVICE=+usb:2-0:1.0
+3,568,3962083,-;hub 2-0:1.0: config failed, hub doesn't have any ports! (err -19)
+ SUBSYSTEM=usb
+ DEVICE=+usb:2-0:1.0
+3,569,3962157,-;usb usb2: Unsupported the hub
+ SUBSYSTEM=usb
+ DEVICE=c189:128
+6,570,3971567,-;aml_vrtc rtc: setting system clock to 2017-01-01 00:00:28 UTC (1483228828)
+ SUBSYSTEM=platform
+ DEVICE=+platform:rtc
+7,571,3972097,-;dwc_otg c9100000.dwc2_a: dwc_otg_driver_probe(0000000030d73374)
+ SUBSYSTEM=platform
+ DEVICE=+platform:c9100000.dwc2_a
+4,572,3972143,-;dwc_otg: usb0: type: 2 speed: 0, config: 0, dma: 0, id: 0, phy: d0078000, ctrl: 0
+4,573,3972144,-;dwc_otg_driver_probe host only, not probe usb_otg!!!
+6,574,3974569,-;cpucore_cooling_register, max_cpu_core_num:4
+6,575,3981031,-;gxbb_pm: enter meson_pm_probe!
+6,576,3981061,-;gxbb_pm: system suspend level: 1
+6,577,3981092,-;no vddio3v3_en pin
+3,578,3981092,-;pm-meson aml_pm: Can't get switch_clk81
+ SUBSYSTEM=platform
+ DEVICE=+platform:aml_pm
+6,579,3981148,-;gxbb_pm: meson_pm_probe done
+6,580,3981732,-;e900-hw-init: notify.enter
+6,581,3981738,-;e900-hw-init: notify.locked ready_vc=1 ready_hhi=1 ready_dmc=1
+6,582,3981740,-;e900-hw-init: waiting for verified network logging and explicit release
+6,583,3981743,-;e900-hw-init: notify.exit ret=-11
+6,584,3981745,-;ALSA device list:
+6,585,3981748,-;  #0: AML-MESONAUDIO
+6,586,4003411,-;rdma_watchdog_setting rdma reset: 21, force flag:0
+6,587,4003420,-;fb: osd rdma restart! 0x0
+6,588,4286643,-;usb 1-1: new high-speed USB device number 2 using xhci-hcd
+ SUBSYSTEM=usb
+ DEVICE=+usb:1-1
+4,589,4295731,-;meson-aml-mmc d0072000.sd: divider requested rate 50000000 != actual rate 49800000: ret=0
+ SUBSYSTEM=platform
+ DEVICE=+platform:d0072000.sd
+6,590,4297946,-;Freeing unused kernel memory: 6016K
+6,591,4309806,-;sd: new high speed SD card at address 0260
+6,592,4315119,-;sd: clock 49800000, 4-bit-bus-width\x0a 
+6,593,4320522,-;mmcblk0: sd:0260       1.89 GiB 
+6,594,4325933,-; mmcblk0: p1
+6,595,4357536,-;fb: malloc_osd_memory, cma:ffffff800acf57f8
+6,596,4357592,-;fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+6,597,4365020,-;fb: malloc_osd_memory, 1255, fb_index=0,fb_rmem_size=25165824
+6,598,4372639,-;fb: malloc_osd_memory, cma mem
+6,599,4376275,-;fb: Frame buffer memory assigned at
+6,600,4380795,-;fb:  0, phy: 0x000000003e400000, vir:0xffffffc03e400000, size=24576K\x0a
+6,601,4390119,-;fb: logo_index=0,fb_index=0
+6,602,4394212,-;fb: osd[0] canvas.idx =0x40
+6,603,4394214,-;fb: osd[0] canvas.addr=0x3e400000
+6,604,4394216,-;fb: osd[0] canvas.width=7680
+6,605,4394217,-;fb: osd[0] canvas.height=3240
+6,606,4394219,-;fb: osd[0] frame.width=1920
+6,607,4394220,-;fb: osd[0] frame.height=1080
+6,608,4394222,-;fb: osd[0] out_addr_id =0x0
+6,609,4427456,-;fb: osd_release now.index=0,open_count=1
+6,610,4434186,-;fb: malloc_osd_memory, cma:ffffff800acf57f8
+6,611,4435742,-;usb 1-1: New USB device found, idVendor=0dd8, idProduct=3708
+ SUBSYSTEM=usb
+ DEVICE=c189:1
+6,612,4435747,-;usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+ SUBSYSTEM=usb
+ DEVICE=c189:1
+6,613,4435751,-;usb 1-1: Product: OnlyDisk
+ SUBSYSTEM=usb
+ DEVICE=c189:1
+6,614,4435754,-;usb 1-1: Manufacturer: Netac
+ SUBSYSTEM=usb
+ DEVICE=c189:1
+6,615,4435757,-;usb 1-1: SerialNumber: FC157462531726A0
+ SUBSYSTEM=usb
+ DEVICE=c189:1
+6,616,4438948,-;usb-storage 1-1:1.0: USB Mass Storage device detected
+ SUBSYSTEM=usb
+ DEVICE=+usb:1-1:1.0
+6,617,4439590,-;scsi host0: usb-storage 1-1:1.0
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:host0
+6,618,4475933,-;fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+6,619,4483426,-;fb: malloc_osd_memory, 1255, fb_index=1,fb_rmem_size=1048576
+6,620,4490492,-;fb: malloc_osd_memory, cma mem
+6,621,4494661,-;fb: Frame buffer memory assigned at
+6,622,4499224,-;fb:  1, phy: 0x000000003fc00000, vir:0xffffffc03fc00000, size=1024K\x0a
+6,623,4508443,-;fb: logo_index=0,fb_index=1
+6,624,4512487,-;fb: ---------------clear fb1 memory 00000000d7af7490
+6,625,4519117,-;fb: osd[1] canvas.idx =0x43
+6,626,4522764,-;fb: osd[1] canvas.addr=0x3fc00000
+6,627,4527318,-;fb: osd[1] canvas.width=128
+6,628,4531379,-;fb: osd[1] canvas.height=32
+6,629,4535424,-;fb: osd[1] frame.width=32
+6,630,4539312,-;fb: osd[1] frame.height=32
+6,631,4543273,-;fb: osd[1] out_addr_id =0x0
+6,632,4553789,-;fb: osd_release now.index=1,open_count=1
+6,633,4570526,-;VID: VD1 off
+6,634,4570842,-;fb: osd[0] enable: 1 (platform_init)
+6,635,4587116,-;fb: osd[1] enable: 0 (platform_init)
+12,636,4613236,-;init: ### Loading kernel modules
+12,637,4615613,-;init: ### Loading kernel module font
+12,638,4617088,-;init: ### Loading kernel module softcursor
+12,639,4618692,-;init: ### Loading kernel module bitblit
+12,640,4620246,-;init: ### Loading kernel module fbcon
+6,641,4636892,-;Console: switching to colour frame buffer device 240x67
+12,642,4661024,-;init: ### Set console font
+12,643,4664785,-;init: ### Checking disk(s): LABEL=COREELEC LABEL=STORAGE
+12,644,4800395,-;init: ### fsck: couldn't find matching filesystem: LABEL=COREELEC
+12,645,5314796,-;init: ### fsck: couldn't find matching filesystem: LABEL=COREELEC
+5,646,5459322,-;scsi 0:0:0:0: Direct-Access     Netac    OnlyDisk         3.00 PQ: 0 ANSI: 4
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+5,647,5460340,-;sd 0:0:0:0: Attached scsi generic sg0 type 0
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+5,648,5460825,-;sd 0:0:0:0: [sda] 60825600 512-byte logical blocks: (31.1 GB/29.0 GiB)
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+5,649,5461009,-;sd 0:0:0:0: [sda] Write Protect is off
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+7,650,5461016,-;sd 0:0:0:0: [sda] Mode Sense: 03 00 00 00
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+3,651,5461164,-;sd 0:0:0:0: [sda] No Caching mode page found
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+3,652,5461169,-;sd 0:0:0:0: [sda] Assuming drive cache: write through
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+6,653,5463193,-; sda: sda1 sda2
+5,654,5465184,-;sd 0:0:0:0: [sda] Attached SCSI removable disk
+ SUBSYSTEM=scsi
+ DEVICE=+scsi:0:0:0:0
+12,655,6081372,-;init: ### STORAGE: clean, 1644/1867776 files, 447710/7471104 blocks
+12,656,6081539,-;init: ### fsck.fat 4.2 (2021-01-31)
+12,657,6081704,-;init: ### /dev/sda1: 191 files, 59788/65501 clusters
+12,658,6083439,-;init: ### No filesystem errors found, continuing...
+12,659,6083606,-;init: ### Mounting flash
+12,660,6083702,-;init: ### mount filesystem LABEL=COREELEC ...
+12,661,6157245,-;init: ### Cleaning up flash (if required)
+12,662,6157900,-;init: ### mount filesystem /flash/SYSTEM294 ...
+6,663,6162677,-;lcd vlock_en=1, vlock_mode=0x4
+12,664,6207767,-;init: ### Mounting storage
+12,665,6208011,-;init: ### mount filesystem LABEL=STORAGE ...
+6,666,6236878,-;vpu: switch_vpu_mem_pd: unsupport vpu mod: 12
+3,667,6264445,-;EXT4-fs (sda2): couldn't mount as ext3 due to feature incompatibilities
+3,668,6265245,-;EXT4-fs (sda2): couldn't mount as ext2 due to feature incompatibilities
+6,669,6276410,-;EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+12,670,6296939,-;init: ### Loading bootsplash
+12,671,6304323,-;init: ### Checking for updates
+12,672,6312791,-;init: ### Preparing system
+12,673,6371826,-;### BIG FAT WARNING
+12,674,6371874,-;### sda2 is removable. suspend/resume may not work
+12,675,6375970,-;### BIG FAT WARNING
+12,676,6376018,-;### sda1 is removable. suspend/resume may not work
+12,677,6560743,-;kernel-overlays-setup: setup base modules
+12,678,6664774,-;kernel-overlays-setup: added modules from /usr/lib/kernel-overlays/base/lib/modules/4.9.269
+12,679,6669968,-;kernel-overlays-setup: added firmware from /usr/lib/kernel-overlays/base/lib/firmware
+12,680,6670709,-;kernel-overlays-setup: adding overlays from /storage/.cache/kernel-overlays
+12,681,6672696,-;kernel-overlays-setup: done
+30,682,6882342,-;systemd[1]: System time before build time, advancing clock.
+3,683,6931174,-;cgroup: cgroup2: unknown option "nsdelegate"
+30,684,6940455,-;systemd[1]: systemd 255.4 running in system mode (-PAM -AUDIT -SELINUX -APPARMOR -IMA -SMACK -SECCOMP -GCRYPT -GNUTLS -OPENSSL -ACL +BLKID -CURL -ELFUTILS -FIDO2 +IDN2 -IDN -IPTC +KMOD -LIBCRYPTSETUP -LIBFDISK -PCRE2 -PWQUALITY -P11KIT -QRENCODE -TPM2 -BZIP2 -LZ4 -XZ -ZLIB -ZSTD -BPF_FRAMEWORK -XKBCOMMON +UTMP +SYSVINIT default-hierarchy=hybrid)
+30,685,6940479,-;systemd[1]: Detected architecture arm64.
+28,686,6941982,-;systemd[1]: Warning! Reported kernel version 4.9.269 is older than systemd's required baseline kernel version 4.15. Your mileage may vary.
+30,687,7452079,-;systemd[1]: Queued start job for default target kodi.target.
+6,688,7489803,-;Netfilter messages via NETLINK v0.30.
+30,689,7534839,-;systemd[1]: Created slice system-modprobe.slice.
+30,690,7538551,-;systemd[1]: Created slice system-wg\x5cx2dquick.slice.
+30,691,7540999,-;systemd[1]: Created slice user.slice.
+30,692,7541501,-;systemd[1]: Started systemd-ask-password-console.path.
+30,693,7541818,-;systemd[1]: Started systemd-ask-password-wall.path.
+30,694,7542154,-;systemd[1]: Reached target nss-lookup.target.
+30,695,7542269,-;systemd[1]: Reached target paths.target.
+30,696,7542402,-;systemd[1]: Reached target slices.target.
+30,697,7561166,-;systemd[1]: Listening on rpcbind.socket.
+30,698,7561353,-;systemd[1]: Reached target rpcbind.target.
+30,699,7561867,-;systemd[1]: Listening on systemd-initctl.socket.
+30,700,7563250,-;systemd[1]: Listening on systemd-journald-dev-log.socket.
+30,701,7564334,-;systemd[1]: Listening on systemd-journald.socket.
+30,702,7566008,-;systemd[1]: Listening on systemd-udevd-control.socket.
+30,703,7567090,-;systemd[1]: Listening on systemd-udevd-kernel.socket.
+30,704,7575174,-;systemd[1]: Mounting dev-mqueue.mount...
+30,705,7580355,-;systemd[1]: Mounting sys-kernel-debug.mount...
+30,706,7585481,-;systemd[1]: Mounting sys-kernel-tracing.mount...
+30,707,7592761,-;systemd[1]: Mounting var.mount...
+30,708,7600341,-;systemd[1]: Starting kmod-static-nodes.service...
+30,709,7617570,-;systemd[1]: Starting machine-id.service...
+30,710,7635608,-;systemd[1]: Starting modprobe@configfs.service...
+30,711,7641085,-;systemd[1]: Starting modprobe@drm.service...
+30,712,7646582,-;systemd[1]: Starting modprobe@fuse.service...
+30,713,7652907,-;systemd[1]: Starting storage-log.service...
+30,714,7665314,-;systemd[1]: Starting swap.service...
+30,715,7679738,-;systemd[1]: Starting systemd-hwdb-update.service...
+30,716,7690070,-;systemd[1]: Starting systemd-modules-load.service...
+30,717,7696537,-;systemd[1]: Starting systemd-timesyncd-setup.service...
+30,718,7704281,-;systemd[1]: Starting systemd-udev-trigger.service...
+30,719,7720930,-;systemd[1]: Starting wait-time-sync.service...
+6,720,7722019,-;fuse init (API version 7.26)
+30,721,7744568,-;systemd[1]: Mounted dev-mqueue.mount.
+30,722,7746042,-;systemd[1]: Mounted sys-kernel-debug.mount.
+30,723,7747365,-;systemd[1]: Mounted sys-kernel-tracing.mount.
+30,724,7748584,-;systemd[1]: Mounted var.mount.
+30,725,7750232,-;systemd[1]: Finished kmod-static-nodes.service.
+30,726,7751885,-;systemd[1]: modprobe@configfs.service: Deactivated successfully.
+30,727,7753042,-;systemd[1]: Finished modprobe@configfs.service.
+30,728,7755169,-;systemd[1]: Finished machine-id.service.
+30,729,7756506,-;systemd[1]: modprobe@drm.service: Deactivated successfully.
+30,730,7757446,-;systemd[1]: Finished modprobe@drm.service.
+30,731,7758921,-;systemd[1]: modprobe@fuse.service: Deactivated successfully.
+30,732,7759879,-;systemd[1]: Finished modprobe@fuse.service.
+30,733,7775145,-;systemd[1]: Mounting sys-fs-fuse-connections.mount...
+6,734,7876551,-;amlvideo-000: V4L2 device registered as video10
+6,735,7876560,-;amlvid:info: v4l2_dev.name=:amlvideo-001
+6,736,7877086,-;amlvideo-001: V4L2 device registered as video23
+4,737,7906725,-;video_framerate_adapter: loading out-of-tree module taints kernel.
+6,738,7907583,-;Registered frame rate driver success.
+30,739,7907918,-;systemd[1]: Mounting sys-kernel-config.mount...
+6,740,7909920,-;register clk_set_setting cpu[42]
+27,741,7914465,-;systemd[1]: systemd-journald.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/unified/system.slice/systemd-journald.service failed: Argument list too long
+6,742,7918773,-;Registered firmware driver success.
+6,743,7919866,-;Try to load video/h264_enc.bin  ...
+30,744,7927341,-;systemd[1]: Starting systemd-journald.service...
+6,745,7938899,-;load firmware size : 76288, Name : video/h264_enc.bin.
+6,746,7939743,-;Try to load video/video_ucode.bin  ...
+30,747,7947884,-;systemd[1]: Starting systemd-tmpfiles-setup-dev-early.service...
+30,748,7969268,-;systemd[1]: Finished systemd-timesyncd-setup.service.
+6,749,7971487,-;load firmware size : 1871104, Name : video/video_ucode.bin.
+6,750,7971866,-;The fw driver version (v0.2) is lower than the pkg version (v0.3).
+6,751,7971869,-;The driver version is too low that may affect the work please update asap.
+30,752,7978448,-;systemd[1]: Finished storage-log.service.
+30,753,7979672,-;systemd[1]: Mounted sys-fs-fuse-connections.mount.
+30,754,7980784,-;systemd[1]: Mounted sys-kernel-config.mount.
+30,755,7985465,-;systemd[1]: var-log.mount was skipped because no trigger condition checks were met.
+46,756,7990280,-;systemd-journald[2319]: Collecting audit messages is disabled.
+3,757,8069833,-;Amlogic A/V streaming port init
+6,758,8085438,-;get gate demux control ok 00000000bf925989
+6,759,8085460,-;get gate parser_top control ok 000000002afa10a6
+6,760,8085480,-;get gate vdec control ok 00000000481dd13b
+6,761,8085502,-;get gate clk_81 control ok 00000000b192699e
+6,762,8085529,-;get gate clk_vdec_mux control ok 00000000fe3770c1
+6,763,8085558,-;get gate clk_hcodec_mux control ok 000000008b2c3318
+6,764,8085591,-;get gate clk_hevc_mux control ok 000000003dd1c3ce
+6,765,8085600,-;get gate clk_hevcb_mux control failed           (null)
+6,766,8085605,-;get gate ahbarb0 control failed           (null)
+6,767,8085609,-;get gate asyncfifo control failed           (null)
+6,768,8085614,-;get gate clk_hevcf_mux control failed           (null)
+6,769,8085616,-;get mux clk err.
+6,770,8085618,-;get mux clk err.
+6,771,8085620,-;get mux clk err.
+6,772,8085621,-;get mux clk err.
+7,773,8130345,-;amvdec_avs module init
+7,774,8158864,-;amvdec_h264 module init
+30,775,8184241,-;systemd[1]: Finished systemd-tmpfiles-setup-dev-early.service.
+7,776,8190357,-;amvdec_h265 module init
+30,777,8196371,-;systemd[1]: Starting systemd-tmpfiles-setup-dev.service...
+30,778,8198068,-;systemd[1]: Finished swap.service.
+30,779,8200639,-;systemd[1]: Reached target swap.target.
+4,780,8211601,-;ammvdec_h264 module init
+4,781,8233342,-;ammvdec_mpeg12 module init
+4,782,8236652,-;ammvdec_mpeg4_driver_init_module 
+30,783,8247722,-;systemd[1]: Mounting tmp.mount...
+30,784,8268728,-;systemd[1]: Mounted tmp.mount.
+7,785,8296519,-;amvdec_vc1 module init
+7,786,8309135,-;amvdec_av1 module init
+7,787,8319112,-;amvdec_vp9 module init
+30,788,8328972,-;systemd[1]: Started systemd-journald.service.
+6,789,8361835,-;wireguard: WireGuard 1.0.20220627 loaded. See www.wireguard.com for information.
+6,790,8361842,-;wireguard: Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
+46,791,8383175,-;systemd-journald[2319]: Received client request to flush runtime journal.
+6,792,11363405,-;meson_uart c81004c0.serial: ttyS0 use xtal(8M) 24000000 change 115200 to 115200
+ SUBSYSTEM=platform
+ DEVICE=+platform:c81004c0.serial
+6,793,11363647,-;meson_uart c81004c0.serial: ttyS0 use xtal(8M) 24000000 change 115200 to 115200
+ SUBSYSTEM=platform
+ DEVICE=+platform:c81004c0.serial
+6,794,11496813,-;Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+6,795,11553914,-;Console: switching to colour dummy device 80x25
+5,796,11995402,-;mali-utgard d00c0000.mali: set min pp to default 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:d00c0000.mali
+5,797,11995411,-;mali-utgard d00c0000.mali: set min clk default to 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:d00c0000.mali
+5,798,11995578,-;mali-utgard d00c0000.mali: max clk set 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:d00c0000.mali
+5,799,11995583,-;mali-utgard d00c0000.mali: turbo clk set to 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:d00c0000.mali
+3,800,12029077,-;thermal thermal_zone0: binding zone soc_thermal with cdev thermal-gpufreq-0 failed:-22
+ SUBSYSTEM=thermal
+ DEVICE=+thermal:thermal_zone0
+4,801,12029093,-;gpu cooling register okay with err=0
+4,802,12032632,-;gpu core cooling register okay with err=0
+4,803,12033291,-;Mali: Mali device driver loaded
+6,804,12900654,-;Bluetooth: Core ver 2.22
+6,805,12900792,-;NET: Registered protocol family 31
+6,806,12900798,-;Bluetooth: HCI device and connection manager initialized
+6,807,12900814,-;Bluetooth: HCI socket layer initialized
+6,808,12900823,-;Bluetooth: L2CAP socket layer initialized
+6,809,12900865,-;Bluetooth: SCO socket layer initialized
+6,810,13056070,-;internal phy init
+6,811,13128044,-;internal phy init
+4,812,13142601,-;meson6-dwmac c9410000.ethernet eth0: fail to init PTP.
+ SUBSYSTEM=platform
+ DEVICE=+platform:c9410000.ethernet
+6,813,13149398,-;IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+3,814,13270932,-;proc: unrecognized mount option "hidepid=invisible" or missing value
+6,815,14162777,-;wol_reg12[12]==0, error
+6,816,15187074,-;meson6-dwmac c9410000.ethernet eth0: Link is Up - 100Mbps/Full - flow control off
+ SUBSYSTEM=platform
+ DEVICE=+platform:c9410000.ethernet
+6,817,15187102,-;IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+6,818,15207532,-;8021q: 802.1Q VLAN Support v1.8
+6,819,17765944,-;Registered IR keymap rc-empty
+6,820,17768102,-;input: meson-ir as /devices/platform/c8100580.meson-ir/rc/rc0/input2
+6,821,17768516,-;rc rc0: meson-ir as /devices/platform/c8100580.meson-ir/rc/rc0
+ SUBSYSTEM=rc
+ DEVICE=+rc:rc0
+6,822,17776838,-;lirc_dev: IR Remote Control driver registered, major 499
+6,823,17778559,-;meson-ir c8100580.meson-ir: receiver initialized
+ SUBSYSTEM=platform
+ DEVICE=+platform:c8100580.meson-ir
+6,824,17793878,-;rc rc0: lirc_dev: driver ir-lirc-codec (meson-ir) registered at minor = 0
+ SUBSYSTEM=rc
+ DEVICE=+rc:rc0
+6,825,17793892,-;IR LIRC bridge handler initialized
+6,826,17912624,-;IR NEC protocol handler initialized
+6,827,17952678,-;IR RC6 protocol handler initialized
+6,828,20402813,-;fb: osd_release now.index=0,open_count=1
+6,829,20925447,-;snd_spdif_dai: enterd aml_spdif_play,set_clock:4,sample_rate=4
+6,830,20925482,-;snd_spdif_dai: set 958 audio clk div 2
+6,831,20957782,-;audio_dsp: buf=0
+6,832,20957791,-;audio_dsp: IEC958_mode_raw=0
+6,833,20965368,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,834,20965378,-;snd_spdif_dai: set 958 audio clk div 4
+6,835,20965390,-;hdmitx: hw: set audio
+6,836,20965394,-;hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+6,837,20965409,-;hdmitx: fs = 2, cd = 4, tmds_clk = 148500
+6,838,20965412,-;hdmitx: hw: aud_n_para = 6272
+6,839,20965420,-;hdmitx: hw: set channel status
+6,840,20965434,-;hdmitx: hw: [0x10e3] = 0x1f
+6,841,20965453,-;hdmitx: audio: Audio Type: PCM
+6,842,20965455,-;hdmitx: audio: set audio param
+6,843,20965761,-;snd_spdif_dai: set normal 512 fs /4 fs
+3,844,25519515,-;cectx c810023c.aocec: CEC framework ctrl enabled
+ SUBSYSTEM=aocec
+ DEVICE=+aocec:c810023c.aocec
+6,845,30638002,-;audio_dsp: buf=0
+6,846,30638009,-;audio_dsp: IEC958_mode_raw=0
+6,847,30645290,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,848,30645537,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,849,30647059,-;snd_spdif_dai: aiu 958 playback enable
+6,850,30742662,-;snd_spdif_dai: aiu 958 playback disable
+6,851,30742782,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,852,30971256,-;snd_spdif_dai: aiu 958 playback enable
+6,853,31066641,-;snd_spdif_dai: aiu 958 playback disable
+6,854,31066728,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,855,31535146,-;snd_spdif_dai: aiu 958 playback enable
+6,856,31630628,-;snd_spdif_dai: aiu 958 playback disable
+6,857,31630696,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,858,31852559,-;snd_spdif_dai: aiu 958 playback enable
+6,859,31946660,-;snd_spdif_dai: aiu 958 playback disable
+6,860,31946762,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,861,32518852,-;snd_spdif_dai: aiu 958 playback enable
+6,862,32614624,-;snd_spdif_dai: aiu 958 playback disable
+6,863,32614706,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,864,32644777,-;snd_spdif_dai: aiu 958 playback enable
+6,865,32738651,-;snd_spdif_dai: aiu 958 playback disable
+6,866,32738734,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,867,32771401,-;snd_spdif_dai: aiu 958 playback enable
+6,868,32866641,-;snd_spdif_dai: aiu 958 playback disable
+6,869,32866723,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,870,32868579,-;snd_spdif_dai: aiu 958 playback enable
+6,871,32962624,-;snd_spdif_dai: aiu 958 playback disable
+6,872,32962705,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,873,33340006,-;snd_spdif_dai: aiu 958 playback enable
+6,874,33434683,-;snd_spdif_dai: aiu 958 playback disable
+6,875,33434767,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,876,33745776,-;snd_spdif_dai: aiu 958 playback enable
+6,877,33838647,-;snd_spdif_dai: aiu 958 playback disable
+6,878,33838727,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,879,34412279,-;snd_spdif_dai: aiu 958 playback enable
+6,880,34506657,-;snd_spdif_dai: aiu 958 playback disable
+6,881,34506765,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,882,35924910,-;snd_spdif_dai: aiu 958 playback enable
+6,883,36018643,-;snd_spdif_dai: aiu 958 playback disable
+6,884,36018720,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,885,37001355,-;snd_spdif_dai: aiu 958 playback enable
+6,886,37278621,-;snd_spdif_dai: aiu 958 playback disable
+6,887,37278695,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,888,38180689,-;snd_spdif_dai: aiu 958 playback enable
+6,889,38274639,-;snd_spdif_dai: aiu 958 playback disable
+6,890,38274727,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,891,38849089,-;snd_spdif_dai: aiu 958 playback enable
+6,892,38942632,-;snd_spdif_dai: aiu 958 playback disable
+6,893,38942692,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,894,38975973,-;snd_spdif_dai: aiu 958 playback enable
+6,895,39070647,-;snd_spdif_dai: aiu 958 playback disable
+6,896,39070728,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,897,39085729,-;snd_spdif_dai: aiu 958 playback enable
+6,898,39178629,-;snd_spdif_dai: aiu 958 playback disable
+6,899,39178696,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,900,39219063,-;snd_spdif_dai: aiu 958 playback enable
+6,901,39314624,-;snd_spdif_dai: aiu 958 playback disable
+6,902,39314685,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,903,39369766,-;snd_spdif_dai: aiu 958 playback enable
+6,904,39462635,-;snd_spdif_dai: aiu 958 playback disable
+6,905,39462705,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,906,39496878,-;snd_spdif_dai: aiu 958 playback enable
+6,907,39590622,-;snd_spdif_dai: aiu 958 playback disable
+6,908,39590679,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,909,39602882,-;snd_spdif_dai: aiu 958 playback enable
+6,910,39698623,-;snd_spdif_dai: aiu 958 playback disable
+6,911,39698686,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,912,39772480,-;snd_spdif_dai: aiu 958 playback enable
+6,913,39866673,-;snd_spdif_dai: aiu 958 playback disable
+6,914,39866753,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,915,40643535,-;snd_spdif_dai: aiu 958 playback enable
+6,916,40738647,-;snd_spdif_dai: aiu 958 playback disable
+6,917,40738733,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,918,41189015,-;snd_spdif_dai: aiu 958 playback enable
+6,919,41466650,-;snd_spdif_dai: aiu 958 playback disable
+6,920,41466756,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,921,42272963,-;snd_spdif_dai: aiu 958 playback enable
+6,922,42370664,-;snd_spdif_dai: aiu 958 playback disable
+6,923,42370751,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,924,42905565,-;snd_spdif_dai: aiu 958 playback enable
+6,925,42998634,-;snd_spdif_dai: aiu 958 playback disable
+6,926,42998701,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,927,43411932,-;snd_spdif_dai: aiu 958 playback enable
+6,928,43629066,-;VID: VD1 off
+6,929,43629886,-;DI no support cmd di_debug_flag0x0
+6,930,43629892,-;supported cmd list:
+6,931,43629893,-;\x09 vframe
+6,932,43629895,-;\x09 state
+6,933,43629896,-;\x09 prog_proc_config 0/1
+6,934,43629897,-;\x09 init_flag 0/1
+6,935,43629899,-;\x09 run
+6,936,43629900,-;\x09 pause
+6,937,43629901,-;\x09 step
+6,938,43629903,-;\x09 prun
+6,939,43629904,-;\x09 ppause
+6,940,43629905,-;\x09 pstep
+6,941,43629907,-;\x09 dumpreg
+6,942,43629908,-;\x09 dumpmif
+6,943,43629909,-;\x09 dumppostmif
+6,944,43629911,-;\x09 recycle_buf
+6,945,43629912,-;\x09 recycle_post
+6,946,43629913,-;\x09 mem_map
+6,947,43629915,-;\x09 reqafbc
+6,948,43629916,-;\x09 rlsafbc
+6,949,43629917,-;\x0a trigger val
+7,950,43630447,-;the demux           clock on, ref cnt: 1
+7,951,43630457,-;the parser_top      clock on, ref cnt: 1
+7,952,43630462,-;the vdec            clock on, ref cnt: 1
+7,953,43630486,-;the clk_vdec_mux    clock on, ref cnt: 1
+7,954,43630572,-;vdec mux clock is 498000000 Hz
+7,955,43630768,-;vdec_create instance 00000000c64f0b81, total 1, PM: legacy
+6,956,43631373,-;The fw has been loaded.
+6,957,43631387,-;vdec_init, dev_name:ammvdec_h264, vdec_type=VDEC_TYPE_FRAME_BLOCK  id = 0
+7,958,43632134,-;ammvdec_h264_mmu_init tvp = 0x0 mmu_enable 0
+7,959,43632142,-;decoder_bmmu_box_alloc_box, tvp_flags = 0
+7,960,43632154,-;0: ammvdec_h264_probe mmu_enable 0 double_write_mode 0x0
+7,961,43633610,-;0: ammvdec_h264 mem-addr=0,buff_offset=26810000,buf_start=26800000
+7,962,43633722,-;vdec mux clock is 664000000 Hz
+7,963,43633730,-;vdec1 video changed to 3840 x 2160 60 fps clk->667MHZ
+4,964,43633736,-;H264 sysinfo: 1280x720 duration=3200, pts_outside=1
+7,965,43633739,-;sync_outside=0, use_idr_framerate=0, is_used_v4l: 0
+6,966,43633799,-;[LOCAL], the fw (h264_multi) will be loaded.
+6,967,43633808,-;e900-gxlx2: firmware format=15 name=g12a_h264_multi.bin cpu=g12a source=video_ucode.bin
+7,968,43634102,-;vh264_init, phy_addr=34e3d000 vaddr=000000009823883e
+7,969,43634307,-;vfm map vdec-map-0 created
+6,970,43634345,-;ppmgr local_init
+6,971,43634356,-;di_receiver_event_fun: vframe provider reg ppmgr
+6,972,43634454,-;vpu_clkb = 0.
+6,973,43634456,-;DI: reg f
+6,974,43639603,-;ppmgr local_init
+7,975,43642562,-;vdec_init, vf_provider_name = vdec.h264.00, b 0
+6,976,43644197,-;vdec->port_flag=0x102, port_flag=0x103
+7,977,43651183,-;0: AV_SCRATCH_1 = 820e1050, AV_SCRATCH_2 18015\x0d
+7,978,43651282,-;0: chroma_format_idc = 1 frame_mbs_only_flag 1, crop_bottom 0,  frame_height 720,
+7,979,43651288,-;0: mb_height 45,crop_right 0, frame_width 1280, mb_width 80
+7,980,43651293,-;0: level_idc = 31 pic_size = 1382400 size = 5
+7,981,43651298,-;0: mb height/widht/total: 30/50/f00 level_idc 1f max_ref_num 2
+7,982,43651303,-;0: restriction_flag=0, max_dec_frame_buffering=0, dec_dpb_size=7 num_reorder_frames 0 used_reorder_dpb_size_margin 6
+7,983,43651308,-;0: vh264_set_params active_buf_spec_num 13 dec_dpb_size 7 collocate_buf_num 6\x0d
+7,984,43664355,-;0: num_ref_frames change from 0 to 2\x0d
+7,985,43680956,-;cal_dur_from_pts vstatus 3200 dur3000 -> 3200, revised 3200
+6,986,43689971,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=3200
+6,987,43690685,-;snd_spdif_dai: aiu 958 playback disable
+6,988,43691370,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,989,43719610,-;DI: di_wr_cue_int:finish
+6,990,43719617,-;di: di_init_buf -S
+7,991,43719641,-;DI: di_init_buf:cma alloc req time: 4294710964 ms
+6,992,43719663,-;di: di_init_buf -E
+6,993,43719676,-;DI: all=0
+6,994,43721742,-;di_cma_alloc:alloc 10 buffer use 0 ms(4294710964~4294710964), tvp:0
+6,995,43728449,-;DI:bypass:0 -> 1
+6,996,43728478,-;pre_de_buf_config:4294710972ms 1th source change: 0x0/0/0/0=>0x9000/1280/720/0
+6,997,43728487,-;DI:6994 disable post.
+6,998,43736793,-;[tsync_avevent_locked 1064]VIDEO_START-tsync_mode:1(S)
+6,999,43736800,-;pcr:0x0,param:0x0,vpts:0x0,apts:0xffffffff
+6,1000,45371137,-;snd_spdif_dai: aiu 958 playback enable
+6,1001,45650637,-;snd_spdif_dai: aiu 958 playback disable
+6,1002,45650707,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1003,46320942,-;snd_spdif_dai: aiu 958 playback enable
+6,1004,46418630,-;snd_spdif_dai: aiu 958 playback disable
+6,1005,46418695,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1006,46954272,-;snd_spdif_dai: aiu 958 playback enable
+6,1007,47046648,-;snd_spdif_dai: aiu 958 playback disable
+6,1008,47046717,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1009,47570899,-;snd_spdif_dai: aiu 958 playback enable
+6,1010,47671617,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=0
+6,1011,47679799,-;PPMGRVPP: info: task: quit
+6,1012,47679865,-;ppmgr local_init
+7,1013,47679884,-;DI: di_receiver_event_fun , is_bypass() 1 trick_mode 0 bypass_all 0
+6,1014,47679886,-;DI: di_receiver_event_fun: unreg
+6,1015,47679888,-;DI: provider name:(null)
+6,1016,47679909,-;di:no w
+7,1017,47679942,-;DI: di_unreg_process unreg start 1.
+6,1018,47679956,-;use keep buffer keep frame!
+6,1019,47679967,-;vf_keep_current_locked: keep video successful!
+6,1020,47679972,-;video_vf_unreg_provider: vd1 used: true, vd2 used: false, keep_ret:1, black_out:0, cur_dispbuf:00000000e4d990be
+6,1021,47679977,-;video first pts = 0
+6,1022,47679982,-;VD1 AFBC 0x0.
+6,1023,47679985,-;pattern detected = 1, pts_enter_pattern_cnt =2, pts_exit_pattern_cnt =2
+3,1024,47703662,-;Error: vf_notify_receiver, fail to get receiver of provider amlvideo
+7,1025,47722679,-;DI: di_unreg_process vf unreg cost 44 ms.
+7,1026,47722686,-;DI: di_unreg_process unreg stop 1.
+6,1027,47722735,-;di_unreg_process_irq disable di mirror image.
+7,1028,47722740,-;DI: di_unreg_process_irq:cma release req time: -252328 ms
+6,1029,47722742,-;DI: rel
+6,1030,47722743,-;di:retry cnt=0
+6,1031,47723301,-;DI: unreg f
+7,1032,47723359,-;vdec_disable_DMC input->target= 0x0
+7,1033,47723515,-;0: vh264_stop
+6,1034,47724761,-;di_cma_release:release 10 buffer use 0 ms(4294714968~4294714968)
+7,1035,47725196,-;vdec_release instance 00000000c64f0b81, total 1 id = 0
+7,1036,47725458,-;the clk_vdec_mux    clock off, ref cnt: 0
+7,1037,47725471,-;the vdec            clock off, ref cnt: 0
+7,1038,47725477,-;the parser_top      clock off, ref cnt: 0
+7,1039,47725481,-;the demux           clock off, ref cnt: 0
+7,1040,47725840,-;the demux           clock on, ref cnt: 1
+7,1041,47725849,-;the parser_top      clock on, ref cnt: 1
+7,1042,47725854,-;the vdec            clock on, ref cnt: 1
+7,1043,47725876,-;the clk_vdec_mux    clock on, ref cnt: 1
+7,1044,47725912,-;vdec mux clock is 498000000 Hz
+7,1045,47725981,-;vdec_create instance 000000004f48932d, total 1, PM: legacy
+6,1046,47726051,-;The fw has been loaded.
+6,1047,47726059,-;vdec_init, dev_name:ammvdec_h264, vdec_type=VDEC_TYPE_FRAME_BLOCK  id = 0
+7,1048,47726884,-;ammvdec_h264_mmu_init tvp = 0x0 mmu_enable 0
+7,1049,47726892,-;decoder_bmmu_box_alloc_box, tvp_flags = 0
+7,1050,47726903,-;0: ammvdec_h264_probe mmu_enable 0 double_write_mode 0x0
+7,1051,47731262,-;0: ammvdec_h264 mem-addr=0,buff_offset=26810000,buf_start=26800000
+7,1052,47731309,-;vdec mux clock is 664000000 Hz
+7,1053,47731314,-;vdec1 video changed to 3840 x 2160 60 fps clk->667MHZ
+4,1054,47731320,-;H264 sysinfo: 1280x720 duration=3200, pts_outside=1
+7,1055,47731323,-;sync_outside=0, use_idr_framerate=0, is_used_v4l: 0
+6,1056,47731379,-;[LOCAL], the fw (h264_multi) will be loaded.
+6,1057,47731385,-;e900-gxlx2: firmware format=15 name=g12a_h264_multi.bin cpu=g12a source=video_ucode.bin
+7,1058,47731726,-;vh264_init, phy_addr=34e3d000 vaddr=0000000097d87e80
+7,1059,47731885,-;vfm map vdec-map-0 created
+6,1060,47731916,-;ppmgr local_init
+6,1061,47731928,-;di_receiver_event_fun: vframe provider reg ppmgr
+6,1062,47733035,-;vpu_clkb = 0.
+6,1063,47733040,-;DI: reg f
+6,1064,47733202,-;ppmgr local_init
+7,1065,47733320,-;vdec_init, vf_provider_name = vdec.h264.00, b 0
+6,1066,47734502,-;vdec->port_flag=0x102, port_flag=0x103
+6,1067,47854649,-;snd_spdif_dai: aiu 958 playback disable
+6,1068,47854730,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1069,48724756,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=0
+6,1070,48725447,-;PPMGRVPP: info: task: quit
+6,1071,48725526,-;ppmgr local_init
+7,1072,48725550,-;DI: di_receiver_event_fun , is_bypass() 0 trick_mode 0 bypass_all 0
+6,1073,48725553,-;DI: di_receiver_event_fun: unreg
+6,1074,48725555,-;DI: provider name:(null)
+6,1075,48725579,-;di:no w
+7,1076,48725595,-;DI: di_unreg_process unreg start 1.
+6,1077,48725622,-;disabled amvideo on vd1 for next before free keep buffer!
+6,1078,48725626,-;VID: VD1 off
+6,1079,48725641,-;keep exit is skip current
+6,1080,48725648,-;video_vf_unreg_provider: vd1 used: true, vd2 used: false, keep_ret:0, black_out:1, cur_dispbuf:00000000e4d990be
+6,1081,48725649,-;keep frame skip, disable video again.
+6,1082,48725653,-;disabled amvideo on vd1 for next before free keep buffer!
+6,1083,48725654,-;VID: VD1 off
+6,1084,48725658,-;VD1 AFBC 0x0.
+7,1085,48766683,-;DI: di_unreg_process vf unreg cost 44 ms.
+7,1086,48766690,-;DI: di_unreg_process unreg stop 1.
+6,1087,48766738,-;di_unreg_process_irq disable di mirror image.
+7,1088,48766744,-;DI: di_unreg_process_irq:cma release req time: -251284 ms
+6,1089,48766752,-;DI: rel
+6,1090,48766754,-;di:retry cnt=0
+6,1091,48766767,-;di_cma_release:release 0 buffer use 0 ms(4294716012~4294716012)
+6,1092,48766801,-;DI: unreg f
+7,1093,48766844,-;vdec_disable_DMC input->target= 0x0
+7,1094,48766984,-;0: vh264_stop
+7,1095,48767347,-;vdec_release instance 000000004f48932d, total 1 id = 0
+7,1096,48767588,-;the clk_vdec_mux    clock off, ref cnt: 0
+7,1097,48767599,-;the vdec            clock off, ref cnt: 0
+7,1098,48767605,-;the parser_top      clock off, ref cnt: 0
+7,1099,48767609,-;the demux           clock off, ref cnt: 0
+6,1100,48768336,-;VID: VD1 off
+6,1101,48769965,-;DI no support cmd di_debug_flag0x0
+6,1102,48769970,-;supported cmd list:
+6,1103,48769972,-;\x09 vframe
+6,1104,48769973,-;\x09 state
+6,1105,48769974,-;\x09 prog_proc_config 0/1
+6,1106,48769976,-;\x09 init_flag 0/1
+6,1107,48769977,-;\x09 run
+6,1108,48769978,-;\x09 pause
+6,1109,48769980,-;\x09 step
+6,1110,48769981,-;\x09 prun
+6,1111,48769982,-;\x09 ppause
+6,1112,48769984,-;\x09 pstep
+6,1113,48769985,-;\x09 dumpreg
+6,1114,48769986,-;\x09 dumpmif
+6,1115,48769987,-;\x09 dumppostmif
+6,1116,48769989,-;\x09 recycle_buf
+6,1117,48769990,-;\x09 recycle_post
+6,1118,48769992,-;\x09 mem_map
+6,1119,48769993,-;\x09 reqafbc
+6,1120,48769995,-;\x09 rlsafbc
+6,1121,48769996,-;\x0a trigger val
+7,1122,48770310,-;the demux           clock on, ref cnt: 1
+7,1123,48770319,-;the parser_top      clock on, ref cnt: 1
+7,1124,48770324,-;the vdec            clock on, ref cnt: 1
+7,1125,48770346,-;the clk_hevc_mux    clock on, ref cnt: 1
+7,1126,48770424,-;hevc mux clock is 498000000 Hz
+6,1127,48770429,-;the mux clk err.
+7,1128,48770431,-;hevc back mux clock is 0 Hz
+7,1129,48770509,-;vdec_create instance 00000000ff6d538c, total 1, PM: legacy
+6,1130,48770563,-;The fw has been loaded.
+6,1131,48770571,-;vdec_init, dev_name:ammvdec_h265, vdec_type=VDEC_TYPE_FRAME_BLOCK  id = 0
+7,1132,48775941,-;decoder_bmmu_box_alloc_box, tvp_flags = 0
+7,1133,48776303,-;[0]dynamic_buf_num_margin=8
+7,1134,48776310,-;[0]double_write_mode=8192
+7,1135,48776321,-;[0]h265:pts_unstable=0
+7,1136,48776326,-;[0]h265: ver (201602101,0) decinfo: 1280x720 rate=3200
+6,1137,48776631,-;[LOCAL], the fw (hevc_mmu) will be loaded.
+6,1138,48776640,-;e900-gxlx2: firmware format=17 name=g12a_hevc_mmu.bin cpu=g12a source=video_ucode.bin
+7,1139,48776759,-;hevc mux clock is 664000000 Hz
+6,1140,48776765,-;the mux clk err.
+7,1141,48776768,-;hevc back mux clock is 0 Hz
+7,1142,48776774,-;hevc video changed to 3840 x 2160 60 fps clk->667MHZ
+7,1143,48776836,-;vfm map vdec-map-0 created
+6,1144,48776869,-;ppmgr local_init
+6,1145,48776882,-;di_receiver_event_fun: vframe provider reg ppmgr
+6,1146,48780722,-;vpu_clkb = 0.
+6,1147,48780728,-;DI: reg f
+6,1148,48780913,-;ppmgr local_init
+7,1149,48781163,-;vdec_init, vf_provider_name = vdec.h265.00, b 0
+6,1150,48782350,-;vdec->port_flag=0x102, port_flag=0x103
+7,1151,48782858,-;[0]vh265 cached=4000  need_size=16384 speed= 12 ms
+7,1152,48784274,-;[0]Bit depth luma = 10
+7,1153,48784282,-;[0]Bit depth chroma = 10
+7,1154,48784326,-;[0]hevc->performance_profile 0
+7,1155,48784331,-;[0]set pic_list_init_flag 1
+7,1156,48787133,-;[0]init_buf_spec2 1280 720
+7,1157,48787141,-;[0]set pic_list_init_flag to 2
+7,1158,48787188,-;[0]set pic_list_init_flag to 3
+7,1159,48787192,-;[vdec_kpi][vh265_isr_thread_fn] First I frame coming.
+7,1160,48789582,-;[0]VH265: output first frame
+7,1161,48789619,-;[vdec_kpi][post_video_frame] First I frame decoded.
+7,1162,48793656,-;cal_dur_from_pts vstatus 3200 dur3000 -> 3200, revised 3200
+6,1163,48795483,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=3200
+6,1164,48803697,-;Now can use cma, free:6130, wm:6144
+6,1165,48815167,-;DI bypass all 1280x720-0x501000.
+6,1166,48820132,-;[tsync_avevent_locked 1064]VIDEO_START-tsync_mode:0(S)
+6,1167,48820139,-;pcr:0x0,param:0x0,vpts:0x0,apts:0xffffffff
+6,1168,51254271,-;snd_spdif_dai: aiu 958 playback enable
+6,1169,51538647,-;snd_spdif_dai: aiu 958 playback disable
+6,1170,51538759,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1171,51906989,-;snd_spdif_dai: aiu 958 playback enable
+6,1172,52002650,-;snd_spdif_dai: aiu 958 playback disable
+6,1173,52002742,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1174,52587627,-;snd_spdif_dai: aiu 958 playback enable
+6,1175,52625285,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=0
+6,1176,52625493,-;PPMGRVPP: info: task: quit
+6,1177,52625599,-;ppmgr local_init
+6,1178,52625612,-;DI:bypass:1 -> 0
+7,1179,52625620,-;DI: di_receiver_event_fun , is_bypass() 0 trick_mode 0 bypass_all 0
+6,1180,52625621,-;DI: di_receiver_event_fun: unreg
+6,1181,52625623,-;DI: provider name:(null)
+6,1182,52625646,-;di:no w
+7,1183,52625676,-;DI: di_unreg_process unreg start 1.
+6,1184,52625691,-;use keep buffer keep frame!
+6,1185,52625704,-;vf_keep_current_locked: keep video successful!
+6,1186,52625710,-;video_vf_unreg_provider: vd1 used: true, vd2 used: false, keep_ret:1, black_out:0, cur_dispbuf:00000000e4d990be
+6,1187,52625715,-;video first pts = 0
+6,1188,52625719,-;VD1 AFBC 0x1700.
+6,1189,52625722,-;pattern detected = 1, pts_enter_pattern_cnt =2, pts_exit_pattern_cnt =2
+3,1190,52631302,-;Error: vf_notify_receiver, fail to get receiver of provider amlvideo
+3,1191,52643541,-;Error: vf_notify_receiver, fail to get receiver of provider amlvideo
+7,1192,52666680,-;DI: di_unreg_process vf unreg cost 44 ms.
+7,1193,52666688,-;DI: di_unreg_process unreg stop 1.
+6,1194,52666745,-;di_unreg_process_irq disable di mirror image.
+7,1195,52666751,-;DI: di_unreg_process_irq:cma release req time: -247384 ms
+6,1196,52666762,-;DI: rel
+6,1197,52666764,-;di:retry cnt=0
+6,1198,52666776,-;di_cma_release:release 0 buffer use 0 ms(4294719912~4294719912)
+6,1199,52667097,-;DI: unreg f
+7,1200,52667143,-;vdec_disable_DMC input->target= 0x1
+7,1201,52668399,-;vdec_release instance 00000000ff6d538c, total 1 id = 0
+7,1202,52668700,-;the clk_hevc_mux    clock off, ref cnt: 0
+7,1203,52668707,-;the clk_hevcb_mux   clock off, ref cnt: -1
+7,1204,52668718,-;the vdec            clock off, ref cnt: 0
+7,1205,52668725,-;the parser_top      clock off, ref cnt: 0
+7,1206,52668730,-;the demux           clock off, ref cnt: 0
+7,1207,52668974,-;the demux           clock on, ref cnt: 1
+7,1208,52668985,-;the parser_top      clock on, ref cnt: 1
+7,1209,52668990,-;the vdec            clock on, ref cnt: 1
+7,1210,52669014,-;the clk_hevc_mux    clock on, ref cnt: 1
+7,1211,52669054,-;hevc mux clock is 498000000 Hz
+6,1212,52669058,-;the mux clk err.
+7,1213,52669060,-;hevc back mux clock is 0 Hz
+7,1214,52669152,-;vdec_create instance 00000000825f82c0, total 1, PM: legacy
+6,1215,52669226,-;The fw has been loaded.
+6,1216,52669235,-;vdec_init, dev_name:ammvdec_h265, vdec_type=VDEC_TYPE_FRAME_BLOCK  id = 0
+7,1217,52669828,-;decoder_bmmu_box_alloc_box, tvp_flags = 0
+7,1218,52675304,-;[0]dynamic_buf_num_margin=8
+7,1219,52675313,-;[0]double_write_mode=8192
+7,1220,52675324,-;[0]h265:pts_unstable=0
+7,1221,52675330,-;[0]h265: ver (201602101,0) decinfo: 1280x720 rate=3200
+6,1222,52676105,-;[LOCAL], the fw (hevc_mmu) will be loaded.
+6,1223,52676117,-;e900-gxlx2: firmware format=17 name=g12a_hevc_mmu.bin cpu=g12a source=video_ucode.bin
+7,1224,52676200,-;hevc mux clock is 664000000 Hz
+6,1225,52676206,-;the mux clk err.
+7,1226,52676209,-;hevc back mux clock is 0 Hz
+7,1227,52676214,-;hevc video changed to 3840 x 2160 60 fps clk->667MHZ
+7,1228,52676353,-;vfm map vdec-map-0 created
+6,1229,52676389,-;ppmgr local_init
+6,1230,52676401,-;di_receiver_event_fun: vframe provider reg ppmgr
+6,1231,52677519,-;vpu_clkb = 0.
+6,1232,52677524,-;DI: reg f
+6,1233,52677726,-;ppmgr local_init
+7,1234,52677894,-;vdec_init, vf_provider_name = vdec.h265.00, b 0
+6,1235,52679314,-;vdec->port_flag=0x102, port_flag=0x103
+7,1236,52679457,-;[0]vh265 cached=19136  need_size=16384 speed= 12 ms
+6,1237,52870638,-;snd_spdif_dai: aiu 958 playback disable
+6,1238,52870717,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1239,53687098,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=0
+6,1240,53687427,-;PPMGRVPP: info: task: quit
+6,1241,53687536,-;ppmgr local_init
+7,1242,53687560,-;DI: di_receiver_event_fun , is_bypass() 0 trick_mode 0 bypass_all 0
+6,1243,53687563,-;DI: di_receiver_event_fun: unreg
+6,1244,53687565,-;DI: provider name:(null)
+6,1245,53687607,-;di:no w
+7,1246,53687645,-;DI: di_unreg_process unreg start 1.
+6,1247,53687673,-;disabled amvideo on vd1 for next before free keep buffer!
+6,1248,53687676,-;VID: VD1 off
+6,1249,53687690,-;keep exit is skip current
+6,1250,53687696,-;video_vf_unreg_provider: vd1 used: true, vd2 used: false, keep_ret:0, black_out:1, cur_dispbuf:00000000e4d990be
+6,1251,53687698,-;keep frame skip, disable video again.
+6,1252,53687701,-;disabled amvideo on vd1 for next before free keep buffer!
+6,1253,53687703,-;VID: VD1 off
+6,1254,53687707,-;VD1 AFBC 0x0.
+7,1255,53730681,-;DI: di_unreg_process vf unreg cost 44 ms.
+7,1256,53730688,-;DI: di_unreg_process unreg stop 1.
+6,1257,53730743,-;di_unreg_process_irq disable di mirror image.
+7,1258,53730749,-;DI: di_unreg_process_irq:cma release req time: -246320 ms
+6,1259,53730758,-;DI: rel
+6,1260,53730760,-;di:retry cnt=0
+6,1261,53730775,-;di_cma_release:release 0 buffer use 0 ms(4294720976~4294720976)
+6,1262,53731254,-;DI: unreg f
+7,1263,53731304,-;vdec_disable_DMC input->target= 0x1
+7,1264,53731717,-;vdec_release instance 00000000825f82c0, total 1 id = 0
+7,1265,53731954,-;the clk_hevc_mux    clock off, ref cnt: 0
+7,1266,53731961,-;the clk_hevcb_mux   clock off, ref cnt: -2
+7,1267,53731970,-;the vdec            clock off, ref cnt: 0
+7,1268,53731976,-;the parser_top      clock off, ref cnt: 0
+7,1269,53731982,-;the demux           clock off, ref cnt: 0
+6,1270,53732323,-;VID: VD1 off
+6,1271,53734222,-;DI no support cmd di_debug_flag0x0
+6,1272,53734228,-;supported cmd list:
+6,1273,53734229,-;\x09 vframe
+6,1274,53734230,-;\x09 state
+6,1275,53734232,-;\x09 prog_proc_config 0/1
+6,1276,53734233,-;\x09 init_flag 0/1
+6,1277,53734234,-;\x09 run
+6,1278,53734236,-;\x09 pause
+6,1279,53734237,-;\x09 step
+6,1280,53734238,-;\x09 prun
+6,1281,53734240,-;\x09 ppause
+6,1282,53734241,-;\x09 pstep
+6,1283,53734242,-;\x09 dumpreg
+6,1284,53734244,-;\x09 dumpmif
+6,1285,53734245,-;\x09 dumppostmif
+6,1286,53734246,-;\x09 recycle_buf
+6,1287,53734248,-;\x09 recycle_post
+6,1288,53734249,-;\x09 mem_map
+6,1289,53734251,-;\x09 reqafbc
+6,1290,53734252,-;\x09 rlsafbc
+6,1291,53734253,-;\x0a trigger val
+7,1292,53734779,-;the demux           clock on, ref cnt: 1
+7,1293,53734790,-;the parser_top      clock on, ref cnt: 1
+7,1294,53734795,-;the vdec            clock on, ref cnt: 1
+7,1295,53734817,-;the clk_hevc_mux    clock on, ref cnt: 1
+7,1296,53734854,-;hevc mux clock is 498000000 Hz
+6,1297,53734858,-;the mux clk err.
+7,1298,53734860,-;hevc back mux clock is 0 Hz
+7,1299,53734940,-;vdec_create instance 00000000f3ff8015, total 1, PM: legacy
+6,1300,53735001,-;The fw has been loaded.
+6,1301,53735008,-;vdec_init, dev_name:ammvdec_h265, vdec_type=VDEC_TYPE_FRAME_BLOCK  id = 0
+7,1302,53739881,-;decoder_bmmu_box_alloc_box, tvp_flags = 0
+7,1303,53740286,-;[0]dynamic_buf_num_margin=8
+7,1304,53740293,-;[0]double_write_mode=8192
+7,1305,53740303,-;[0]h265:pts_unstable=0
+7,1306,53740307,-;[0]h265: ver (201602101,0) decinfo: 1280x720 rate=3200
+6,1307,53740575,-;[LOCAL], the fw (hevc_mmu) will be loaded.
+6,1308,53740585,-;e900-gxlx2: firmware format=17 name=g12a_hevc_mmu.bin cpu=g12a source=video_ucode.bin
+7,1309,53740661,-;hevc mux clock is 664000000 Hz
+6,1310,53740667,-;the mux clk err.
+7,1311,53740670,-;hevc back mux clock is 0 Hz
+7,1312,53740675,-;hevc video changed to 3840 x 2160 60 fps clk->667MHZ
+7,1313,53740770,-;vfm map vdec-map-0 created
+6,1314,53740805,-;ppmgr local_init
+6,1315,53740817,-;di_receiver_event_fun: vframe provider reg ppmgr
+6,1316,53740899,-;vpu_clkb = 0.
+6,1317,53740901,-;DI: reg f
+6,1318,53741055,-;ppmgr local_init
+7,1319,53741253,-;vdec_init, vf_provider_name = vdec.h265.00, b 0
+6,1320,53742412,-;vdec->port_flag=0x102, port_flag=0x103
+7,1321,53742916,-;[0]vh265 cached=18499  need_size=16384 speed= 4 ms
+7,1322,53744880,-;[0]Bit depth luma = 10
+7,1323,53744887,-;[0]Bit depth chroma = 10
+7,1324,53744916,-;[0]hevc->performance_profile 0
+7,1325,53744922,-;[0]set pic_list_init_flag 1
+7,1326,53748723,-;[0]init_buf_spec2 1280 720
+7,1327,53748731,-;[0]set pic_list_init_flag to 2
+7,1328,53748772,-;[0]set pic_list_init_flag to 3
+7,1329,53748777,-;[vdec_kpi][vh265_isr_thread_fn] First I frame coming.
+7,1330,53751598,-;[0]VH265: output first frame
+7,1331,53751634,-;[vdec_kpi][post_video_frame] First I frame decoded.
+6,1332,53755553,-;DI bypass all 1280x720-0x501000.
+7,1333,53755804,-;cal_dur_from_pts vstatus 3200 dur3000 -> 3200, revised 3200
+6,1334,53757646,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=3200
+6,1335,53770129,-;[tsync_avevent_locked 1064]VIDEO_START-tsync_mode:0(S)
+6,1336,53770137,-;pcr:0x0,param:0x0,vpts:0x0,apts:0xffffffff
+6,1337,54787585,-;snd_spdif_dai: aiu 958 playback enable
+6,1338,55066641,-;snd_spdif_dai: aiu 958 playback disable
+6,1339,55067084,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1340,55487634,-;snd_spdif_dai: aiu 958 playback enable
+6,1341,55770660,-;snd_spdif_dai: aiu 958 playback disable
+6,1342,55770842,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1343,62482660,-;fb: mem_free_work, free memory: addr:800000
+6,1344,62654274,-;snd_spdif_dai: aiu 958 playback enable
+6,1345,62938653,-;snd_spdif_dai: aiu 958 playback disable
+6,1346,62938725,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1347,65304219,-;snd_spdif_dai: aiu 958 playback enable
+6,1348,65398647,-;snd_spdif_dai: aiu 958 playback disable
+6,1349,65398744,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1350,65904209,-;snd_spdif_dai: aiu 958 playback enable
+6,1351,65998639,-;snd_spdif_dai: aiu 958 playback disable
+6,1352,65998719,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1353,66554429,-;snd_spdif_dai: aiu 958 playback enable
+6,1354,66646635,-;snd_spdif_dai: aiu 958 playback disable
+6,1355,66646705,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1356,66687639,-;snd_spdif_dai: aiu 958 playback enable
+6,1357,66782651,-;snd_spdif_dai: aiu 958 playback disable
+6,1358,66782736,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1359,66827016,-;snd_spdif_dai: aiu 958 playback enable
+6,1360,66922660,-;snd_spdif_dai: aiu 958 playback disable
+6,1361,66922751,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1362,66923119,-;snd_spdif_dai: aiu 958 playback enable
+6,1363,67018639,-;snd_spdif_dai: aiu 958 playback disable
+6,1364,67018712,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1365,67304226,-;snd_spdif_dai: aiu 958 playback enable
+6,1366,67398630,-;snd_spdif_dai: aiu 958 playback disable
+6,1367,67398711,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1368,67937573,-;snd_spdif_dai: aiu 958 playback enable
+6,1369,68030634,-;snd_spdif_dai: aiu 958 playback disable
+6,1370,68030755,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1371,68537556,-;snd_spdif_dai: aiu 958 playback enable
+6,1372,68630645,-;snd_spdif_dai: aiu 958 playback disable
+6,1373,68630728,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1374,69170882,-;snd_spdif_dai: aiu 958 playback enable
+6,1375,69266643,-;snd_spdif_dai: aiu 958 playback disable
+6,1376,69266735,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1377,69820956,-;snd_spdif_dai: aiu 958 playback enable
+6,1378,69914653,-;snd_spdif_dai: aiu 958 playback disable
+6,1379,69914726,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1380,70307890,-;snd_spdif_dai: aiu 958 playback enable
+6,1381,70402642,-;snd_spdif_dai: aiu 958 playback disable
+6,1382,70402722,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1383,71404221,-;snd_spdif_dai: aiu 958 playback enable
+6,1384,71498643,-;snd_spdif_dai: aiu 958 playback disable
+6,1385,71498724,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1386,71890594,-;snd_spdif_dai: aiu 958 playback enable
+6,1387,71982639,-;snd_spdif_dai: aiu 958 playback disable
+6,1388,71982710,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1389,72904223,-;snd_spdif_dai: aiu 958 playback enable
+6,1390,72998626,-;snd_spdif_dai: aiu 958 playback disable
+6,1391,72998695,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1392,73337538,-;snd_spdif_dai: aiu 958 playback enable
+6,1393,73430626,-;snd_spdif_dai: aiu 958 playback disable
+6,1394,73430693,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1395,73837548,-;snd_spdif_dai: aiu 958 playback enable
+6,1396,73930626,-;snd_spdif_dai: aiu 958 playback disable
+6,1397,73930710,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1398,74637575,-;snd_spdif_dai: aiu 958 playback enable
+6,1399,74914623,-;snd_spdif_dai: aiu 958 playback disable
+6,1400,74914684,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1401,76887621,-;snd_spdif_dai: aiu 958 playback enable
+6,1402,77166626,-;snd_spdif_dai: aiu 958 playback disable
+6,1403,77166696,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1404,78537547,-;snd_spdif_dai: aiu 958 playback enable
+6,1405,78634653,-;snd_spdif_dai: aiu 958 playback disable
+6,1406,78634752,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1407,80270893,-;snd_spdif_dai: aiu 958 playback enable
+6,1408,80366624,-;snd_spdif_dai: aiu 958 playback disable
+6,1409,80366702,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1410,82887629,-;snd_spdif_dai: aiu 958 playback enable
+6,1411,82982625,-;snd_spdif_dai: aiu 958 playback disable
+6,1412,82982689,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1413,83270887,-;snd_spdif_dai: aiu 958 playback enable
+6,1414,83366624,-;snd_spdif_dai: aiu 958 playback disable
+6,1415,83366689,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1416,83854296,-;snd_spdif_dai: aiu 958 playback enable
+6,1417,84134632,-;snd_spdif_dai: aiu 958 playback disable
+6,1418,84134699,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1419,84870912,-;snd_spdif_dai: aiu 958 playback enable
+6,1420,84966639,-;snd_spdif_dai: aiu 958 playback disable
+6,1421,84966718,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1422,85537495,-;snd_spdif_dai: aiu 958 playback enable
+6,1423,85630625,-;snd_spdif_dai: aiu 958 playback disable
+6,1424,85630716,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1425,85720883,-;snd_spdif_dai: aiu 958 playback enable
+6,1426,85814628,-;snd_spdif_dai: aiu 958 playback disable
+6,1427,85814686,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1428,86320886,-;snd_spdif_dai: aiu 958 playback enable
+6,1429,86414644,-;snd_spdif_dai: aiu 958 playback disable
+6,1430,86414725,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1431,86970906,-;snd_spdif_dai: aiu 958 playback enable
+6,1432,87066639,-;snd_spdif_dai: aiu 958 playback disable
+6,1433,87066735,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1434,87587552,-;snd_spdif_dai: aiu 958 playback enable
+6,1435,87682623,-;snd_spdif_dai: aiu 958 playback disable
+6,1436,87683022,-;snd_spdif_dai: set normal 512 fs /4 fs
+7,1437,88038439,-;DI: DI: tasklet schedule cost 32ms.
+6,1438,88337499,-;snd_spdif_dai: aiu 958 playback enable
+6,1439,88614667,-;snd_spdif_dai: aiu 958 playback disable
+6,1440,88614795,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1441,91004165,-;snd_spdif_dai: aiu 958 playback enable
+6,1442,91102637,-;snd_spdif_dai: aiu 958 playback disable
+6,1443,91102699,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1444,92537593,-;snd_spdif_dai: aiu 958 playback enable
+6,1445,92822655,-;snd_spdif_dai: aiu 958 playback disable
+6,1446,92822758,-;snd_spdif_dai: set normal 512 fs /4 fs
+7,1447,94638355,-;DI: DI: tasklet schedule cost 32ms.
+7,1448,111538638,-;DI: DI: tasklet schedule cost 36ms.
+6,1449,111622349,-;vframe_rate_uevent: sent uevent FRAME_RATE_HINT=0
+6,1450,111622705,-;PPMGRVPP: info: task: quit
+6,1451,111622758,-;ppmgr local_init
+7,1452,111622779,-;DI: di_receiver_event_fun , is_bypass() 0 trick_mode 0 bypass_all 0
+6,1453,111622781,-;DI: di_receiver_event_fun: unreg
+6,1454,111622784,-;DI: provider name:(null)
+6,1455,111622816,-;di:no w
+7,1456,111626730,-;DI: di_unreg_process unreg start 1.
+6,1457,111626761,-;disabled amvideo on vd1 for next before free keep buffer!
+6,1458,111626763,-;VID: VD1 off
+6,1459,111626769,-;keep exit is skip current
+6,1460,111626774,-;video_vf_unreg_provider: vd1 used: true, vd2 used: false, keep_ret:0, black_out:1, cur_dispbuf:00000000e4d990be
+6,1461,111626780,-;video first pts = 0
+6,1462,111626782,-;keep frame skip, disable video again.
+6,1463,111626785,-;disabled amvideo on vd1 for next before free keep buffer!
+6,1464,111626787,-;VID: VD1 off
+6,1465,111626790,-;VD1 AFBC 0x0.
+6,1466,111626793,-;pattern detected = 1, pts_enter_pattern_cnt =9, pts_exit_pattern_cnt =8
+7,1467,111670639,-;DI: di_unreg_process vf unreg cost 44 ms.
+7,1468,111670648,-;DI: di_unreg_process unreg stop 1.
+6,1469,111670693,-;di_unreg_process_irq disable di mirror image.
+7,1470,111670699,-;DI: di_unreg_process_irq:cma release req time: -188380 ms
+6,1471,111670705,-;DI: rel
+6,1472,111670707,-;di:retry cnt=0
+6,1473,111670720,-;di_cma_release:release 0 buffer use 0 ms(4294778916~4294778916)
+6,1474,111671009,-;DI: unreg f
+7,1475,111671052,-;vdec_disable_DMC input->target= 0x1
+7,1476,111672217,-;vdec_release instance 00000000f3ff8015, total 1 id = 0
+7,1477,111672451,-;the clk_hevc_mux    clock off, ref cnt: 0
+7,1478,111672457,-;the clk_hevcb_mux   clock off, ref cnt: -3
+7,1479,111672467,-;the vdec            clock off, ref cnt: 0
+7,1480,111672472,-;the parser_top      clock off, ref cnt: 0
+7,1481,111672477,-;the demux           clock off, ref cnt: 0
+6,1482,111698301,-;VID: VD1 off
+6,1483,113671672,-;e900-hw-init: begin fixed video register completion
+6,1484,113671682,-;e900-hw-init: step=1 read.begin reg=1d27
+6,1485,113671686,-;e900-hw-init: step=1 read.end reg=1d27 value=fff00fff
+6,1486,113671690,-;e900-hw-init: step=1 write.begin reg=1d27 value=fff00fff
+6,1487,113671694,-;e900-hw-init: step=1 write.end reg=1d27
+6,1488,113671696,-;e900-hw-init: step=2 write.begin reg=1d1a value=1000
+6,1489,113671698,-;e900-hw-init: step=2 write.end reg=1d1a
+6,1490,113671701,-;e900-hw-init: step=3 write.begin reg=1d1e value=1000
+6,1491,113671703,-;e900-hw-init: step=3 write.end reg=1d1e
+6,1492,113671706,-;e900-hw-init: step=4 write.begin reg=1d00 value=4080200
+6,1493,113671708,-;e900-hw-init: step=4 write.end reg=1d00
+6,1494,113671709,-;e900-hw-init: fifo/windows/dummy submitted
+6,1495,113671712,-;e900-hw-init: step=5 write.begin reg=1d91 value=0
+6,1496,113671714,-;e900-hw-init: step=5 write.end reg=1d91
+6,1497,113671716,-;e900-hw-init: step=6 write.begin reg=1d92 value=0
+6,1498,113671718,-;e900-hw-init: step=6 write.end reg=1d92
+6,1499,113671721,-;e900-hw-init: step=7/8 skip SR0 sync; sr_support=0
+6,1500,113671722,-;e900-hw-init: sharp/bypass submitted
+6,1501,113671726,-;e900-hw-init: step=10 read.begin reg=1d22
+6,1502,113671729,-;e900-hw-init: step=10 read.end reg=1d22 value=8080808
+6,1503,113671731,-;e900-hw-init: step=11 read.begin reg=1d27
+6,1504,113671733,-;e900-hw-init: step=11 read.end reg=1d27 value=fff00fff
+6,1505,113671735,-;e900-hw-init: step=12 read.begin reg=1d1a
+6,1506,113671738,-;e900-hw-init: step=12 read.end reg=1d1a value=1000
+6,1507,113671740,-;e900-hw-init: step=13 read.begin reg=1d1e
+6,1508,113671742,-;e900-hw-init: step=13 read.end reg=1d1e value=1000
+6,1509,113671746,-;e900-hw-init: complete fifo=fff00fff vd1=1000 vd2=1000 hold=8
+6,1510,118804294,-;audio_dsp: buf=0
+6,1511,118804303,-;audio_dsp: IEC958_mode_raw=0
+6,1512,118812361,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1513,118812637,-;snd_spdif_dai: set normal 512 fs /4 fs
+6,1514,118814193,-;snd_spdif_dai: aiu 958 playback enable
+6,1515,119098643,-;snd_spdif_dai: aiu 958 playback disable
+6,1516,119098738,-;snd_spdif_dai: set normal 512 fs /4 fs

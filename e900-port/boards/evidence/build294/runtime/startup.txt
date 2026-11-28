@@ -1,0 +1,51 @@
+Linux CoreELEC 4.9.269 #1 SMP PREEMPT Sat Nov 28 08:59:14 UTC 2026 aarch64 GNU/Linux
+NAME="CoreELEC"
+VERSION="21.3-Omega_devel_20261128084424"
+ID="coreelec"
+VERSION_ID="21.3"
+PRETTY_NAME="CoreELEC (community): 21.3-Omega_devel_20261128084424"
+HOME_URL="https://coreelec.org"
+BUG_REPORT_URL="https://github.com/CoreELEC/CoreELEC"
+BUILD_ID="fc61125e8900ab0c2593a29b615980ed0cd5b939"
+LIBREELEC_ARCH="Amlogic-ng.arm"
+LIBREELEC_BUILD="community"
+LIBREELEC_PROJECT="Amlogic-ce"
+COREELEC_ARCH="Amlogic-ng.arm"
+COREELEC_BUILD="community"
+COREELEC_PROJECT="Amlogic-ce"
+COREELEC_DEVICE="Amlogic-ng"
+d94c005b-3b85-4980-b26f-5c296d18686a
+boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=1 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=7 systemd.show_status=auto
+major minor  #blocks  name
+
+   7        0     166796 loop0
+ 179        0    1978368 mmcblk0
+ 179        1    1978242 mmcblk0p1
+   8        0   30412800 sda
+   8        1     524288 sda1
+   8        2   29884416 sda2
+/dev/loop0 / squashfs ro,relatime 0 0
+/dev/mmcblk0p1 /var/media/mmcblk0p1-FAAC-E128 vfat rw,nosuid,nodev,noexec,noatime,fmask=0133,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 0
+Module                  Size  Used by
+ir_rc6_decoder         16384  0
+ir_nec_decoder         16384  0
+ir_lirc_codec          16384  0
+lirc_dev               24576  1 ir_lirc_codec
+meson_ir               16384  0
+8021q                  32768  0
+bluetooth             622592  6
+mali                  315392  1
+nfsd                  323584  5
+N
+[    0.788581@0]- mtdoops: mtd device (mtddev=name/number) must be supplied
+[    3.086883@2]- e900-hw-init: queued fixed register init; early probe retained
+[    3.103409@2]- e900-hw-init: probe.complete
+[    3.133582@2]- e900-hw-init: video_init.complete subscribe.begin
+[    3.139467@2]- e900-hw-init: notify.enter
+[    3.143429@2]- e900-hw-init: notify.locked ready_vc=0 ready_hhi=0 ready_dmc=0
+[    3.150505@2]- e900-hw-init: notify.exit ret=-11
+[    3.159648@2]- e900-hw-init: subscribe.end ret=0
+[    3.981732@0]- e900-hw-init: notify.enter
+[    3.981738@0]- e900-hw-init: notify.locked ready_vc=1 ready_hhi=1 ready_dmc=1
+[    3.981740@0]- e900-hw-init: waiting for verified network logging and explicit release
+[    3.981743@0]- e900-hw-init: notify.exit ret=-11

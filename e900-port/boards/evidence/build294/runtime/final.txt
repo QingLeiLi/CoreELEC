@@ -1,0 +1,46 @@
+VERSION
+Linux CoreELEC 4.9.269 #1 SMP PREEMPT Sat Nov 28 08:59:14 UTC 2026 aarch64 GNU/Linux
+NAME="CoreELEC"
+VERSION="21.3-Omega_devel_20261128084424"
+ID="coreelec"
+VERSION_ID="21.3"
+PRETTY_NAME="CoreELEC (community): 21.3-Omega_devel_20261128084424"
+HOME_URL="https://coreelec.org"
+BUG_REPORT_URL="https://github.com/CoreELEC/CoreELEC"
+BUILD_ID="fc61125e8900ab0c2593a29b615980ed0cd5b939"
+LIBREELEC_ARCH="Amlogic-ng.arm"
+LIBREELEC_BUILD="community"
+LIBREELEC_PROJECT="Amlogic-ce"
+COREELEC_ARCH="Amlogic-ng.arm"
+COREELEC_BUILD="community"
+COREELEC_PROJECT="Amlogic-ce"
+COREELEC_DEVICE="Amlogic-ng"
+BOOT
+d94c005b-3b85-4980-b26f-5c296d18686a
+boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=1 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=7 systemd.show_status=auto
+INIT
+Y
+[  113.671712@2]- e900-hw-init: step=5 write.begin reg=1d91 value=0
+[  113.671714@2]- e900-hw-init: step=5 write.end reg=1d91
+[  113.671716@2]- e900-hw-init: step=6 write.begin reg=1d92 value=0
+[  113.671718@2]- e900-hw-init: step=6 write.end reg=1d92
+[  113.671721@2]- e900-hw-init: step=7/8 skip SR0 sync; sr_support=0
+[  113.671722@2]- e900-hw-init: sharp/bypass submitted
+[  113.671726@2]- e900-hw-init: step=10 read.begin reg=1d22
+[  113.671729@2]- e900-hw-init: step=10 read.end reg=1d22 value=8080808
+[  113.671731@2]- e900-hw-init: step=11 read.begin reg=1d27
+[  113.671733@2]- e900-hw-init: step=11 read.end reg=1d27 value=fff00fff
+[  113.671735@2]- e900-hw-init: step=12 read.begin reg=1d1a
+[  113.671738@2]- e900-hw-init: step=12 read.end reg=1d1a value=1000
+[  113.671740@2]- e900-hw-init: step=13 read.begin reg=1d1e
+[  113.671742@2]- e900-hw-init: step=13 read.end reg=1d1e value=1000
+[  113.671746@2]- e900-hw-init: complete fifo=fff00fff vd1=1000 vd2=1000 hold=8
+TF
+/dev/mmcblk0p1 /var/media/mmcblk0p1-FAAC-E128 vfat rw,nosuid,nodev,noexec,noatime,fmask=0133,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 0
+SPACE
+Filesystem                Size      Used Available Use% Mounted on
+/dev/sda1               511.7M    467.1M     44.6M  91% /flash
+KODI
+active
+REMOTE_TEST
+reverted

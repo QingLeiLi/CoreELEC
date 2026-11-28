@@ -1,0 +1,16 @@
+{
+  "run": 46126690423,
+  "commit": "491fb30742186178512cf150ab99aef2f5be0fd5",
+  "kernel": "unmodified source-built Image",
+  "hw_init_wait": 1,
+  "previous": "Image293H/SYSTEM293 with TF enabled, wait=1",
+  "payload_bytes": 203827272,
+  "dtb_adjustment": "only sd@d0072000/status enabled, preserving tested TF support; wireless remains disabled",
+  "files": {
+    "e900-Image294": "28084214adca2d9b840a97ddccc33b81ab61f925fb6de06d0bd2723c74722a78",
+    "e900-uInitrd294": "de7c29ab6a9eb454d0180eb31c7a0adc5441ee43e8b202ce30f58d9bfe070a6a",
+    "e900-dtb294": "364963ab897430591e966130da204c0b88e14394fc1dd4eda63e62b8948d954a",
+    "SYSTEM294": "65eb524806ab3a430d12d2bfbd58630dcc591ce9ff68bfdca3999de5aadbd8a1",
+    "boot294.script": "21c9402df12ffe66180fe0fc1f3d7495027f30aff065dea14234b1872c00b88e"
+  }
+}

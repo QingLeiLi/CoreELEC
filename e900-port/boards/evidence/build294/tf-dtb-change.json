@@ -1,0 +1,9 @@
+{
+  "base_sha256": "005db34d2c3f785cbd1c982c17ef89ba8d806b0a89a44e23b325fbda18e571f9",
+  "enabled_sha256": "364963ab897430591e966130da204c0b88e14394fc1dd4eda63e62b8948d954a",
+  "bytes": 57051,
+  "only_changed_property": "/sd@d0072000/status",
+  "previous": "disabled",
+  "new": "okay",
+  "hardware_tested": false
+}
