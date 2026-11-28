@@ -1,0 +1,41 @@
+Startup finished in 6.812s (kernel) + 11.308s (userspace) = 18.121s 
+kodi.target reached after 11.308s in userspace.
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+kodi.service +72ms
+└─smp-affinity.service @10.989s +191ms
+  └─graphical.target @10.940s
+    └─multi-user.target @10.852s
+      └─smbd.service @10.566s +281ms
+        └─nmbd.service @10.332s +224ms
+          └─network-online.target @10.296s
+            └─kodi-waitonnetwork.service @6.078s +4.215s
+              └─connman.service @5.868s +130ms
+                └─dbus.service @4.247s +456ms
+                  └─basic.target @4.155s
+                    └─sockets.target @4.155s
+                      └─lircd.socket @4.154s
+                        └─sysinit.target @4.149s
+                          └─systemd-udevd.service @4.049s +99ms
+                            └─systemd-hwdb-update.service @816ms +3.226s
+                              └─systemd-journald.socket @701ms
+                                └─-.mount @574ms
+                                  └─-.slice @574ms
+9.555s wait-time-sync.service
+5.219s dev-sda2.device
+5.138s dev-sda1.device
+4.992s dev-loop0.device
+4.215s kodi-waitonnetwork.service
+3.226s systemd-hwdb-update.service
+1.376s systemd-udev-trigger.service
+1.315s connman-vpn.service
+1.313s pulseaudio.service
+1.299s sshd.service
+1.091s systemd-logind.service
+1.058s wpa_supplicant.service
+ 794ms opentee_linuxdriver.service
+ 686ms systemd-modules-load.service
+ 598ms update-bl301.service
+ 567ms cron.service
+d94c005b-3b85-4980-b26f-5c296d18686a

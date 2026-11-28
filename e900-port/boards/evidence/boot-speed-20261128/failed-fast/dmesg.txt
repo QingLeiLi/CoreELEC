@@ -1,0 +1,867 @@
+[    0.000000@0]d Booting Linux on physical CPU 0x0
+[    0.000000@0]d Linux version 4.9.269 (runner@runnervm9f4oe) (gcc version 13.2.0 (GCC) ) #1 SMP PREEMPT Sat Nov 28 08:59:14 UTC 2026
+[    0.000000@0]d Boot CPU: AArch64 Processor [410fd034]
+[    0.000000@0]d CoreELEC dt-id: gxlx2_p291_1g_e900v21c
+[    0.000000@0]d Machine model: Skyworth E900V21C (GXLX2, experimental USB)
+[    0.000000@0]d 	3dc00000 - 40000000,    36864 KB, linux,meson-fb
+[    0.000000@0]d 	07400000 - 07500000,     1024 KB, ramoops@0x07400000
+[    0.000000@0]d 	10000000 - 10200000,     2048 KB, firmware_secmon@10000000
+[    0.000000@0]d 	39000000 - 3dc00000,    77824 KB, linux,ion-dev
+[    0.000000@0]d 	36800000 - 39000000,    40960 KB, linux,di_cma
+[    0.000000@0]d Reserved memory: created DMA memory pool at 0x0000000036800000, size 0 MiB
+[    0.000000@0]d 	36800000 - 36800000,        0 KB, linux,ppmgr
+[    0.000000@0]d __reserved_mem_alloc_size, start:0x0000000005000000, end:0x0000000005400000, len:4 MiB
+[    0.000000@0]d 	05000000 - 05400000,     4096 KB, linux,secmon
+[    0.000000@0]d 	26800000 - 33800000,   212992 KB, linux,codec_mm_cma
+[    0.000000@0]d 	36800000 - 36800000,        0 KB, linux,codec_mm_reserved
+[    0.000000@0]d 	35400000 - 36800000,    20480 KB, linux,vdin1_cma
+[    0.000000@0]d 	3dc00000 - 40000000,    36864 KB, linux,meson-fb
+[    0.000000@0]d cma: Reserved 8 MiB at 0x0000000034c00000
+[    0.000000@0]d On node 0 totalpages: 261376
+[    0.000000@0]d   DMA zone: 4092 pages used for memmap
+[    0.000000@0]d   DMA zone: 0 pages reserved
+[    0.000000@0]d   DMA zone: 261376 pages, LIFO batch:31
+[    0.000000@0]d psci: probing for conduit method from DT.
+[    0.000000@0]d psci: PSCIv0.2 detected in firmware.
+[    0.000000@0]d psci: Using standard PSCI v0.2 function IDs
+[    0.000000@0]d psci: Trusted OS migration not required
+[    0.000000@0]d percpu: Embedded 21 pages/cpu s47576 r8192 d30248 u86016
+[    0.000000@0]d pcpu-alloc: s47576 r8192 d30248 u86016 alloc=21*4096
+[    0.000000@0]d pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3 
+[    0.000000@0]d Detected VIPT I-cache on CPU0
+[    0.000000@0]d CPU features: enabling workaround for ARM erratum 845719
+[    0.000000@0]d Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 257284
+[    0.000000@0]d Kernel command line: boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=0 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=4 systemd.show_status=auto
+[    0.000000@0]d vout: 1080p60hz
+[    0.000000@0]d vout: en: 1
+[    0.000000@0]d fb: osd0
+[    0.000000@0]d fb: loaded
+[    0.000000@0]d fb: 0x3dc00000
+[    0.000000@0]d am_vecm: boot hdr_policy: 1
+[    0.000000@0]d PID hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.000000@0]d Dentry cache hash table entries: 131072 (order: 8, 1048576 bytes)
+[    0.000000@0]d Inode-cache hash table entries: 65536 (order: 7, 524288 bytes)
+[    0.000000@0]d Memory: 587384K/1045504K available (13822K kernel code, 2408K rwdata, 6076K rodata, 6016K init, 4781K bss, 56712K reserved, 401408K cma-reserved)
+[    0.000000@0]d Virtual kernel memory layout:
+[    0.000000@0]d     modules : 0xffffff8000000000 - 0xffffff8008000000   (   128 MB)
+[    0.000000@0]d     vmalloc : 0xffffff8008000000 - 0xffffffbebfff0000   (   250 GB)
+[    0.000000@0]d       .text : 0xffffff8009080000 - 0xffffff8009e00000   ( 13824 KB)
+[    0.000000@0]d     .rodata : 0xffffff8009e00000 - 0xffffff800a400000   (  6144 KB)
+[    0.000000@0]d       .init : 0xffffff800a400000 - 0xffffff800a9e0000   (  6016 KB)
+[    0.000000@0]d       .data : 0xffffff800a9e0000 - 0xffffff800ac3a008   (  2409 KB)
+[    0.000000@0]d        .bss : 0xffffff800ac3a008 - 0xffffff800b0e5624   (  4782 KB)
+[    0.000000@0]d     fixed   : 0xffffffbefe7fd000 - 0xffffffbefec00000   (  4108 KB)
+[    0.000000@0]d     PCI I/O : 0xffffffbefee00000 - 0xffffffbeffe00000   (    16 MB)
+[    0.000000@0]d     vmemmap : 0xffffffbf00000000 - 0xffffffc000000000   (     4 GB maximum)
+[    0.000000@0]d               0xffffffbf00004000 - 0xffffffbf01000000   (    15 MB actual)
+[    0.000000@0]d     memory  : 0xffffffc000100000 - 0xffffffc040000000   (  1023 MB)
+[    0.000000@0]d SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000@0]d Preemptible hierarchical RCU implementation.
+[    0.000000@0]d 	Build-time adjustment of leaf fanout to 64.
+[    0.000000@0]d 	RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=4.
+[    0.000000@0]d RCU: Adjusting geometry for rcu_fanout_leaf=64, nr_cpu_ids=4
+[    0.000000@0]d NR_IRQS:64 nr_irqs:64 0
+[    0.000000@0]d irq_meson_gpio: 110 to 8 gpio interrupt mux initialized
+[    0.000000@0]d amlogic_init_sdemmc: register amlogic sdemmc clk
+[    0.000000@0]d amlogic_init_sdemmc: register amlogic sdemmc clk
+[    0.000000@0]d amlogic_init_gpu: register meson gpu clk
+[    0.000000@0]d amlogic_init_media: register meson media clk
+[    0.000000@0]d amlogic_init_misc: register meson misc clk
+[    0.000000@0]d gxl_clkc_init initialization complete
+[    0.000000@0]d arm_arch_timer: Architected cp15 timer(s) running at 24.00MHz (phys).
+[    0.000000@0]d clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000004@0]d sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000042@0]d meson_bc_timer: mclk->mux_reg =        (ptrval),mclk->reg =        (ptrval)
+[    0.000504@0]- Console: colour dummy device 80x25
+[    0.000605@0]- console [tty0] enabled
+[    0.000619@0]- Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000627@0]- pid_max: default: 32768 minimum: 301
+[    0.000722@0]- Security Framework initialized
+[    0.000729@0]- SELinux:  Initializing.
+[    0.000761@0]- SELinux:  Starting in permissive mode
+[    0.000790@0]- Mount-cache hash table entries: 2048 (order: 2, 16384 bytes)
+[    0.000794@0]- Mountpoint-cache hash table entries: 2048 (order: 2, 16384 bytes)
+[    0.001418@0]- ftrace: allocating 43711 entries in 171 pages
+[    0.076001@0]- sched-energy: CPU device node has no sched-energy-costs
+[    0.087718@0]- ASID allocator initialised with 65536 entries
+[    0.116821@0]- secmon: can't fine clear_range
+[    0.118872@0]- chip version = 2A:E - C5:0
+[    0.164118@1]d Detected VIPT I-cache on CPU1
+[    0.164175@1]d CPU1: Booted secondary processor [410fd034]
+[    0.196173@2]d Detected VIPT I-cache on CPU2
+[    0.196219@2]d CPU2: Booted secondary processor [410fd034]
+[    0.228222@3]d Detected VIPT I-cache on CPU3
+[    0.228265@3]d CPU3: Booted secondary processor [410fd034]
+[    0.228342@0]- Brought up 4 CPUs
+[    0.228346@0]- SMP: Total of 4 processors activated.
+[    0.228351@0]- CPU features: detected feature: 32-bit EL0 Support
+[    0.228426@0]- CPU: All CPU(s) started at EL2
+[    0.228449@0]d alternatives: patching kernel code
+[    0.229149@0]- devtmpfs: initialized
+[    0.240845@0]- clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.240858@0]- futex hash table entries: 1024 (order: 4, 65536 bytes)
+[    0.240987@0]- pinctrl core: initialized pinctrl subsystem
+[    0.242026@0]- NET: Registered protocol family 16
+[    0.242582@2]- schedtune: init normalization constants...
+[    0.242586@2]- schedtune: no energy model data
+[    0.242588@2]- schedtune: disabled!
+[    0.260416@2]- cpuidle: using governor menu
+[    0.260510@2]- register canvas platform driver
+[    0.260568@2]- register rdma platform driver
+[    0.261154@2]- vdso: 2 pages (1 code @         (ptrval), 1 data @         (ptrval))
+[    0.261172@2]- hw-breakpoint: found 6 breakpoint and 4 watchpoint registers.
+[    0.262103@2]- DMA: preallocated 2048 KiB pool for atomic allocations
+[    0.262460@2]- clkmsr: clkmsr: driver init
+[    0.262465@2]- codec_mm_module_init
+[    0.262514@2]- media_configs_system_init
+[    0.263471@2]- pstore: using zlib compression
+[    0.263542@2]- console [pstore-1] enabled
+[    0.263545@2]- pstore: Registered ramoops as persistent store backend
+[    0.263549@2]- ramoops: attached 0x100000@0x7400000, ecc: 0/0
+[    0.265322@2]- aml_iomap: amlogic iomap probe done
+[    0.266005@2]- meson_mhu: mhu ffffffc00037fc10 to scp done 0x1
+[    0.268408@2]- vpu: driver version: v20210916(2-gxl)
+[    0.268417@2]- vpu: load vpu_clk: 666666667Hz(7)
+[    0.268582@2]- vpu: clktree_init
+[    0.268753@2]- vpu: set vpu clk: 666666667Hz(7), readback: 664000000Hz(0x2000300)
+[    0.268821@2]- vpu: vpu_probe OK
+[    0.271825@2]- clkmsr: msr_clk_reg0=        (ptrval),msr_clk_reg2=        (ptrval)
+[    0.271836@2]- clkmsr c110875c.meson_clk_msr: failed to get msr ring reg0
+[    0.273230@2]- aml_vdac_config_probe: cpu_id:0, name:meson-gx_l_m-vdac
+[    0.273428@2]- aml_vdac_probe: ok
+[    0.277190@2]- cvbs_out: cvbsout_probe, cpu_id:0,name:meson-gxl-cvbsout
+[    0.277300@2]- cvbs_out: find performance_pal config
+[    0.277309@2]- cvbs_out: register cvbs module server ok
+[    0.277311@2]- cvbs_out: register cvbs module vout2 server ok
+[    0.277316@2]- cvbs_out: chrdev devno 264241152 for disp
+[    0.277536@2]- cvbs_out: create cdev cvbs
+[    0.277541@2]- cvbs_out: cvbsout_probe OK
+[    0.278458@2]- codec_mm codec_mm: assigned reserved memory node linux,codec_mm_cma
+[    0.278535@2]- codec_mm codec_mm: assigned reserved memory node linux,codec_mm_cma
+[    0.278537@2]- codec_mm_probe ok
+[    0.278753@2]- canvas_probe reg=        (ptrval),size=400
+[    0.278769@2]- canvas maped reg_base =        (ptrval)
+[    0.281130@2]- rdma_probe,cpu_type:0, ver:0, len:8,rdma_table_size:65536
+[    0.281138@2]d vpu: switch_vpu_mem_pd: unsupport vpu mod: 57
+[    0.281422@2]- rdma_register, rdma_table_addr         (ptrval) rdma_table_addr_phy 34e00000 reg_buf         (ptrval)
+[    0.281428@2]- rdma_register success, handle 1 table_size 65536
+[    0.281431@2]- set_rdma_handle video rdma handle = 1.
+[    0.281475@2]- classs created ok
+[    0.281484@2]- classs file created ok
+[    0.511011@3]- SCSI subsystem initialized
+[    0.511203@3]- libata version 3.00 loaded.
+[    0.511468@3]- usbcore: registered new interface driver usbfs
+[    0.511527@3]- usbcore: registered new interface driver hub
+[    0.511570@3]- usbcore: registered new device driver usb
+[    0.511702@3]- media: Linux media interface: v0.10
+[    0.511751@3]- Linux video capture interface: v2.00
+[    0.511842@3]- pps_core: LinuxPPS API ver. 1 registered
+[    0.511847@3]- pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.511873@3]- PTP clock support registered
+[    0.512368@3]- secmon: reserve_mem_size:0x300000
+[    0.512436@3]- secmon secmon: assigned reserved memory node linux,secmon
+[    0.512646@3]- secmon: get page:        (ptrval), 5000
+[    0.512668@3]- secmon: share in base: 0xffffff8008378000, share out base: 0xffffff8008374000
+[    0.512671@3]- secmon: phy_in_base: 0x100fe000, phy_out_base: 0x100ff000
+[    0.512936@3]- fb: osd_init_module
+[    0.513358@3]- fb: viu vsync irq: 28
+[    0.513371@3]- fb: rdma irq: 36
+[    0.513606@3]- fb: osd_rdma_init: rdma_table p=0x34e10000,op=0x34e10000 , v=0x        (ptrval)
+[    0.513637@3]- rdma_register, rdma_table_addr         (ptrval) rdma_table_addr_phy 34e11000 reg_buf         (ptrval)
+[    0.513641@3]- rdma_register success, handle 2 table_size 4096
+[    0.513643@3]- fb: osd_rdma_init:osd reset rdma handle = 2.
+[    0.513668@3]- rdma_register, rdma_table_addr         (ptrval) rdma_table_addr_phy 34e12000 reg_buf         (ptrval)
+[    0.513670@3]- rdma_register success, handle 3 table_size 4096
+[    0.513673@3]- fb: osd_rdma_init:osd rdma handle = 3.
+[    0.513686@3]- fb: mem_size: 0x800000
+[    0.513687@3]- fb: mem_size: 0x1800000
+[    0.513689@3]- fb: mem_size: 0x100000
+[    0.513691@3]- fb: mem_size: 0x0
+[    0.513692@3]- fb: mem_size: 0x0
+[    0.513755@3]- meson-fb meson-fb: assigned reserved memory node linux,meson-fb
+[    0.513759@3]- fb: reserved memory base:0x000000003dc00000, size:2400000
+[    0.513900@3]- fb: init fbdev bpp is:32
+[    0.514662@3]- fb: set osd0 reverse as NONE
+[    0.521274@3]- fb: osd probe OK
+[    0.521787@3]- hdmitx: system: Ver: 20210902
+[    0.521888@3]- hdmitx: system: hdmitx_device.drm_feature : 0
+[    0.521911@3]- hdmitx: system: hpd irq = 29, viu1_vsync = -6
+[    0.521921@3]- amhdmitx amhdmitx: experimental GXLX2 HDMI register transport; GXL PHY retained
+[    0.522562@3]d vpu: switch_vpu_mem_pd: unsupport vpu mod: 63
+[    0.522570@3]- hdmitx: hw: alread display in uboot 0x1f
+[    0.522600@3]- hdmitx: hw: avmute set to 1
+[    0.522662@3]- hdmitx: hdmitx_uboot_audio_en[604] data = 0xf
+[    0.524212@3]- vout: error: dummy_venc_clktree_probe: get enci_top_gate error
+[    0.524402@3]- vout: dummy_venc_probe OK
+[    0.525067@3]- hdmitx: hdmitx_set_current_vmode[5644]
+[    0.525073@3]- hdmitx: system: recalc before 1080p60hz 60 1, frac 0
+[    0.525078@3]- hdmitx: system: recalc after 1080p60hz 60 1, frac 0
+[    0.525079@3]- hdmitx: alread display in uboot
+[    0.525093@3]- hdmitx: system: update rx hdr info 0
+[    0.525096@3]- vout: init mode 1080p60hz set ok
+[    0.525100@3]- fb: current vmode=1080p60hz, cmd: 0x60000
+[    0.525103@3]- vout: aml_vout_probe OK
+[    0.525717@3]- chip type:0x2a
+[    0.525723@3]- can't find port descriptor,cpu:42
+[    0.525785@3]- bytes_per_cycle:16, reg:5b
+[    0.526247@3]- MEMORY:[100000+3ff00000]
+[    0.526254@3]- ramdump_probe, storage device:data
+[    0.526256@3]- NO valid ramdump args:0 0
+[    0.526276@3]- ramdump_probe, set sticky to 8400
+[    0.526539@3]- Advanced Linux Sound Architecture Driver Initialized.
+[    0.527486@3]- NetLabel: Initializing
+[    0.527491@3]- NetLabel:  domain hash size = 128
+[    0.527493@3]- NetLabel:  protocols = UNLABELED CIPSOv4
+[    0.527550@3]- NetLabel:  unlabeled traffic allowed by default
+[    0.528363@3]- clocksource: Switched to clocksource arch_sys_counter
+[    0.592945@1]- VFS: Disk quotas dquot_6.6.0
+[    0.593032@1]- VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    0.593153@1]- FS-Cache: Loaded
+[    0.600065@1]d hdmitx: edid: EDID Parser:
+[    0.600110@1]d hdmitx: edid: get dtd0 vic: 16
+[    0.600116@1]d hdmitx: edid: get dtd1 vic: 4
+[    0.600121@1]d hdmitx: edid: get dtd2 vic: 3
+[    0.600126@1]d hdmitx: edid: get dtd3 vic: 18
+[    0.600167@1]d hdmitx: edid: find IEEEOUT
+[    0.600190@1]- hdmitx: edid: blk0 raw data
+[    0.600227@1]- hdmitx: edid: 
+[    0.600227@1]- 00ffffffffffff0005e3012764c900000b1d0103803c22782a8671a355539d25
+[    0.600227@1]- 0d5054bfef00d1c0b30095008180814081c001010101565e00a0a0a029503020
+[    0.600227@1]- 350055502100001e000000ff00474e584b334841303531353536000000fc0051
+[    0.600227@1]- 32375031420a202020202020000000fd00324c1e631e000a2020202020200113
+[    0.600227@1]- 
+[    0.600227@1]- 
+[    0.600230@1]- hdmitx: edid: blk1 raw data
+[    0.600265@1]- hdmitx: edid: 
+[    0.600265@1]- 02031ef14b101f051404130312021101230907078301000065030c002000023a
+[    0.600265@1]- 801871382d40582c450055502100001e011d007251d01e206e28550055502100
+[    0.600265@1]- 001e8c0ad08a20e02d10103e96005550210000188c0ad090204031200c405500
+[    0.600265@1]- 555021000018f03c00d051a0355060883a0055502100001c00000000000000e7
+[    0.600265@1]- 
+[    0.600265@1]- 
+[    0.600272@1]- hdmitx: system: update rx hdr info 0
+[    0.600744@1]- hdmitx: system: can't request viu1_vsync irq
+[    0.600765@1]- hdmitx: hdmitx: get vic 31 cscd 
+[    0.600773@1]- hdmitx: hdmitx: mode name 1920x1080p50hz
+[    0.600793@1]- hdmitx: hdmitx: tmds clock 148
+[    0.600795@1]- hdmitx: hdmitx: act clock: 148
+[    0.600816@0]h hdmitx: system: irq 80000002 0
+[    0.607623@0]h hdmitx: system: irq 80000002 0
+[    0.609040@0]- NET: Registered protocol family 2
+[    0.628919@0]- TCP established hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.628985@0]- TCP bind hash table entries: 8192 (order: 5, 131072 bytes)
+[    0.629157@0]- TCP: Hash tables configured (established 8192 bind 8192)
+[    0.629299@0]- UDP hash table entries: 512 (order: 2, 16384 bytes)
+[    0.629323@0]- UDP-Lite hash table entries: 512 (order: 2, 16384 bytes)
+[    0.629604@0]- NET: Registered protocol family 1
+[    0.630151@0]- RPC: Registered named UNIX socket transport module.
+[    0.630155@0]- RPC: Registered udp transport module.
+[    0.630156@0]- RPC: Registered tcp transport module.
+[    0.630159@0]- RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.630170@0]- PCI: CLS 0 bytes, default 64
+[    0.633278@0]- Unpacking initramfs...
+[    0.661717@3]- clear:21800000, free:21800000, tick:123849 us
+[    0.755348@0]- Freeing initrd memory: 3804K
+[    0.755886@0]- efusekeynum: 4
+[    0.755904@0]- efusekeyname:             mac	offset:     0	size:     6
+[    0.755916@0]- efusekeyname:          mac_bt	offset:     6	size:     6
+[    0.755927@0]- efusekeyname:        mac_wifi	offset:    12	size:     6
+[    0.755937@0]- efusekeyname:            usid	offset:    18	size:    16
+[    0.756175@0]- efuse efuse: probe OK!
+[    0.757213@0]- unifykey: no efuse-version set, use default value: -1
+[    0.757556@0]- unifykey: aml_unifykeys_init done!
+[    0.758118@0]- hw perfevents: clusterb_enabled = 0
+[    0.758126@0]- hw perfevents: cpumasks 0xf, 0x0
+[    0.758153@0]- hw perfevents: cluster A irq = 15
+[    0.758241@0]- hw perfevents: enabled with armv8_pmuv3 PMU driver, 7 counters available
+[    0.760408@0]- audit: initializing netlink subsys (disabled)
+[    0.760456@0]- audit: type=2000 audit(0.712:1): initialized
+[    0.761250@0]- workingset: timestamp_bits=45 max_order=18 bucket_order=0
+[    0.769880@0]- squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    0.770553@0]- FS-Cache: Netfs 'nfs' registered for caching
+[    0.771192@0]- NFS: Registering the id_resolver key type
+[    0.771215@0]- Key type id_resolver registered
+[    0.771218@0]- Key type id_legacy registered
+[    0.771226@0]- nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[    0.771229@0]- nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+[    0.771430@0]- FS-Cache: Netfs 'cifs' registered for caching
+[    0.772309@0]- SELinux:  Registering netfilter hooks
+[    0.775527@0]- NET: Registered protocol family 38
+[    0.775539@0]- Key type asymmetric registered
+[    0.775544@0]- Asymmetric key parser 'x509' registered
+[    0.775772@0]- Block layer SCSI generic (bsg) driver version 0.4 loaded (major 241)
+[    0.775778@0]- io scheduler noop registered (default)
+[    0.775781@0]- io scheduler deadline registered
+[    0.775929@0]- io scheduler cfq registered
+[    0.778391@1]d random: fast init done
+[    0.778426@1]- random: crng init done
+[    0.778622@0]- [drm] Initialized
+[    0.778727@0]- Unable to detect cache hierarchy for CPU 0
+[    0.784084@0]- loop: module loaded
+[    0.785382@0]- mtdoops: mtd device (mtddev=name/number) must be supplied
+[    0.786173@0]- libphy: Fixed MDIO Bus: probed
+[    0.787293@0]-  ee eth reset:Addr = 000000003c37aee0
+[    0.787517@0]- meson6-dwmac c9410000.ethernet: no reset control found
+[    0.787523@0]- stmmac - user ID: 0x11, Synopsys ID: 0x37
+[    0.787526@0]-  Ring mode enabled
+[    0.787529@0]-  DMA HW capability register supported
+[    0.787532@0]-  Normal descriptors
+[    0.787534@0]-  RX Checksum Offload Engine supported
+[    0.787536@0]- 	COE Type 2
+[    0.787537@0]-  TX Checksum insertion supported
+[    0.787539@0]-  Wake-Up On Lan supported
+[    0.787600@0]- eth%d: device MAC address 02:c9:28:d4:bc:8f
+[    0.787602@0]-  Enable RX Mitigation via HW Watchdog Timer
+[    0.788461@0]- libphy: yzhang..read phyaddr=8, phyid=01814400
+[    0.790628@0]- libphy: stmmac: probed
+[    0.790637@0]- eth%d: PHY ID 01814400 at 8 IRQ POLL (stmmac-0:08) active
+[    0.792313@0]- ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.792378@0]- ehci-pci: EHCI PCI platform driver
+[    0.792472@0]- ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    0.792492@0]- ohci-pci: OHCI PCI platform driver
+[    0.793076@0]- usbcore: registered new interface driver cdc_acm
+[    0.793081@0]- cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
+[    0.793147@0]- usbcore: registered new interface driver usb-storage
+[    0.793251@0]- usbcore: registered new interface driver usbserial
+[    0.793293@0]- usbcore: registered new interface driver usbserial_generic
+[    0.793325@0]- usbserial: USB Serial support registered for generic
+[    0.793719@0]- mousedev: PS/2 mouse device common for all mice
+[    0.794115@0]- i2c /dev entries driver
+[    0.795205@0]- cpu cpu0: bL_cpufreq_init: CPU 0 initialized
+[    0.796397@0]- arm_big_little: bL_cpufreq_register: Registered platform driver: scpi
+[    0.797938@0]- ledtrig-cpu: registered to indicate activity on CPUs
+[    0.798386@0]- hidraw: raw HID events driver (C) Jiri Kosina
+[    0.798728@0]- usbcore: registered new interface driver usbhid
+[    0.798732@0]- usbhid: USB HID core driver
+[    0.799162@0]- c81004c0.serial: clock gate not found
+[    0.799239@0]- meson_uart c81004c0.serial: ==uart0 reg addr = 0000000089c3ed51
+[    0.799279@0]- c81004c0.serial: ttyS0 at MMIO 0xc81004c0 (irq = 18, base_baud = 1500000) is a meson_uart
+[    0.799294@0]- meson_uart c81004c0.serial: ttyS0 use xtal(8M) 24000000 change 0 to 115200
+[    0.899581@0]- console [ttyS0] enabled
+[    0.900093@0]- c11084c0.serial: clock gate not found
+[    0.904560@0]- meson_uart c11084c0.serial: ==uart1 reg addr = 000000004b824920
+[    0.904611@0]- c11084c0.serial: ttyS1 at MMIO 0xc11084c0 (irq = 19, base_baud = 10375000) is a meson_uart
+[    0.905730@0]- amlogic-new-usb2 d0078000.usb2phy: USB2 phy probe:phy_mem:0xd0078000, iomap phy_base:0xffffff8008529000
+[    0.905970@0]- amlogic-new-usb3 d0078080.usb3phy: This phy has no usb port
+[    0.911349@0]- amlogic-new-usb3 d0078080.usb3phy: USB3 phy probe:phy_mem:0xd0078080, iomap phy_base:0xffffff800852d080
+[    0.913631@0]- aml_dma c883e000.aml_dma: Aml dma
+[    0.915123@0]- aml_aes_dma c883e000.aml_dma:aml_aes: Aml AES_dma
+[    0.916071@0]- aml_tdes_dma c883e000.aml_dma:aml_tdes: Aml TDES_dma
+[    0.919069@0]- ion_dev ion_dev: assigned reserved memory node linux,ion-dev
+[    0.919084@0]- ion-dev: failed get fb memory
+[    0.919092@0]- ion-dev: failed get secure memory
+[    0.919388@0]- ion-dev: add heap type:0 id:0
+[    0.919463@0]- ion-dev: add heap type:5 id:5
+[    0.919517@0]- ion-dev: add heap type:4 id:4
+[    0.919519@0]- ion-dev: dev_ion_probe, create 3 heaps
+[    0.919694@0]- ge2d: ge2d_init_module
+[    0.920522@0]- ge2d: ge2d clock is 398 MHZ
+[    0.920534@0]- ge2d: register address resource is not found
+[    0.920574@0]- ge2d: reserved mem is not used
+[    0.920627@0]- ge2d: ge2d start monitor
+[    0.921250@0]- new arch is :0.
+[    0.921364@0]- [tsync_pcr_init]init success.
+[    0.921656@0]- e900-video: legacy_blend=1 mif=legacy vd1_gen=0x1a50 vd1_canvas=0x1a51 vd1_fmt=0x1a68
+[    0.921668@0]- e900-hw-init: queued fixed register init; early probe retained
+[    0.921702@0]- amvideom vsync irq: 28, cpu_type:1
+[    0.921732@0]- create_ge2d_work_queue video task ok
+[    0.921735@0]- e900-hw-init: probe.complete
+[    0.922557@0]- create_video_receiver video_render.0  0000000029081ef4, path_id:2 success
+[    0.922564@0]- create_video_receiver video_render.1  00000000ba479f61, path_id:3 success
+[    0.922629@0]- e900-hw-init: video_init.complete subscribe.begin
+[    0.922631@0]- e900-hw-init: notify.enter
+[    0.922635@0]- e900-hw-init: notify.locked ready_vc=0 ready_hhi=0 ready_dmc=0
+[    0.922637@0]- e900-hw-init: notify.exit ret=-11
+[    0.922639@0]- e900-hw-init: subscribe.end ret=0
+[    0.922977@0]- amvideocap_probe,amvideocap
+[    0.924567@0]- use cma buf.
+[    0.927555@0]- hdmitx: hdcp: hdmitx_hdcp_init
+[    0.927591@0]h rdma_watchdog_setting rdma reset: 21, force flag:-1
+[    0.927598@0]h fb: osd rdma restart! 0x0
+[    0.928299@0]- DI: di_module_init ok.
+[    0.928576@0]- DI: di_probe:
+[    0.928586@0]- DI: di_probe: major 508
+[    0.928815@0]- match name: di_deinterlace:id[255]
+[    0.928888@0]- deinterlace deinterlace: assigned reserved memory node linux,di_cma
+[    0.928892@0]- di:flag_cma=1
+[    0.928895@0]- DI: CMA size 0x2800000.
+[    0.928915@0]- pre_irq:40
+[    0.928923@0]- post_irq:41
+[    0.928926@0]- DI: di_probe allocate rdma channel 0.
+[    0.928932@0]- di_get_vpu_clkb: get clk vpu error.
+[    0.932037@0]- DI: vpu clkb <250000000, 500000000>
+[    0.932040@0]- di_get_vpu_clkb: get vpu clkb gate error.
+[    0.937341@0]- DI:enable vpu clkb.
+[    0.937360@0]- DI: support multi decoding 219~220~221.
+[    0.937535@0]- DI: ic_id:0x11 [b]0
+[    0.937548@0]- DI: di_probe:Di use HRTIMER
+[    0.937756@0]- DI: di_probe:ok
+[    0.937859@0]- dim:dim_module_init
+[    0.938520@0]- dim:dim_module_init finish
+[    0.938523@0]- dil:dil_init.
+[    0.938734@0]- dil:dil_init ok.
+[    0.939198@0]- vdin_drv_init: vdin driver init done
+[    0.939595@0]- [viuin..]viuin_init_module done
+[    0.939862@0]- Reserved memory: failed to init DMA memory pool at 0x0000000036800000, size 0 MiB
+[    0.946064@0]- PPMGRDRV: info: ppmgr_dev major:506
+[    0.946431@0]- aml_vecm_init:module init
+[    0.946789@0]- VECM probe start
+[    0.947137@0]- Can't find  tv_mode.
+[    0.947142@0]- Can't find  lut3d_en.
+[    0.947148@0]- Can't find  blue stretch en.
+[    0.947191@0]- vlock clk not cfg
+[    0.964364@0]- vlock_status_init vlock_en:1
+[    0.964549@0]- aml_vecm_probe: ok
+[    0.964647@0]- amdolby_vision_init:module init
+[    0.966700@0]- meson-mmc: mmc driver version: 3.02, 2017-05-15: New Emmc Host Controller
+[    0.967782@1]- meson-mmc: gpio_cd = 1c1
+[    1.004394@1]- meson-mmc: meson_mmc_probe() : success!
+[    1.006349@1]- aml_vrtc rtc: rtc core: registered aml_vrtc as rtc0
+[    1.006522@1]- input: aml_vkeypad as /devices/platform/rtc/input/input0
+[    1.008241@1]- input: cec_input as /devices/virtual/input/input1
+[    1.008444@1]- cectx c810023c.aocec: not find 'port_num'
+[    1.008504@1]- get sleep state error!
+[    1.008507@1]- get A default state
+[    1.008526@1]- cectx c810023c.aocec: no clock regs
+[    1.020145@1]- cectx c810023c.aocec: wakeup_reason:0x0
+[    1.020305@1]- cectx c810023c.aocec: wakeup_data: 0x0 0x0
+[    1.025588@1]- audio_dsp: [dsp]register dsp to char divece(257)
+[    1.025801@1]- amaudio: amaudio: driver amaudio init!
+[    1.026187@1]- amaudio: amaudio_init - amaudio: driver amaudio succuess!
+[    1.027190@1]- sysled: module init
+[    1.027612@1]- meson_wdt c11098d0.watchdog: start watchdog
+[    1.027617@1]- meson_wdt c11098d0.watchdog: create hrtimer for watch dog
+[    1.027923@1]- meson_wdt c11098d0.watchdog: AML Watchdog Timer probed done
+[    1.030822@1]- can't get port desc
+[    1.031568@1]- defendkey c8834500.defendkey: Reserved memory is not enough!
+[    1.032981@1]- defendkey: probe of c8834500.defendkey failed with error -22
+[    1.034079@1]- bl301_manager: driver init
+[    1.034636@1]- usbcore: registered new interface driver snd-usb-audio
+[    1.036153@1]- aml_codec_T9015 c8832000.t9015: aml_T9015_audio_codec_probe
+[    1.036180@1]- T9015 acodec used by meson, tdmout:0
+[    1.037685@1]- snd_i2s_dai: clock source gate top_glue : 00000000df2c2deb
+[    1.037715@1]- snd_i2s_dai: clock source gate aud_buf : 0000000027eed2f2
+[    1.037742@1]- snd_i2s_dai: clock source gate i2s_out : 000000007e9d685c
+[    1.037772@1]- snd_i2s_dai: clock source gate amclk_measure : 000000000b115066
+[    1.037804@1]- snd_i2s_dai: clock source gate aififo2 : 000000004bd370bc
+[    1.037841@1]- snd_i2s_dai: clock source gate aud_mixer : 00000000929d8397
+[    1.037880@1]- snd_i2s_dai: clock source gate mixer_reg : 0000000097d01825
+[    1.037924@1]- snd_i2s_dai: clock source gate adc : 000000005fed7c0d
+[    1.037971@1]- snd_i2s_dai: clock source gate top_level : 00000000cf8c5d3c
+[    1.038023@1]- snd_i2s_dai: clock source gate aoclk : 00000000c0d723a8
+[    1.038076@1]- snd_i2s_dai: clock source gate aud_in : 00000000ad549555
+[    1.038084@1]- snd_i2s_dai: ignore aud_buf/vdac_clk gate
+[    1.038309@1]- aml-i2s-dai I2S: I2S Mic is in platform!
+[    1.039069@1]- snd_pcm_dai: pcm mode detection =1
+[    1.039263@1]- snd_pcm_dai: tdm config: 0x1, 0x1, 2, 16
+[    1.039742@1]- snd_spdif_dai: enterd aml_spdif_play,set_clock:-1,sample_rate=4
+[    1.039856@1]- snd_spdif_dai: set normal 512 fs /4 fs
+[    1.039858@1]- snd_spdif_dai: set 958 audio clk div 4
+[    1.040580@1]- spdif-dit spdif_codec: audio_spdif_out_mute can't get pinctrl
+[    1.042061@1]- spdif-dit spdif_codec: audio_spdif_in_mute can't get pinctrl
+[    1.048959@1]- spdif-dit spdif_codec: audio_spdif_in can't get pinctrl
+[    1.056093@1]- snd_card_meson: aml_card_dai_parse_of codec_node count:1
+[    1.056179@1]- snd_card_meson: aml_card_dai_parse_of codec_node count:1
+[    1.056284@1]- snd_card_meson: aml_card_dai_parse_of codec_node count:1
+[    1.132382@1]- hdmitx: system: plugin
+[    1.167584@0]h rdma_watchdog_setting rdma reset: 21, force flag:0
+[    1.167590@0]h fb: osd rdma restart! 0x0
+[    1.208429@1]- meson-mmc: card IN
+[    1.261795@1]d hdmitx: edid: EDID Parser:
+[    1.261819@1]d hdmitx: edid: get dtd0 vic: 16
+[    1.261823@1]d hdmitx: edid: get dtd1 vic: 4
+[    1.261826@1]d hdmitx: edid: get dtd2 vic: 3
+[    1.261829@1]d hdmitx: edid: get dtd3 vic: 18
+[    1.261851@1]d hdmitx: edid: find IEEEOUT
+[    1.261871@1]- hdmitx: edid: blk0 raw data
+[    1.261908@1]- hdmitx: edid: 
+[    1.261908@1]- 00ffffffffffff0005e3012764c900000b1d0103803c22782a8671a355539d25
+[    1.261908@1]- 0d5054bfef00d1c0b30095008180814081c001010101565e00a0a0a029503020
+[    1.261908@1]- 350055502100001e000000ff00474e584b334841303531353536000000fc0051
+[    1.261908@1]- 32375031420a202020202020000000fd00324c1e631e000a2020202020200113
+[    1.261908@1]- 
+[    1.261908@1]- 
+[    1.261911@1]- hdmitx: edid: blk1 raw data
+[    1.261945@1]- hdmitx: edid: 
+[    1.261945@1]- 02031ef14b101f051404130312021101230907078301000065030c002000023a
+[    1.261945@1]- 801871382d40582c450055502100001e011d007251d01e206e28550055502100
+[    1.261945@1]- 001e8c0ad08a20e02d10103e96005550210000188c0ad090204031200c405500
+[    1.261945@1]- 555021000018f03c00d051a0355060883a0055502100001c00000000000000e7
+[    1.261945@1]- 
+[    1.261945@1]- 
+[    1.261949@1]- hdmitx: system: update physical size: 600 340
+[    1.263972@1]- hdmitx: E: ddc rd8b 0x50 0x00 0x00
+[    1.264624@2]- snd_card_meson: headphone detection disable=1
+[    1.264630@2]- snd_card_meson: no spk event delay time set
+[    1.265477@2]- aml_meson_snd_card aml_sound_meson: T9015-audio-hifi <-> I2S mapping ok
+[    1.266105@2]- aml_meson_snd_card aml_sound_meson: dit-hifi <-> SPDIF mapping ok
+[    1.266202@2]- snd_pcm: enter aml_pcm_new dai->name: PCM dai->id: 0
+[    1.266579@2]- aml_meson_snd_card aml_sound_meson: pcm2bt-pcm <-> PCM mapping ok
+[    1.266607@2]- aml_meson_snd_card aml_sound_meson: ASoC: no source widget found for LOUTL
+[    1.268998@1]- hdmitx: system: get current mode: 1080p60hz
+[    1.269003@1]- hdmitx: system: update physical size: 600 340
+[    1.269029@1]- hdmitx: hdmitx: display colourdepth is auto set to 8 bits (VIC: 16)
+[    1.269063@1]- hdmitx: video: already init VIC = 0  Now VIC = 16
+[    1.269069@1]- hdmitx: hw: div40: 0
+[    1.269193@2]- aml_meson_snd_card aml_sound_meson: ASoC: Failed to add route LOUTL -> direct -> Ext Spk
+[    1.278490@2]- aml_meson_snd_card aml_sound_meson: ASoC: no source widget found for LOUTR
+[    1.286593@2]- aml_meson_snd_card aml_sound_meson: ASoC: Failed to add route LOUTR -> direct -> Ext Spk
+[    1.296068@2]- aml-spdif-dai SPDIF: ASoC: Failed to create S/PDIF Playback debugfs file
+[    1.296073@2]- aml-spdif-dai SPDIF: ASoC: Failed to create S/PDIF Capture debugfs file
+[    1.297510@3]- snd_card_meson: enable i2sclk in startup
+[    1.298378@1]- hdmitx: E: ddc w1b 0x54 0x20 0x00
+[    1.298389@1]- hdmitx: frac_rate = 0
+[    1.298394@1]- hdmitx: config HPLL = 5940000 frac_rate = 0
+[    1.298450@1]- hdmitx: HPLL: 0xc000027b
+[    1.298451@1]- hdmitx: config HPLL done
+[    1.298458@1]- hdmitx: set_hpll_od3_clk_div[687] div = 6
+[    1.298465@1]- hdmitx: j = 4  vid_clk_div = 1
+[    1.298481@1]- hdmitx: set enc for VIC: 16
+[    1.302494@2]- Register vad
+[    1.303033@2]- Initializing XFRM netlink socket
+[    1.303052@2]- IPsec XFRM device driver
+[    1.303597@2]- NET: Registered protocol family 10
+[    1.304780@0]- NET: Registered protocol family 17
+[    1.304849@0]- Key type dns_resolver registered
+[    1.305230@0]- Registered swp emulation handler
+[    1.305244@0]- Registered cp15_barrier emulation handler
+[    1.305252@0]- Registered setend emulation handler
+[    1.305295@0]- disable EAS feature
+[    1.306002@0]- registered taskstats version 1
+[    1.312961@3]- dwc3 c9000000.dwc3: Configuration mismatch. dr_mode forced to host
+[    1.316300@3]- xhci-hcd xhci-hcd.0.auto: xHCI Host Controller
+[    1.316325@3]- xhci-hcd xhci-hcd.0.auto: new USB bus registered, assigned bus number 1
+[    1.316706@3]- xhci-hcd xhci-hcd.0.auto: hcc params 0x0228f664 hci version 0x100 quirks 0x02010010
+[    1.316768@3]- xhci-hcd xhci-hcd.0.auto: irq 26, io mem 0xc9000000
+[    1.316918@3]- usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[    1.316923@3]- usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.316927@3]- usb usb1: Product: xHCI Host Controller
+[    1.316930@3]- usb usb1: Manufacturer: Linux 4.9.269 xhci-hcd
+[    1.316934@3]- usb usb1: SerialNumber: xhci-hcd.0.auto
+[    1.317631@0]- hub 1-0:1.0: USB hub found
+[    1.317668@0]- hub 1-0:1.0: 2 ports detected
+[    1.318016@0]- xhci-hcd xhci-hcd.0.auto: xHCI Host Controller
+[    1.318030@0]- xhci-hcd xhci-hcd.0.auto: new USB bus registered, assigned bus number 2
+[    1.318110@0]- usb usb2: We don't know the algorithms for LPM for this host, disabling LPM.
+[    1.318201@0]- usb usb2: New USB device found, idVendor=1d6b, idProduct=0003
+[    1.318206@0]- usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.318210@0]- usb usb2: Product: xHCI Host Controller
+[    1.318213@0]- usb usb2: Manufacturer: Linux 4.9.269 xhci-hcd
+[    1.318217@0]- usb usb2: SerialNumber: xhci-hcd.0.auto
+[    1.318791@2]- hub 2-0:1.0: USB hub found
+[    1.318824@2]- hub 2-0:1.0: config failed, hub doesn't have any ports! (err -19)
+[    1.320714@2]- usb usb2: Unsupported the hub
+[    1.323838@1]- meson-mmc: normal card in
+[    1.325290@2]- aml_vrtc rtc: setting system clock to 2017-01-01 00:00:25 UTC (1483228825)
+[    1.325686@2]- dwc_otg c9100000.dwc2_a: dwc_otg_driver_probe(00000000952cd159)
+[    1.325719@2]- dwc_otg: usb0: type: 2 speed: 0, config: 0, dma: 0, id: 0, phy: d0078000, ctrl: 0
+[    1.325726@2]- dwc_otg_driver_probe host only, not probe usb_otg!!!
+[    1.327503@0]- cpucore_cooling_register, max_cpu_core_num:4
+[    1.333399@0]- gxbb_pm: enter meson_pm_probe!
+[    1.333419@0]- gxbb_pm: system suspend level: 1
+[    1.333427@0]- no vddio3v3_en pin
+[    1.333443@0]- pm-meson aml_pm: Can't get switch_clk81
+[    1.333523@0]- gxbb_pm: meson_pm_probe done
+[    1.333940@0]- e900-hw-init: notify.enter
+[    1.333947@0]- e900-hw-init: notify.locked ready_vc=1 ready_hhi=1 ready_dmc=1
+[    1.333950@0]- e900-hw-init: begin fixed video register completion
+[    1.333953@0]- e900-hw-init: step=1 read.begin reg=1d27
+[    1.333957@0]- e900-hw-init: step=1 read.end reg=1d27 value=fff00fff
+[    1.333960@0]- e900-hw-init: step=1 write.begin reg=1d27 value=fff00fff
+[    1.333964@0]- e900-hw-init: step=1 write.end reg=1d27
+[    1.333966@0]- e900-hw-init: step=2 write.begin reg=1d1a value=1000
+[    1.333968@0]- e900-hw-init: step=2 write.end reg=1d1a
+[    1.333971@0]- e900-hw-init: step=3 write.begin reg=1d1e value=1000
+[    1.333973@0]- e900-hw-init: step=3 write.end reg=1d1e
+[    1.333975@0]- e900-hw-init: step=4 write.begin reg=1d00 value=4080200
+[    1.333977@0]- e900-hw-init: step=4 write.end reg=1d00
+[    1.333979@0]- e900-hw-init: fifo/windows/dummy submitted
+[    1.333981@0]- e900-hw-init: step=5 write.begin reg=1d91 value=0
+[    1.333983@0]- e900-hw-init: step=5 write.end reg=1d91
+[    1.333986@0]- e900-hw-init: step=6 write.begin reg=1d92 value=0
+[    1.333988@0]- e900-hw-init: step=6 write.end reg=1d92
+[    1.333990@0]- e900-hw-init: step=7/8 skip SR0 sync; sr_support=0
+[    1.333992@0]- e900-hw-init: sharp/bypass submitted
+[    1.333994@0]- e900-hw-init: step=10 read.begin reg=1d22
+[    1.333997@0]- e900-hw-init: step=10 read.end reg=1d22 value=8080808
+[    1.333999@0]- e900-hw-init: step=11 read.begin reg=1d27
+[    1.334002@0]- e900-hw-init: step=11 read.end reg=1d27 value=fff00fff
+[    1.334004@0]- e900-hw-init: step=12 read.begin reg=1d1a
+[    1.334006@0]- e900-hw-init: step=12 read.end reg=1d1a value=1000
+[    1.334008@0]- e900-hw-init: step=13 read.begin reg=1d1e
+[    1.334011@0]- e900-hw-init: step=13 read.end reg=1d1e value=1000
+[    1.334014@0]- e900-hw-init: complete fifo=fff00fff vd1=1000 vd2=1000 hold=8
+[    1.334016@0]- e900-hw-init: notify.exit ret=0
+[    1.334018@0]- ALSA device list:
+[    1.334021@0]-   #0: AML-MESONAUDIO
+[    1.336272@0]- Freeing unused kernel memory: 6016K
+[    1.340414@1]- hdmitx: hw:  config hdmitx IP vic = 16 cd:4 cs: 2
+[    1.350528@1]- hdmitx: video: Sink is HDMI device
+[    1.350567@1]- hdmitx: hw: set audio
+[    1.350578@1]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[    1.350592@1]- hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+[    1.350595@1]- hdmitx: hw: aud_n_para = 6144
+[    1.350603@1]- hdmitx: hw: set channel status
+[    1.350617@1]- hdmitx: hw: [0x10e3] = 0x1f
+[    1.350637@1]- hdmitx: audio: Audio Type: PCM
+[    1.350640@1]- hdmitx: system: update rx hdr info 0
+[    1.350643@1]- hdmitx: hw: set audio
+[    1.350645@1]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[    1.350657@1]- hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+[    1.350659@1]- hdmitx: hw: aud_n_para = 6144
+[    1.350666@1]- hdmitx: hw: set channel status
+[    1.350681@1]- hdmitx: hw: [0x10e3] = 0x1f
+[    1.350700@1]- hdmitx: audio: Audio Type: PCM
+[    1.389472@0]- fb: malloc_osd_memory, cma:ffffff800acf57f8
+[    1.389481@0]- fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+[    1.389535@0]- fb: malloc_osd_memory, 1255, fb_index=0,fb_rmem_size=25165824
+[    1.390317@2]- fb: malloc_osd_memory, cma mem
+[    1.390323@2]- fb: Frame buffer memory assigned at
+[    1.390333@2]- fb:  0, phy: 0x000000003e400000, vir:0xffffffc03e400000, size=24576K
+[    1.390333@2]- 
+[    1.390337@2]- fb: logo_index=0,fb_index=0
+[    1.390393@2]- fb: osd[0] canvas.idx =0x40
+[    1.390395@2]- fb: osd[0] canvas.addr=0x3e400000
+[    1.390397@2]- fb: osd[0] canvas.width=7680
+[    1.390398@2]- fb: osd[0] canvas.height=3240
+[    1.390400@2]- fb: osd[0] frame.width=1920
+[    1.390401@2]- fb: osd[0] frame.height=1080
+[    1.390403@2]- fb: osd[0] out_addr_id =0x0
+[    1.508257@1]- meson-aml-mmc d0072000.sd: divider requested rate 50000000 != actual rate 49800000: ret=0
+[    1.508332@1]- meson-aml-mmc d0072000.sd: divider requested rate 50000000 != actual rate 49800000: ret=0
+[    1.508366@1]- sd: new high speed SD card at address 0260
+[    1.508867@1]- sd: clock 49800000, 4-bit-bus-width
+[    1.508867@1]-  
+[    1.508868@1]- mmcblk0: sd:0260       1.89 GiB 
+[    1.510246@1]-  mmcblk0: p1
+[    1.644381@0]- usb 1-1: new high-speed USB device number 2 using xhci-hcd
+[    1.785277@0]- usb 1-1: New USB device found, idVendor=0dd8, idProduct=3708
+[    1.785281@0]- usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[    1.785285@0]- usb 1-1: Product: OnlyDisk
+[    1.785288@0]- usb 1-1: Manufacturer: Netac
+[    1.785291@0]- usb 1-1: SerialNumber: FC157462531726A0
+[    1.786401@0]- usb-storage 1-1:1.0: USB Mass Storage device detected
+[    1.786833@0]- scsi host0: usb-storage 1-1:1.0
+[    2.412677@2]- fb: osd_release now.index=0,open_count=1
+[    2.414533@1]- fb: malloc_osd_memory, cma:ffffff800acf57f8
+[    2.414543@1]- fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+[    2.414547@1]- fb: malloc_osd_memory, 1255, fb_index=1,fb_rmem_size=1048576
+[    2.414819@1]- fb: malloc_osd_memory, cma mem
+[    2.414823@1]- fb: Frame buffer memory assigned at
+[    2.414831@1]- fb:  1, phy: 0x000000003fc00000, vir:0xffffffc03fc00000, size=1024K
+[    2.414831@1]- 
+[    2.414836@1]- fb: logo_index=0,fb_index=1
+[    2.414840@1]- fb: ---------------clear fb1 memory 00000000edf8364f
+[    2.415256@1]- fb: osd[1] canvas.idx =0x43
+[    2.415259@1]- fb: osd[1] canvas.addr=0x3fc00000
+[    2.415261@1]- fb: osd[1] canvas.width=128
+[    2.415263@1]- fb: osd[1] canvas.height=32
+[    2.415265@1]- fb: osd[1] frame.width=32
+[    2.415267@1]- fb: osd[1] frame.height=32
+[    2.415269@1]- fb: osd[1] out_addr_id =0x0
+[    2.683915@0]d vpu: switch_vpu_mem_pd: unsupport vpu mod: 12
+[    2.797069@1]- scsi 0:0:0:0: Direct-Access     Netac    OnlyDisk         3.00 PQ: 0 ANSI: 4
+[    2.798181@0]- sd 0:0:0:0: Attached scsi generic sg0 type 0
+[    2.798579@1]- sd 0:0:0:0: [sda] 60825600 512-byte logical blocks: (31.1 GB/29.0 GiB)
+[    2.798761@1]- sd 0:0:0:0: [sda] Write Protect is off
+[    2.798768@1]- sd 0:0:0:0: [sda] Mode Sense: 03 00 00 00
+[    2.798917@1]- sd 0:0:0:0: [sda] No Caching mode page found
+[    2.798970@1]- sd 0:0:0:0: [sda] Assuming drive cache: write through
+[    2.807289@1]-  sda: sda1 sda2
+[    2.809345@1]- sd 0:0:0:0: [sda] Attached SCSI removable disk
+[    3.436669@1]- fb: osd_release now.index=1,open_count=1
+[    3.748367@0]- lcd vlock_en=1, vlock_mode=0x4
+[    4.460716@2]- VID: VD1 off
+[    4.460897@2]- fb: osd[0] enable: 1 (platform_init)
+[    5.484608@2]- fb: osd[1] enable: 0 (platform_init)
+[    6.518202@1]- init: ### Loading kernel modules
+[    6.520613@2]- init: ### Loading kernel module font
+[    6.522044@2]- init: ### Loading kernel module softcursor
+[    6.523537@3]- init: ### Loading kernel module bitblit
+[    6.525127@0]- init: ### Loading kernel module fbcon
+[    7.532388@1]- Console: switching to colour frame buffer device 240x67
+[    7.556297@2]- init: ### Set console font
+[    7.560067@3]- init: ### Checking disk(s): LABEL=COREELEC LABEL=STORAGE
+[    8.170503@3]- init: ### STORAGE: clean, 1663/1867776 files, 447780/7471104 blocks
+[    8.170663@3]- init: ### fsck.fat 4.2 (2021-01-31)
+[    8.170828@3]- init: ### /dev/sda1: 192 files, 59789/65501 clusters
+[    8.172520@3]- init: ### No filesystem errors found, continuing...
+[    8.172689@3]- init: ### Mounting flash
+[    8.172787@3]- init: ### mount filesystem LABEL=COREELEC ...
+[    8.245250@1]- init: ### Cleaning up flash (if required)
+[    8.245907@1]- init: ### mount filesystem /flash/SYSTEM294 ...
+[    8.292955@2]- init: ### Mounting storage
+[    8.293204@2]- init: ### mount filesystem LABEL=STORAGE ...
+[    8.349872@1]- EXT4-fs (sda2): couldn't mount as ext3 due to feature incompatibilities
+[    8.350692@1]- EXT4-fs (sda2): couldn't mount as ext2 due to feature incompatibilities
+[    8.473132@0]- EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+[    8.491871@0]- init: ### Loading bootsplash
+[    8.499109@0]- init: ### Checking for updates
+[    8.507388@1]- init: ### Preparing system
+[    8.565493@0]- ### BIG FAT WARNING
+[    8.565547@0]- ### sda2 is removable. suspend/resume may not work
+[    8.569690@0]- ### BIG FAT WARNING
+[    8.569740@0]- ### sda1 is removable. suspend/resume may not work
+[    8.751199@3]- kernel-overlays-setup: setup base modules
+[    8.858068@1]- kernel-overlays-setup: added modules from /usr/lib/kernel-overlays/base/lib/modules/4.9.269
+[    8.863507@3]- kernel-overlays-setup: added firmware from /usr/lib/kernel-overlays/base/lib/firmware
+[    8.864220@3]- kernel-overlays-setup: adding overlays from /storage/.cache/kernel-overlays
+[    8.866250@0]- kernel-overlays-setup: done
+[    9.072487@3]- systemd[1]: System time before build time, advancing clock.
+[    9.121238@0]- cgroup: cgroup2: unknown option "nsdelegate"
+[    9.130430@0]- systemd[1]: systemd 255.4 running in system mode (-PAM -AUDIT -SELINUX -APPARMOR -IMA -SMACK -SECCOMP -GCRYPT -GNUTLS -OPENSSL -ACL +BLKID -CURL -ELFUTILS -FIDO2 +IDN2 -IDN -IPTC +KMOD -LIBCRYPTSETUP -LIBFDISK -PCRE2 -PWQUALITY -P11KIT -QRENCODE -TPM2 -BZIP2 -LZ4 -XZ -ZLIB -ZSTD -BPF_FRAMEWORK -XKBCOMMON +UTMP +SYSVINIT default-hierarchy=hybrid)
+[    9.130454@0]- systemd[1]: Detected architecture arm64.
+[    9.131885@1]- systemd[1]: Warning! Reported kernel version 4.9.269 is older than systemd's required baseline kernel version 4.15. Your mileage may vary.
+[    9.657250@0]- systemd[1]: Queued start job for default target kodi.target.
+[    9.694876@3]- Netfilter messages via NETLINK v0.30.
+[    9.740109@0]- systemd[1]: Created slice system-modprobe.slice.
+[    9.742990@0]- systemd[1]: Created slice system-wg\x2dquick.slice.
+[    9.745144@0]- systemd[1]: Created slice user.slice.
+[    9.745625@0]- systemd[1]: Started systemd-ask-password-console.path.
+[    9.745947@0]- systemd[1]: Started systemd-ask-password-wall.path.
+[    9.746267@0]- systemd[1]: Reached target nss-lookup.target.
+[    9.746364@0]- systemd[1]: Reached target paths.target.
+[    9.746520@0]- systemd[1]: Reached target slices.target.
+[    9.766113@0]- systemd[1]: Listening on rpcbind.socket.
+[    9.766377@0]- systemd[1]: Reached target rpcbind.target.
+[    9.767055@0]- systemd[1]: Listening on systemd-initctl.socket.
+[    9.769155@0]- systemd[1]: Listening on systemd-journald-dev-log.socket.
+[    9.770677@0]- systemd[1]: Listening on systemd-journald.socket.
+[    9.772751@0]- systemd[1]: Listening on systemd-udevd-control.socket.
+[    9.773746@0]- systemd[1]: Listening on systemd-udevd-kernel.socket.
+[    9.781521@0]- systemd[1]: Mounting dev-mqueue.mount...
+[    9.786860@0]- systemd[1]: Mounting sys-kernel-debug.mount...
+[    9.792025@0]- systemd[1]: Mounting sys-kernel-tracing.mount...
+[    9.798143@3]- systemd[1]: Mounting var.mount...
+[    9.805701@3]- systemd[1]: Starting kmod-static-nodes.service...
+[    9.819382@3]- systemd[1]: Starting machine-id.service...
+[    9.827811@3]- systemd[1]: Starting modprobe@configfs.service...
+[    9.841978@1]- systemd[1]: Starting modprobe@drm.service...
+[    9.847651@1]- systemd[1]: Starting modprobe@fuse.service...
+[    9.865542@3]- systemd[1]: Starting storage-log.service...
+[    9.873370@3]- systemd[1]: Starting swap.service...
+[    9.884571@1]- systemd[1]: Starting systemd-hwdb-update.service...
+[    9.901681@1]- systemd[1]: Starting systemd-modules-load.service...
+[    9.908088@1]- systemd[1]: Starting systemd-timesyncd-setup.service...
+[    9.922237@0]- systemd[1]: Starting systemd-udev-trigger.service...
+[    9.927740@0]- systemd[1]: Starting wait-time-sync.service...
+[    9.941112@0]- systemd[1]: Mounted dev-mqueue.mount.
+[    9.942336@0]- systemd[1]: Mounted sys-kernel-debug.mount.
+[    9.943487@0]- systemd[1]: Mounted sys-kernel-tracing.mount.
+[    9.944704@0]- systemd[1]: Mounted var.mount.
+[    9.946422@0]- systemd[1]: Finished kmod-static-nodes.service.
+[    9.948161@0]- systemd[1]: Finished machine-id.service.
+[    9.949655@0]- systemd[1]: modprobe@configfs.service: Deactivated successfully.
+[    9.950848@0]- systemd[1]: Finished modprobe@configfs.service.
+[    9.952201@0]- systemd[1]: modprobe@drm.service: Deactivated successfully.
+[    9.953384@0]- systemd[1]: Finished modprobe@drm.service.
+[    9.963646@0]- systemd[1]: Mounting sys-kernel-config.mount...
+[   10.049366@3]- fuse init (API version 7.26)
+[   10.077550@1]- systemd[1]: systemd-journald.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/unified/system.slice/systemd-journald.service failed: Argument list too long
+[   10.095375@1]- systemd[1]: Starting systemd-journald.service...
+[   10.110595@3]- systemd[1]: Starting systemd-tmpfiles-setup-dev-early.service...
+[   10.137053@1]- systemd[1]: modprobe@fuse.service: Deactivated successfully.
+[   10.138266@1]- systemd[1]: Finished modprobe@fuse.service.
+[   10.141295@3]- systemd[1]: Finished systemd-timesyncd-setup.service.
+[   10.141310@1]- systemd-journald[2295]: Collecting audit messages is disabled.
+[   10.143195@3]- systemd[1]: Finished storage-log.service.
+[   10.144053@3]- systemd[1]: Mounted sys-kernel-config.mount.
+[   10.151623@3]- systemd[1]: Mounting sys-fs-fuse-connections.mount...
+[   10.152038@3]- systemd[1]: var-log.mount was skipped because no trigger condition checks were met.
+[   10.158099@3]- amlvideo-000: V4L2 device registered as video10
+[   10.158109@3]- amlvid:info: v4l2_dev.name=:amlvideo-001
+[   10.158664@3]- amlvideo-001: V4L2 device registered as video23
+[   10.176998@3]- video_framerate_adapter: loading out-of-tree module taints kernel.
+[   10.177882@1]- Registered frame rate driver success.
+[   10.180188@1]- register clk_set_setting cpu[42]
+[   10.185998@3]- Registered firmware driver success.
+[   10.187117@3]- Try to load video/h264_enc.bin  ...
+[   10.197466@0]- load firmware size : 76288, Name : video/h264_enc.bin.
+[   10.198488@0]- Try to load video/video_ucode.bin  ...
+[   10.231952@2]- load firmware size : 1871104, Name : video/video_ucode.bin.
+[   10.232300@2]- The fw driver version (v0.2) is lower than the pkg version (v0.3).
+[   10.232303@2]- The driver version is too low that may affect the work please update asap.
+[   10.233170@0]- systemd[1]: Mounted sys-fs-fuse-connections.mount.
+[   10.378533@0]- systemd[1]: Started systemd-journald.service.
+[   10.384605@1]- Amlogic A/V streaming port init
+[   10.396129@3]- get gate demux control ok 000000007974db26
+[   10.396145@3]- get gate parser_top control ok 0000000004b876b0
+[   10.396163@3]- get gate vdec control ok 00000000661ae800
+[   10.396184@3]- get gate clk_81 control ok 000000007f609e10
+[   10.396209@3]- get gate clk_vdec_mux control ok 00000000e64705c6
+[   10.396238@3]- get gate clk_hcodec_mux control ok 000000002fe02d30
+[   10.396270@3]- get gate clk_hevc_mux control ok 00000000992d55b4
+[   10.396278@3]- get gate clk_hevcb_mux control failed           (null)
+[   10.396282@3]- get gate ahbarb0 control failed           (null)
+[   10.396287@3]- get gate asyncfifo control failed           (null)
+[   10.396291@3]- get gate clk_hevcf_mux control failed           (null)
+[   10.396293@3]- get mux clk err.
+[   10.396295@3]- get mux clk err.
+[   10.396296@3]- get mux clk err.
+[   10.396298@3]- get mux clk err.
+[   10.428013@3]- amvdec_avs module init
+[   10.455644@2]- amvdec_h264 module init
+[   10.478841@1]- systemd-journald[2295]: Received client request to flush runtime journal.
+[   10.480610@2]- amvdec_h265 module init
+[   10.511592@0]- ammvdec_h264 module init
+[   10.528282@1]- ammvdec_mpeg12 module init
+[   10.534575@1]- ammvdec_mpeg4_driver_init_module 
+[   10.563714@1]- amvdec_vc1 module init
+[   10.585653@1]- amvdec_av1 module init
+[   10.596241@1]- amvdec_vp9 module init
+[   10.640631@0]- wireguard: WireGuard 1.0.20220627 loaded. See www.wireguard.com for information.
+[   10.640638@0]- wireguard: Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
+[   13.575648@3]- meson_uart c81004c0.serial: ttyS0 use xtal(8M) 24000000 change 115200 to 115200
+[   13.575904@3]- meson_uart c81004c0.serial: ttyS0 use xtal(8M) 24000000 change 115200 to 115200
+[   13.711781@2]- Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+[   13.773403@2]- Console: switching to colour dummy device 80x25
+[   14.330568@1]- mali-utgard d00c0000.mali: set min pp to default 1
+[   14.330577@1]- mali-utgard d00c0000.mali: set min clk default to 0
+[   14.330717@1]- mali-utgard d00c0000.mali: max clk set 2
+[   14.330722@1]- mali-utgard d00c0000.mali: turbo clk set to 3
+[   14.345289@3]- thermal thermal_zone0: binding zone soc_thermal with cdev thermal-gpufreq-0 failed:-22
+[   14.345302@3]- gpu cooling register okay with err=0
+[   14.348508@2]- gpu core cooling register okay with err=0
+[   14.349047@2]- Mali: Mali device driver loaded
+[   16.015061@0]- Bluetooth: Core ver 2.22
+[   16.015263@0]- NET: Registered protocol family 31
+[   16.015271@0]- Bluetooth: HCI device and connection manager initialized
+[   16.015291@0]- Bluetooth: HCI socket layer initialized
+[   16.015300@0]- Bluetooth: L2CAP socket layer initialized
+[   16.015349@0]- Bluetooth: SCO socket layer initialized
+[   16.018370@0]- internal phy init
+[   16.089767@3]- internal phy init
+[   16.102259@0]- meson6-dwmac c9410000.ethernet eth0: fail to init PTP.
+[   16.117709@0]- IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   16.410572@2]- proc: unrecognized mount option "hidepid=invisible" or missing value
+[   16.839830@0]- Registered IR keymap rc-empty
+[   16.841247@0]- input: meson-ir as /devices/platform/c8100580.meson-ir/rc/rc0/input2
+[   16.841835@0]- rc rc0: meson-ir as /devices/platform/c8100580.meson-ir/rc/rc0
+[   16.851652@2]- meson-ir c8100580.meson-ir: receiver initialized
+[   16.851924@0]- lirc_dev: IR Remote Control driver registered, major 499
+[   16.867946@0]- rc rc0: lirc_dev: driver ir-lirc-codec (meson-ir) registered at minor = 0
+[   16.867956@0]- IR LIRC bridge handler initialized
+[   17.013254@1]- IR NEC protocol handler initialized
+[   17.044636@3]- IR RC6 protocol handler initialized
+[   17.132502@0]- wol_reg12[12]==0, error
+[   18.156854@0]d meson6-dwmac c9410000.ethernet eth0: Link is Up - 100Mbps/Full - flow control off
+[   18.156883@0]- IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[   18.177178@1]- 8021q: 802.1Q VLAN Support v1.8
+[   21.977303@1]- fb: osd_release now.index=0,open_count=1
+[   25.320279@1]- snd_spdif_dai: enterd aml_spdif_play,set_clock:4,sample_rate=4
+[   25.320312@1]- snd_spdif_dai: set 958 audio clk div 2
+[   25.352471@0]- audio_dsp: buf=0
+[   25.352479@0]- audio_dsp: IEC958_mode_raw=0
+[   25.360137@0]- snd_spdif_dai: set normal 512 fs /4 fs
+[   25.360146@0]- snd_spdif_dai: set 958 audio clk div 4
+[   25.360158@0]- hdmitx: hw: set audio
+[   25.360163@0]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[   25.360177@0]- hdmitx: fs = 2, cd = 4, tmds_clk = 148500
+[   25.360180@0]- hdmitx: hw: aud_n_para = 6272
+[   25.360188@0]- hdmitx: hw: set channel status
+[   25.360202@0]- hdmitx: hw: [0x10e3] = 0x1f
+[   25.360222@0]- hdmitx: audio: Audio Type: PCM
+[   25.360224@0]- hdmitx: audio: set audio param
+[   25.360589@3]- snd_spdif_dai: set normal 512 fs /4 fs
+[   33.184910@3]- cectx c810023c.aocec: CEC framework ctrl enabled
+[   62.476405@3]- fb: mem_free_work, free memory: addr:800000
