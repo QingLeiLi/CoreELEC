@@ -31,7 +31,8 @@
 
 新增固定版本fixture：amvecm.c/amve.c/amcm.c，均从指定Git对象提取并记录Git blob SHA1和SHA256；云端按现有fixture下载器取得。新增`check-all-output-legacy.py`已加入Actions主机检查：
 
-- 执行49处实际新谓词，在CPU ID 0..127及多输出/状态组合下核对：只有GXLX2回落legacy，其余CPU与原表达式相同。
+- 执行49处实际新谓词，在CPU ID 0..127下核对：只有GXLX2回落legacy，其余CPU与原表达式相同。
+- 编译执行`video_process`与`vpp_matrix_update`两段真实输出尾部：LCD/HDMI/dummy ENCP、无帧/YUV/RGB、SDR/HDR、VD1/VD2、range/BS变化及3DLUT开关共73728种输入组合。GXLX2无G12尾部API调用，其它CPU逐项调用参数与基准一致；API调用仍不等于硬件写入或完成。
 - 执行14个实际HDR2早退guard与直接histogram初始化guard；核对它们在硬件访问前，GXLX2无模拟副作用；没有其它条件或写体被悄悄改动。
 - 逆向移除明确新增的谓词/guard/include后，与0044基准逐字相等。原五选择测试单独固定在0044阶段，HDR观测测试单独核对观测逻辑；不能把新路由策略变化误报成诊断修改。
 
@@ -42,3 +43,11 @@
 HDR策略参数默认值未被顺手修改：全走legacy不等于自动将`hdr_mode=0`变为auto，也不代表HDR→SDR已正确tone-map。后续格式实验记录实际mode及sink能力；先取得SDR正常参考，再按预定流程检查，黑态不叠加试验。
 
 参考：[切换前覆盖审查](LEGACY-ROUTING-COVERAGE-20261128.md)、[293H实机结果](BUILD293H-HDR-HELPER-TRIAL-20261128.md)。
+
+## 提交后复核
+
+复核`59eaf0b682`，没有发现需要再改生产补丁的新问题。重点核对：原五入口仍生效；剩余G12旁路只对GXLX2关闭；14个早退均在硬件副作用前；guard返回值保持原接口类型；reg_helper的TL1/TM2门槛不会被0x2a命中，SR旧偏移的精确家族判断也没有把GXLX2列成G12。精确G12A/G12B及旧家族细分判断没有被全局CPU替换影响。
+
+发现并纠正一个测试表述/覆盖问题：原测试将未传入实际代码的mode/frame/output变量放进循环，不能据此声称已测多输出分支。本轮删除空循环，新增上面的真实输出尾部测试，gnu89/gnu99均通过。生产补丁保持不变，之前38项通过结论仍保留；本轮复跑改动的主机测试通过，没有再操作设备或启动构建。
+
+这些检查仍不是完整函数/ARM内核执行，也没有证明矩阵、LUT和位深适用于硅片。完整构建及上述物理验收仍待完成，尤其HDR偏灰不能由主机测试排除。

@@ -66,16 +66,97 @@ static bool cpu_after_eq(unsigned n){return cpu>=n;}
   code+=f'static {"unsigned" if ret else "void"} writer_{name}(unsigned hdr_process_select){{\n(void)hdr_process_select;\n'+guard+'writes++;'+('return hdr_process_select;' if ret else '')+'}\n'
  if '#include <linux/amlogic/cpu_version.h>' not in old['set_hdr2_v0.c']:restored=restored.replace('#include <linux/amlogic/cpu_version.h>\n','',1)
  assert restored==old['set_hdr2_v0.c'],'unexpected changes to HDR2 write sequences'
- code+='int main(void){unsigned mode,frame,output;for(cpu=0;cpu<128;cpu++){for(mode=0;mode<3;mode++)for(frame=0;frame<2;frame++)for(output=0;output<2;output++){(void)mode;(void)frame;(void)output;\n'
+ code+='int main(void){for(cpu=0;cpu<128;cpu++){\n'
  for before,after in pairs:
   code+=f'if(cpu==0x2a)assert(({after})=={int(before.startswith("!"))});else assert(({before})==({after}));\n'
  code+='writes=0;histogram_init();\n'
  for name in writers:code+=f'writer_{name}(0x123);\n'
- code+=f'assert(writes==(cpu==0x2a?0:{len(writers)+1}));'+'}}return 0;}\n'
+ code+=f'assert(writes==(cpu==0x2a?0:{len(writers)+1}));'+'}return 0;}\n'
  c=r/'test.c';c.write_text(code)
  for std in ('gnu89','gnu99'):
   subprocess.run([shutil.which('clang') or 'cc','-std='+std,'-Wall','-Wextra','-Werror','-Wdeclaration-after-statement',str(c),'-o',str(r/'test')],check=True)
   subprocess.run([str(r/'test')],check=True)
-print('PASS: 49 actual CSC/PQ/CM/VADJ gates select legacy on GXLX2 for all output modes; other CPUs 0..127 unchanged')
+
+ # Execute the REAL two output-dependent tails, not loops over unused modes.
+ def output_tail(src,name):
+  f=body(src,name)
+  end=f.index('\n\tif (cur_hdr_process_mode') if name=='video_process' else f.index('\n\t/* eye protection mode */')
+  matches=list(re.finditer(r'\n\tif \([^\n]*get_cpu_type\(\) >= MESON_CPU_MAJOR_ID_G12A',f[:end]))
+  assert matches,name
+  a=matches[-1].start();start=f.index('{',a);b=start+1;depth=1
+  while depth:depth+=(f[b]=='{')-(f[b]=='}');b+=1
+  return f[a:b]
+ actual=(r/D/'amcsc.c').read_text()
+ outputs=r"""
+#include <assert.h>
+#include <stdbool.h>
+#include <string.h>
+#define MESON_CPU_MAJOR_ID_G12A 0x28
+#define VIDTYPE_RGB_444 1
+#define HDRTYPE_SDR 0
+#define VMODE_LCD 0
+#define VMODE_HDMI 1
+#define VMODE_DUMMY_ENCP 2
+#define POST2_MTX 1
+#define MATRIX_NULL 0
+#define MTX_OFF 0
+#define MTX_ON 1
+#define VPP_VADJ1_MISC 11
+#define VPP_VADJ2_MISC 12
+#define VPP_POST2_MATRIX_EN_CTRL 13
+#define VPP_LUT3D_CTRL 14
+#define SIG_RANGE_CHG 1
+#define SIG_BS_CHG 2
+/* Only selectors/arguments are mocked; the actual branch bodies are intact.
+ * A recorded API invocation is not a hardware write/completion assertion. */
+enum mtx_csc_e { MATRIX_YUV709F_RGB=20, MATRIX_YUV709_RGB=21,
+ MATRIX_YUV709F_YUV709=22 };
+struct vframe_s {unsigned type;};
+struct vinfo_s {unsigned mode;};
+static struct vframe_s frame;
+static struct vframe_s *vf;
+static struct vinfo_s info,*vinfo=&info;
+static unsigned cpu,source_type[2],source_format[2],vd_path,csc_type;
+static unsigned signal_change_flag,bs_3dlut_en,bs_proc_en;
+static unsigned calls[64][5],count;
+static unsigned get_cpu_type(void){return cpu;}
+static bool is_meson_gxlx2_cpu(void){return cpu==0x2a;}
+static bool vinfo_lcd_support(void){return info.mode==VMODE_LCD || info.mode==VMODE_DUMMY_ENCP;}
+static void note(unsigned op,unsigned a,unsigned b,unsigned c,unsigned d){
+ assert(count<64);calls[count][0]=op;calls[count][1]=a;calls[count][2]=b;
+ calls[count][3]=c;calls[count++][4]=d;
+}
+#define WRITE_VPP_REG_BITS(r,v,s,n) note(1,r,v,s,n)
+#define mtx_setting(s,c,on) note(2,s,c,on,0)
+#define mtx_init(s,c,on) note(3,s,c,on,0)
+#define vpp_enable_lut3d(a,b) note(4,a,b,0,0)
+"""
+ for label,src in [('baseline',old['amcsc.c']),('candidate',actual)]:
+  outputs+='static void '+label+'(void){\n'+output_tail(src,'video_process')+'\n'+output_tail(src,'vpp_matrix_update')+'\n}\n'
+ outputs+=r"""
+int main(void){
+ unsigned mode,frame_kind,format,flags,lut,path;
+ for(cpu=0;cpu<128;cpu++)for(mode=0;mode<3;mode++)
+ for(frame_kind=0;frame_kind<3;frame_kind++)for(format=0;format<2;format++)
+ for(flags=0;flags<4;flags++)for(lut=0;lut<4;lut++)for(path=0;path<2;path++){
+  unsigned saved[64][5],expected;
+  info.mode=mode;frame.type=frame_kind==2?VIDTYPE_RGB_444:0;
+  vf=frame_kind?&frame:0;vd_path=path;csc_type=23;
+  source_type[path]=source_format[path]=format;
+  signal_change_flag=flags;bs_3dlut_en=lut&1;bs_proc_en=(lut>>1)&1;
+  count=0;baseline();expected=count;memcpy(saved,calls,sizeof saved);
+  count=0;candidate();
+  if(cpu==0x2a)assert(count==0);
+  else{assert(count==expected);assert(!memcmp(calls,saved,count*sizeof calls[0]));}
+ }
+ return 0;
+}
+"""
+ c.write_text(outputs)
+ for std in ('gnu89','gnu99'):
+  subprocess.run([shutil.which('clang') or 'cc','-std='+std,'-Wall','-Wextra','-Werror','-Wdeclaration-after-statement',str(c),'-o',str(r/'outputs')],check=True)
+  subprocess.run([str(r/'outputs')],check=True)
+print('PASS: real video_process/matrix_update output tails: LCD/HDMI/dummy ENCP, no/YUV/RGB frame, SDR/HDR, VD1/VD2, range/BS and 3DLUT states; GXLX2 skips all G12 tail calls; other CPUs keep the exact API call sequence')
+print('PASS: 49 actual CSC/PQ/CM/VADJ predicates select legacy on GXLX2; other CPUs 0..127 unchanged')
 print('PASS: 14 HDR2 entry guards plus histogram init reject GXLX2 before side effects; remaining write bodies unchanged')
 print('PENDING: full ARM build, LCD/non-HDMI hardware, SDR regression and HDR10/HLG color validation')
