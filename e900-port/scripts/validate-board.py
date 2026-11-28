@@ -112,6 +112,7 @@ def validate(path):
     assert cells(hdmi["ic_type"]) == [3] and "amlogic,gxlx2-direct-hdmi" in hdmi
     ethernet = nodes["/ethernet@0xc9410000"]
     assert cells(ethernet["internal_phy"]) == [1] and ethernet["phy-mode"] == b"rmii\0"
+    assert cells(ethernet["wol"]) == [1]
     assert ethernet["pinctrl-names"] == b"internal_eth_pins\0"
     assert ethernet["pinctrl-0"] == b"" and "rst_pin-gpios" not in ethernet
     # Fixed secure memory, CMA allocation range and framebuffer must not overlap.

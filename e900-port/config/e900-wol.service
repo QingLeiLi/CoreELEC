@@ -1,0 +1,13 @@
+[Unit]
+Description=Enable E900 Ethernet Magic Packet wake
+After=connman.service e900-wol-runtime.service
+ConditionPathExists=/sys/class/net/eth0
+ConditionPathExists=!/storage/.config/e900-wol.disable
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /usr/lib/e900-boot/e900-wol.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

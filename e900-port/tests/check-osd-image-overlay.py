@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory(prefix='e900-osd-overlay-') as tmp:
   dest=checkout/rel;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(REF/rel,dest)
  with mock.patch.dict(os.environ,{'E900_SOURCE_TRACE':'0','E900_VDIN_CAPTURE':'0','E900_INCREMENTAL_REUSE':'1'}),mock.patch.object(installer.subprocess,'check_output',return_value=installer.PINS['coreelec']):
   installer.install(checkout,'decoder')
-  state=json.loads((checkout/'.e900-profile.json').read_text());assert len(state['image_files'])==7
+  state=json.loads((checkout/'.e900-profile.json').read_text());assert len(state['image_files'])==9
   # Run the pinned CE functions, rather than reimplementing their copy behavior.
   functions=(REF/'config/functions').read_text();a=functions.index('enable_service() {');b=functions.index('### MULTI-THREADED',a)
   image=(REF/'scripts/image').read_text();a=image.index('# Copy DEVICE related files');b=image.index('# Replace placeholders',a)
@@ -46,6 +46,10 @@ with tempfile.TemporaryDirectory(prefix='e900-osd-overlay-') as tmp:
   network=(target/'usr/lib/systemd/system/kodi-waitonnetwork.service.d/20-e900-fast-boot.conf').read_text()
   assert 'ConditionPathExists=/storage/.config/e900-boot-wait-network' in network
   assert 'ExecStart=' not in network and 'connman.service' not in network
+  wol=(target/'usr/lib/systemd/system/e900-wol.service').read_text()
+  assert 'ExecStart=/bin/sh /usr/lib/e900-boot/e900-wol.sh' in wol and 'ExecStop=' not in wol
+  assert (target/'usr/lib/e900-boot/e900-wol.sh').is_file()
+  assert (target/'usr/lib/systemd/system/multi-user.target.wants/e900-wol.service').readlink()==Path('../e900-wol.service')
   boot=load('image_boot_policy',target/'usr/lib/e900-boot/e900-osd-rdma-boot.py')
   assert json.loads((target/'usr/lib/e900-boot/source-contract.json').read_text())==boot.SOURCE_CONTRACT
   assert all(x not in unit for x in ['/storage/.config/e900-osd-rdma-boot.py','ExecStartPre='])

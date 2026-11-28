@@ -1,0 +1,18 @@
+Subject: [EXPERIMENTAL] retain E900 internal PHY during suspend for WOL
+
+The legacy GXL network setup consumes wol, not G12A's mac_wol property.
+internal_phy_suspend() preserves PHY power when this flag is set. This does
+not prove shutdown/BL301 wake support; physical suspend/wake remains pending.
+
+diff --git a/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts b/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
+--- a/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
++++ b/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
+@@ -90,6 +90,8 @@
+ 
+ &ethmac {
+ 	internal_phy = <1>;
++	/* Legacy internal_phy_suspend keeps power for Magic Packet wake. */
++	wol = <1>;
+ 	phy-mode = "rmii";
+ 	mc_val_internal_phy = <0x1800>;
+ 	/* No external PHY reset or strap GPIOs on this board. */

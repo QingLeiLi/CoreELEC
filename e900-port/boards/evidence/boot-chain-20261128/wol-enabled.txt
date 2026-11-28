@@ -1,0 +1,13 @@
+cat /proc/sys/kernel/random/boot_id; cat /sys/class/net/eth0/address; ethtool eth0 | grep -E 'Supports Wake-on|Wake-on|Link detected'; cat /sys/class/net/eth0/device/power/wakeup; systemctl --no-pager show e900-wol-runtime.service -p ActiveState -p SubState -p ExecMainStatus -p UnitFileState; exit
+787ad4a9-eb6d-4d60-a74b-7817315d77d7
+02:c9:28:d4:bc:8f
+	Supports Wake-on: ug
+	Wake-on: g
+	Link detected: yes
+enabled
+ExecMainStatus=0
+ActiveState=active
+SubState=exited
+UnitFileState=enabled
+logout
+Connection to 192.168.31.11 closed.

@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**有线WOL启用（2026-11-28，用户指定）**：同787ad4a9 ethtool从d改g成功，wakeup=enabled；安装开机自动启用服务，当前服务success且重复设置跳过，未休眠/关机。源码overlay带同功能；新0049与板DTS补旧GXL internal PHY消费的wol=1，编译DTB/验证通过。当前旧DT未热改，完整唤醒未实测，尤其厂商shutdown仍可关闭PHY；纠正旧审计把G12A mac_wol分支直接套本机的推论。见[配置、MAC与验收边界](WOL-20261128.md)。
+
 **OSD早期恢复源码修正（2026-11-28，用户指定）**：新增Linux0048，仅GXLX2记录总线发布前的OSD start意图，ready notifier在video回调之后通过原rdma_config恢复CH3；用现有OSD锁串行start/stop/回调，释放前取消并注销，检查活跃状态与真实DMA范围；保留SYSTEM补偿和内核禁用开关。增加原OSD等待超时日志，未缩短等待/改CTRL/共享reset。45项主机检查通过，尚未ARM构建或实机部署；不能宣称超时已消失。下一步新decoder/image验同boot早期恢复、完成持续增长、补偿零写和可见菜单，再验播放/重播。见[实现、锁序、开关与验收](OSD-EARLY-REARM-20261128.md)。
 
 **hwdb预生成落地（2026-11-28，用户同意）**：decoder在SYSTEM压缩前根据最终vendor规则预生成hwdb；保留用户规则触发/run重建，未mask服务。Ubuntu构建器补装工具，镜像层变更保留内核/工具链缓存。主机保护检查、既有检查，以及盒子/tmp内真实255生成/查询/条件验证通过；未覆盖系统文件、未重启，真实Ubuntu249→新ARM镜像与启动节省仍待构建验收。见[实现、证据边界与回退](HWDB-PREBUILD-20261128.md)。

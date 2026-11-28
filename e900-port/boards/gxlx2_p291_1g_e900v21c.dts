@@ -90,6 +90,8 @@
 
 &ethmac {
 	internal_phy = <1>;
+	/* Legacy internal_phy_suspend keeps power for Magic Packet wake. */
+	wol = <1>;
 	phy-mode = "rmii";
 	mc_val_internal_phy = <0x1800>;
 	/* No external PHY reset or strap GPIOs on this board. */

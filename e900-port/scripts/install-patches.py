@@ -58,7 +58,8 @@ PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-r
                                          "linux/0045-gxlx2-all-output-legacy-csc-pq.patch",
                                          "linux/0046-gxlx2-idle-diagnostic-fast-paths.patch",
                                          "linux/0047-aml-bt-optional-host-wake.patch",
-                                         "linux/0048-gxlx2-osd-bus-ready-rearm.patch"]
+                                         "linux/0048-gxlx2-osd-bus-ready-rearm.patch",
+                                         "linux/0049-e900-internal-phy-wol.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
 HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")
@@ -449,6 +450,8 @@ def image_overlay_files(profile):
         raise RuntimeError("Boot recovery requires an audit for the new source pins")
     prefix = "projects/Amlogic-ce/devices/Amlogic-ng/filesystem/"
     files = {
+        "usr/lib/e900-boot/e900-wol.sh": (PORT / "scripts/e900-wol.sh").read_bytes(),
+        "usr/lib/systemd/system/e900-wol.service": (PORT / "config/e900-wol.service").read_bytes(),
         "usr/lib/e900-boot/e900-osd-rdma-boot.py": (PORT / "scripts/e900-osd-rdma-boot.py").read_bytes(),
         "usr/lib/e900-boot/source-contract.json": (json.dumps(boot.SOURCE_CONTRACT, indent=2) + "\n").encode(),
         "usr/lib/systemd/system/e900-osd-rdma-image.service": (PORT / "config/e900-osd-rdma-image.service").read_bytes(),
