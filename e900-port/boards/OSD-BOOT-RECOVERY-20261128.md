@@ -35,20 +35,21 @@ Kodi通过Requires/After依赖此oneshot，它在graphical.target之后、Kodi�
 
 ## 源码和镜像集成
 
-用户确认正常后要求持久化到源码。`install-patches.py`对decoder配置安装CE官方device filesystem overlay，`scripts/image`每次组装SYSTEM时复制以下四项：
+用户确认正常后要求持久化到源码。`install-patches.py`对decoder配置安装CE官方device filesystem overlay，`scripts/image`每次组装SYSTEM时复制以下五项：
 
 - `/usr/lib/e900-boot/e900-osd-rdma-boot.py`
 - `/usr/lib/e900-boot/source-contract.json`
 - `/usr/lib/systemd/system/e900-osd-rdma-image.service`
 - `/usr/lib/systemd/system/kodi.service.d/30-e900-osd-rdma-image.conf`
+- `/usr/lib/systemd/system/kodi-waitonnetwork.service.d/20-e900-fast-boot.conf`
 
-执行顺序、唯一CH3写入、前置检查和失败回退沿用已实测方案。正常USB引导默认wait0/log4，诊断wait1仍可手动使用且不会触发补偿。未将网络等待或屏保偏好硬编码进镜像。
+执行顺序、唯一CH3写入、前置检查和失败回退沿用已实测方案。正常USB引导默认wait0/log4，诊断wait1仍可手动使用且不会触发补偿。后续按用户要求纳入可恢复的跳过网络等待配置，屏保默认保持上游。
 
 新镜像不按构建日期放开：只读SYSTEM内契约必须与固定CE/Linux revision、板型、4.9.269和RDMA布局完全匹配，并核对os-release的BUILD_ID；源码pin变更时installer拒绝安装，要求重新审计。现场的AUTO、独立计数、DMA页等保护仍保留，内存布局变化会拒绝写入。build294原运行时安装仍支持原精确版本。
 
 镜像service使用独立的`e900-osd-rdma-image.service`名，避免旧STORAGE安装同名unit遮蔽SYSTEM版本。现盒子原有运行时服务保持不动；换新镜像后旧脚本因版本不同跳过，由镜像内服务执行。源码部署不代表已在盒子执行新版本。
 
-overlay文件纳入构建状态哈希与本地修改保护；只改这四项时不清理内核或工具链，CE重新打包即带入。43项主机检查全部通过，包括实际CE镜像复制函数、源码契约、保护/回退和缓存保留。**新源码镜像完整构建及实机启动仍待下一轮验收**；构建选择decoder + image。
+overlay文件纳入构建状态哈希与本地修改保护；只改这些overlay项时不清理内核或工具链，CE重新打包即带入。43项主机检查全部通过，包括实际CE镜像复制函数、源码契约、保护/回退和缓存保留。**新源码镜像完整构建及实机启动仍待下一轮验收**；构建选择decoder + image。
 
 这是将已验证的启动补偿纳入源码构建，尚未消除内核早期codec dispatcher未发布导致写入丢弃的底层依赖问题。
 
@@ -58,4 +59,4 @@ overlay文件纳入构建状态哈希与本地修改保护；只改这四项时�
 - 诊断wait1启动也会跳过，不抢先写硬件。
 - 每次日志：`/storage/e900-boot-speed/boot-rdma/<boot-id>.json`，同时进入systemd journal；记录先创建，再尝试硬件写入。
 - 旧运行时安装完全撤销：删除Kodi的30-e900-osd-rdma.conf、该service与脚本，daemon-reload。镜像内版本使用上述disable标记禁用；要移除文件需源码改动后重新打包。原build294内核/SYSTEM、TF配置未改；原诊断引导仍在/flash/e900-boot-diagnostic。
-- 上一轮屏保临时关闭、网络等待开关保留，不在本轮叠加新亮度/分辨率/颜色变化。
+- 屏保临时关闭已按用户要求恢复dim模式；网络等待开关已纳入源码，详见启动速度文档最新条目。

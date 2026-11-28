@@ -428,6 +428,7 @@ def image_overlay_files(profile):
         "usr/lib/e900-boot/e900-osd-rdma-boot.py": (PORT / "scripts/e900-osd-rdma-boot.py").read_bytes(),
         "usr/lib/e900-boot/source-contract.json": (json.dumps(boot.SOURCE_CONTRACT, indent=2) + "\n").encode(),
         "usr/lib/systemd/system/e900-osd-rdma-image.service": (PORT / "config/e900-osd-rdma-image.service").read_bytes(),
+        "usr/lib/systemd/system/kodi-waitonnetwork.service.d/20-e900-fast-boot.conf": (PORT / "config/20-e900-fast-boot.conf").read_bytes(),
         "usr/lib/systemd/system/kodi.service.d/30-e900-osd-rdma-image.conf": (PORT / "config/30-e900-osd-rdma-image.conf").read_bytes(),
     }
     return {prefix + name: data for name, data in files.items()}

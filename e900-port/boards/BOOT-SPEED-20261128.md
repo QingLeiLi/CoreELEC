@@ -1,4 +1,15 @@
-# 启动速度优化：画面仍待通过
+# 启动速度优化与网络等待配置
+
+## 最新状态：补偿验收后落地（2026-11-28）
+
+此前黑屏已通过独立OSD CH3补偿完成一次软重启验收并纳入源码，见[启动补偿](OSD-BOOT-RECOVERY-20261128.md)。下文保留实验历史，不代表当前仍失败。
+
+用户要求跳过网络等待落地：SYSTEM overlay新增`kodi-waitonnetwork.service.d/20-e900-fast-boot.conf`，仅对等待服务增加ConditionPathExists；默认先启动Kodi，不禁用ConnMan、DHCP、NTP或连接后台任务。网络未就绪时IPTV、网络媒体库和共享访问仍需等待连接；依赖启动即联网的用户可执行`touch /storage/.config/e900-boot-wait-network`，下次启动恢复上游等待逻辑（仍需满足其原条件）。删除标记重新跳过。现机已使用同内容drop-in，无需重启或再次部署。
+
+时钟检查：2026-11-28盒子显示14:15:56 UTC，ConnMan TimeUpdates=auto、TimeserverSynced=True；日志有启动时NTP jump及14:09:31的slew +0.033915s。问题为UTC时区，而非缺少NTP。经Kodi Settings API设China/Asia/Shanghai后，系统显示22:16:55 CST，`/var/run/localtime`指向Asia/Shanghai。ConnMan Clock缓存Timezone仍显示UTC，不据此否定实际系统链接与本地时间；不重启网络进程。默认四个pool.ntp.org作为fallback，未另加校时守护程序或强制改NTP服务器。
+
+按用户要求恢复原屏保`screensaver.xbmc.builtin.dim`，不改源码屏保默认。时区和屏保属于当前用户配置，未全局强制所有刷机用户采用中国时区。无重启、播放或显示寄存器操作。实际CE overlay复制及构建缓存测试通过；新镜像构建验收仍待进行。
+
 
 基准build294/d94c005b，用户确认菜单正常。用户随后要求优化启动速度，并确认方便观察重启。
 
