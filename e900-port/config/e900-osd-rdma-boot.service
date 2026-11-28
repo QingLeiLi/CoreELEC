@@ -1,0 +1,12 @@
+[Unit]
+Description=Restore verified E900 build294 OSD boot trigger
+After=graphical.target
+Before=kodi.service
+ConditionKernelCommandLine=amvideo.gxlx2_hw_init_wait=0
+ConditionPathExists=!/storage/.config/e900-osd-rdma.disable
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /storage/.config/e900-osd-rdma-boot.py
+RemainAfterExit=yes
+TimeoutStartSec=10

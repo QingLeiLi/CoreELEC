@@ -224,6 +224,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-vdin-capture.py"
           python3 "$PORT_ROOT/tests/check-media-install.py"
           python3 "$PORT_ROOT/tests/check-wireless.py"
+          python3 "$PORT_ROOT/tests/check-osd-boot-recovery.py"
           python3 "$PORT_ROOT/tests/check-build-cache.py"
           python3 "$PORT_ROOT/tests/check-usb-image.py"
 
