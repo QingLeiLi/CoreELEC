@@ -24,10 +24,20 @@
 
 这是晚发布媒体接口后没有补齐RDMA初始化依赖；0019已处理video_hw，但没有覆盖本条OSD/manager路径。不能通过把晚发布简单提前来绕过（早期发布曾造成启动失败）。RDMA probe中的CTRL初始化也经过晚注册接口，CTRL0因此有独立来源；本轮不一起改CTRL，避免混淆。
 
-## 已准备的最小因果验证（尚未执行）
+## 已执行的最小因果验证
 
 仅在同boot、No vdec、OSD完成0、CH3 DMA范围合法且AUTO仍0x120时，按现有驱动字段定义恢复通道3：AUTO→0x010001a0。只改bits24..31/7/3，保留其它通道；不写CTRL、不做共享复位、不改分辨率。观察两秒OSD完成是否持续增长及用户菜单反馈；失败恢复原通道3字段并停止。脚本[osd-rearm-once.py](evidence/osd-startup-20261128/osd-rearm-once.py)只允许该固定boot和值，当前只编译语法，未执行写入。
 
 已询问用户是否方便观察，等待确认。实测前不把候选写成已修复；若成功，再处理启动时的RDMA就绪依赖和重放，不能把单次寄存器修补当永久驱动修复。
 
 原始记录：[独立计数](evidence/osd-startup-20261128/no-screensaver/visible/osd-counters.json)、[固定寄存器读回](evidence/osd-startup-20261128/no-screensaver/visible/rdma-fixed-read.json)、[EDID/迟到现场](evidence/osd-startup-20261128/no-screensaver/visible/display.txt)、[试验计划](evidence/osd-startup-20261128/osd-rearm-plan.json)。Android Logo可能被保留到Linux早期，不能仅按该图案判断仍停在Android；缺少CE Logo也要先排除OSD更新缺失，尚未精确分段测出U-Boot读盘耗时。
+
+## 单次恢复成功与暂停点
+
+用户回复“方便”后执行已准备脚本，同boot、无vdec、触发旧值0x120、OSD完成0，CH3表START34e10000/END34e10e07通过范围检查。仅写AUTO=0x010001a0，不动CTRL/共享复位/分辨率。1秒后OSD独立完成61，2秒后123，证明该通道恢复硬件完成，而不只是共享IRQ变化。
+
+实际AUTO读回0x014001e0：本次恢复的是CH3字段；其余增加的CH2触发/方向字段与OSD回调内的reset-RDMA路径相容，不把它叫写回完全等于候选值。未进一步改该字或其它寄存器。用户反馈“还行，先这样吧”，据此停止后续调整，保持当前会话；没有重启或新视频实验。
+
+这是当前现场的一次因果恢复，不是持久启动修复。盒子仍为build294、wait0/log4、网络等待关闭、屏保临时关闭；本次AUTO通道恢复会在重启后丢失，下一次启动仍可能复发。源码默认启动脚本没有带入快速候选，也未新增开机寄存器写入服务。后续仅在用户重新要求继续时，修补RDMA总线就绪后的初始化/触发重放并做开机验收。
+
+[原始恢复记录](evidence/osd-startup-20261128/osd-rearm-result.json)。当前已断开调试SSH，未留下持续采集进程。

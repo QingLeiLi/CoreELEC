@@ -1,0 +1,23 @@
+{
+  "boot": "2a016423-613c-402f-b41f-9bd02954b476",
+  "before": {
+    "AUTO": "0x120",
+    "START3": "0x34e10000",
+    "END3": "0x34e10e07",
+    "osd_irq": 0
+  },
+  "write": "0x10001a0",
+  "samples": [
+    {
+      "mono": 4530.308822397,
+      "AUTO": "0x14001e0",
+      "osd_irq": 61
+    },
+    {
+      "mono": 4531.326403037,
+      "AUTO": "0x14001e0",
+      "osd_irq": 123
+    }
+  ],
+  "success": true
+}
