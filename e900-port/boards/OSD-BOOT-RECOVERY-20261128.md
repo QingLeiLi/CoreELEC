@@ -1,8 +1,8 @@
-# build294重启黑屏：持久开机补偿
+# E900重启黑屏：已验收开机补偿与源码集成
 
 用户纠正“重启黑屏的问题你忘了？”后继续处理；不把此前单次运行时恢复当成重启修复。依据为[OSD初始化丢失及单次因果恢复](OSD-STARTUP-RDMA-20261128.md)。
 
-## 实现与范围
+## build294运行时实现与范围
 
 不需重新编译。脚本[启动补偿](../scripts/e900-osd-rdma-boot.py)和[service](../config/e900-osd-rdma-boot.service)安装在U盘STORAGE分区：
 
@@ -20,14 +20,42 @@ Kodi通过Requires/After依赖此oneshot，它在graphical.target之后、Kodi�
 
 主机检查 `tests/check-osd-boot-recovery.py` 覆盖正常恢复、已健康跳过、不同构建/诊断模式跳过、错误板/内核/总线未就绪/活动解码/异常AUTO/DMA/非零停滞/写前状态变化拒绝，以及失败仅回退CH3而保留CH2。检查已加入workflow。
 
-现机执行`--check`：同2a016423，OSD完成22415→22422，输出already-completing，未再写控制器。安装unit和drop-in后daemon-reload，systemd-analyze verify通过；Kodi Requires/After均包含新服务。当前尚未启动此service，也尚未重启验收，用户画面未因此更改。
+现机执行`--check`：同2a016423，OSD完成22415→22422，输出already-completing，未再写控制器。安装unit和drop-in后daemon-reload，systemd-analyze verify通过；Kodi Requires/After均包含新服务。随后用户授权软重启并完成下述验收。
 
-验收：用户方便时软重启，不按遥控器；记录新boot、oneshot在Kodi之前的日志、OSD完成持续增长、菜单是否自行出现及时间。不能以服务success替代用户看到正常菜单。
+### 软重启验收通过（2026-11-28）
+
+新boot `787ad4a9-eb6d-4d60-a74b-7817315d77d7`，用户反馈“正常”。无需手动再写寄存器，服务在Kodi启动前完成：
+
+- 初始独立OSD计数0→0，AUTO=0x120，表START=0x34e10000、END=0x34e10107。
+- 仅恢复CH3后计数12→26，AUTO=0x014001e0；后续4593→4655，证明完成持续推进。CH2由正常回调配置，未被补偿覆盖。
+- 服务于17.444s结束，Kodi17.476s开始；Linux+systemd目标17.569s，**不含U-Boot时间，也不是测得的上电到菜单时间**。
+- 初始化状态2，TF卡仍自动挂载。没有更换内核/SYSTEM或写eMMC。
+
+原始记录：[启动与顺序](evidence/osd-boot-acceptance-20261128/state.txt)、[补偿日志](evidence/osd-boot-acceptance-20261128/recovery.json)。本次证明这一配置的一次软重启成功，未覆盖断电、无HDMI启动/热插拔及长期重复。
+
+## 源码和镜像集成
+
+用户确认正常后要求持久化到源码。`install-patches.py`对decoder配置安装CE官方device filesystem overlay，`scripts/image`每次组装SYSTEM时复制以下四项：
+
+- `/usr/lib/e900-boot/e900-osd-rdma-boot.py`
+- `/usr/lib/e900-boot/source-contract.json`
+- `/usr/lib/systemd/system/e900-osd-rdma-image.service`
+- `/usr/lib/systemd/system/kodi.service.d/30-e900-osd-rdma-image.conf`
+
+执行顺序、唯一CH3写入、前置检查和失败回退沿用已实测方案。正常USB引导默认wait0/log4，诊断wait1仍可手动使用且不会触发补偿。未将网络等待或屏保偏好硬编码进镜像。
+
+新镜像不按构建日期放开：只读SYSTEM内契约必须与固定CE/Linux revision、板型、4.9.269和RDMA布局完全匹配，并核对os-release的BUILD_ID；源码pin变更时installer拒绝安装，要求重新审计。现场的AUTO、独立计数、DMA页等保护仍保留，内存布局变化会拒绝写入。build294原运行时安装仍支持原精确版本。
+
+镜像service使用独立的`e900-osd-rdma-image.service`名，避免旧STORAGE安装同名unit遮蔽SYSTEM版本。现盒子原有运行时服务保持不动；换新镜像后旧脚本因版本不同跳过，由镜像内服务执行。源码部署不代表已在盒子执行新版本。
+
+overlay文件纳入构建状态哈希与本地修改保护；只改这四项时不清理内核或工具链，CE重新打包即带入。43项主机检查全部通过，包括实际CE镜像复制函数、源码契约、保护/回退和缓存保留。**新源码镜像完整构建及实机启动仍待下一轮验收**；构建选择decoder + image。
+
+这是将已验证的启动补偿纳入源码构建，尚未消除内核早期codec dispatcher未发布导致写入丢弃的底层依赖问题。
 
 ## 开关、日志与回退
 
 - 禁用开机补偿：`touch /storage/.config/e900-osd-rdma.disable`，下次启动跳过，便于保留原始故障；删除该文件重新启用。
 - 诊断wait1启动也会跳过，不抢先写硬件。
 - 每次日志：`/storage/e900-boot-speed/boot-rdma/<boot-id>.json`，同时进入systemd journal；记录先创建，再尝试硬件写入。
-- 完全撤销：删除Kodi的30-e900-osd-rdma.conf、该service与脚本，daemon-reload。原build294内核/SYSTEM、TF配置未改；原诊断引导仍在/flash/e900-boot-diagnostic。
+- 旧运行时安装完全撤销：删除Kodi的30-e900-osd-rdma.conf、该service与脚本，daemon-reload。镜像内版本使用上述disable标记禁用；要移除文件需源码改动后重新打包。原build294内核/SYSTEM、TF配置未改；原诊断引导仍在/flash/e900-boot-diagnostic。
 - 上一轮屏保临时关闭、网络等待开关保留，不在本轮叠加新亮度/分辨率/颜色变化。

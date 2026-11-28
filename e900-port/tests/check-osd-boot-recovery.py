@@ -17,7 +17,9 @@ class Fake:
                      '/sys/class/vdec/vdec_status':'No vdec.'}
         self.regs={'1110':0x120,'1106':0x34e10000,'1107':0x34e10e07}
         self.counts=iter([0,0,0,12,24]);self.writes=[];self.race=False;self.auto_reads=0
-    def text(self,p):return self.values[p].strip()
+    def text(self,p):
+        if p not in self.values:raise FileNotFoundError(p)
+        return self.values[p].strip()
     def irq(self):return next(self.counts)
     def sleep(self,s):pass
     def read_reg(self,r):
@@ -57,3 +59,13 @@ assert f.writes==[0x010001a0,0x00400160]  # rollback CH3, preserve callback's CH
 assert r['rollback']=='0x400160'
 print('PASS: boot recovery preserves other channels, skips healthy/new builds/diagnostic mode, rejects unsafe states and rolls back failed completion')
 print('PENDING: actual boot ordering, hardware completion and physical first menu')
+
+# New dates require an immutable, exact source-layout contract inside SYSTEM.
+f=Fake();f.values['/etc/os-release']='ID="coreelec"\nVERSION="21.3-Omega_devel_NEW"\nVERSION_ID="21.3"\nBUILD_ID="'+m.SOURCE_CONTRACT['coreelec_revision']+'"\n'
+import json
+f.values[m.CONTRACT_FILE]=json.dumps(m.SOURCE_CONTRACT)
+r={};m.recover(f,r);assert r['result']=='recovered'
+f=Fake();f.values['/etc/os-release']='ID="coreelec"\nVERSION="21.3-Omega_devel_NEW"\nVERSION_ID="21.3"\nBUILD_ID="'+m.SOURCE_CONTRACT['coreelec_revision']+'"\n'
+bad=dict(m.SOURCE_CONTRACT,linux_revision='unapproved');f.values[m.CONTRACT_FILE]=json.dumps(bad)
+r={};m.recover(f,r);assert r['result']=='skipped-other-build' and not f.writes
+print('PASS: packaged builds accept new timestamps only with the audited source contract; changed driver pins reject')

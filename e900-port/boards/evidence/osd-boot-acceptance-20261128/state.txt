@@ -1,0 +1,28 @@
+787ad4a9-eb6d-4d60-a74b-7817315d77d7
+boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=0 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=4 systemd.show_status=auto
+Startup finished in 8.668s (kernel) + 8.900s (userspace) = 17.569s 
+kodi.target reached after 8.900s in userspace.
+ORDER
+[   15.835705] CoreELEC systemd[1]: Starting e900-osd-rdma-boot.service...
+[   17.358205] CoreELEC python3[3646]: {"boot": "787ad4a9-eb6d-4d60-a74b-7817315d77d7", "monotonic": 16.575215673, "check": false, "irq_before": [0, 0], "before": {"auto": "0x120", "start": "0x34e10000", "end": "0x34e10107"}, "samples": [{"irq": 12, "auto": "0x14001e0"}, {"irq": 26, "auto": "0x14001e0"}], "result": "recovered"}
+[   17.444421] CoreELEC systemd[1]: Finished e900-osd-rdma-boot.service.
+[   17.476663] CoreELEC systemd[1]: Starting kodi.service...
+[   17.557131] CoreELEC systemd[1]: Started kodi.service.
+[   17.574896] CoreELEC (kodi.sh)[3769]: kodi.service: Referenced but unset environment variable evaluates to an empty string: KODI_DEBUG
+[   17.617726] CoreELEC kodi.sh[3769]: KODI_AE_SINK env variable is deprecated and will be removed in the future.
+[   17.617726] CoreELEC kodi.sh[3769]: Use the --audio-backend command line switch instead.
+[   36.772678] CoreELEC udevadm[3844]: Unknown device "/sys/bus/sdio/devices/*": No such device
+[   53.555959] CoreELEC kodi.sh[3776]: codec_init amstream version : 2.0
+[   53.573188] CoreELEC kodi.sh[3776]: [codec_pause]p->has_audio=0
+[   53.573188] CoreELEC kodi.sh[3776]: video_pause!
+[   55.857543] CoreELEC kodi.sh[3776]: [codec_pause]p->has_audio=0
+[   55.857543] CoreELEC kodi.sh[3776]: video_pause!
+[   55.910428] CoreELEC kodi.sh[3776]: [codec_reset:1492]ret=0
+OSD1
+4593
+OSD2
+4655
+INIT
+2
+TF
+/dev/mmcblk0p1 /var/media/mmcblk0p1-FAAC-E128 vfat rw,nosuid,nodev,noexec,noatime,fmask=0133,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 0

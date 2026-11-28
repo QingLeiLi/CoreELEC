@@ -1,0 +1,25 @@
+{
+  "boot": "787ad4a9-eb6d-4d60-a74b-7817315d77d7",
+  "monotonic": 16.575215673,
+  "check": false,
+  "irq_before": [
+    0,
+    0
+  ],
+  "before": {
+    "auto": "0x120",
+    "start": "0x34e10000",
+    "end": "0x34e10107"
+  },
+  "samples": [
+    {
+      "irq": 12,
+      "auto": "0x14001e0"
+    },
+    {
+      "irq": 26,
+      "auto": "0x14001e0"
+    }
+  ],
+  "result": "recovered"
+}

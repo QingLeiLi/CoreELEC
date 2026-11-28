@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install a version-checked patch profile into a dedicated CoreELEC checkout."""
 import hashlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -412,6 +413,31 @@ def uwe_module_install_fix(repo):
     return relative, content, metadata
 
 
+def image_overlay_files(profile):
+    """CE copies the device filesystem overlay on every image assembly."""
+    if profile != "decoder":
+        return {}
+    spec = importlib.util.spec_from_file_location("e900_boot_image", PORT / "scripts/e900-osd-rdma-boot.py")
+    boot = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(boot)
+    if (boot.SOURCE_CONTRACT["linux_revision"] != PINS["linux"] or
+            boot.SOURCE_CONTRACT["coreelec_revision"] != PINS["coreelec"]):
+        raise RuntimeError("Boot recovery requires an audit for the new source pins")
+    prefix = "projects/Amlogic-ce/devices/Amlogic-ng/filesystem/"
+    files = {
+        "usr/lib/e900-boot/e900-osd-rdma-boot.py": (PORT / "scripts/e900-osd-rdma-boot.py").read_bytes(),
+        "usr/lib/e900-boot/source-contract.json": (json.dumps(boot.SOURCE_CONTRACT, indent=2) + "\n").encode(),
+        "usr/lib/systemd/system/e900-osd-rdma-image.service": (PORT / "config/e900-osd-rdma-image.service").read_bytes(),
+        "usr/lib/systemd/system/kodi.service.d/30-e900-osd-rdma-image.conf": (PORT / "config/30-e900-osd-rdma-image.conf").read_bytes(),
+    }
+    return {prefix + name: data for name, data in files.items()}
+
+
+def image_overlay_metadata(profile):
+    return [dict(destination=name, sha256=hashlib.sha256(data).hexdigest())
+            for name, data in sorted(image_overlay_files(profile).items())]
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -419,6 +445,7 @@ def install(repo, profile):
     if head != PINS["coreelec"]:
         raise RuntimeError(f"Refusing unpinned checkout: {head}")
     selected = selected_patches(profile)
+    image_files = image_overlay_files(profile)
     marker = repo / ".e900-profile.json"
     previous = json.loads(marker.read_text()) if marker.exists() else None
     capture_enabled = os.environ.get("E900_VDIN_CAPTURE", "0") == "1"
@@ -447,6 +474,7 @@ def install(repo, profile):
                  package_install_fixes=[media_metadata] + ([uwe_fix[2]] if uwe_fix else []),
                  host_codegen=host_metadata,
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
+                 image_files=image_overlay_metadata(profile),
                  status="experimental-unvalidated")
 
     old_host = (previous or {}).get("host_codegen")
@@ -465,6 +493,15 @@ def install(repo, profile):
             raise RuntimeError("Patch profile changed after building. Use a fresh build volume "
                                "or explicitly enable checked incremental reuse.")
         invalidate = invalidated_packages(previous, state)
+    old_image_files = {entry["destination"]: entry for entry in (previous or {}).get("image_files", [])}
+    for name, entry in old_image_files.items():
+        dest = repo / name
+        if dest.is_symlink() or (dest.exists() and hashlib.sha256(dest.read_bytes()).hexdigest() != entry["sha256"]):
+            raise RuntimeError("Locally edited image overlay: " + name)
+    for name in image_files:
+        dest = repo / name
+        if dest.is_symlink() or (dest.exists() and name not in old_image_files):
+            raise RuntimeError("Unmanaged image overlay: " + name)
     # Do not overwrite a user's edits, even in files this script installed before.
     for entry in (previous or {}).get("patches", []):
         dest = repo / entry["destination"]
@@ -481,6 +518,12 @@ def install(repo, profile):
         dest = repo / entry["destination"]
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes((PORT / "patches" / entry["source"]).read_bytes())
+    for name in old_image_files.keys() - image_files.keys():
+        (repo / name).unlink(missing_ok=True)
+    for name, data in image_files.items():
+        dest = repo / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
     for source_path, source_content, _ in source_fixes:
         (repo / source_path).write_text(source_content)
     (repo / host_path).write_text(host_content)

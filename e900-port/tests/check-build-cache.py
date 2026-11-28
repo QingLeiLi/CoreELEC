@@ -28,7 +28,7 @@ cache = load("build_cache_test", PORT / "scripts/build-cache.py")
 with tempfile.TemporaryDirectory(prefix="e900-cache-check-") as temporary:
     root = pathlib.Path(temporary)
     port = root / "port"
-    for name in ["scripts", "patches", "boards"]:
+    for name in ["scripts", "patches", "boards", "config"]:
         shutil.copytree(PORT / name, port / name, ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy2(PORT / "pins.json", port / "pins.json")
     host = dict(os_release="Ubuntu 22.04", machine="x86_64", packages="gcc-12=12.3;libc6=2.35")

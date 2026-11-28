@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build294-only boot compensation for the verified missing OSD CH3 trigger.
+"""Audited E900 boot compensation for the verified missing OSD CH3 trigger.
 
 Run before Kodi, after graphics/device setup. No arbitrary register interface,
 shared reset, CTRL write, video playback or persistent bootloader modification.
@@ -15,6 +15,23 @@ BUILD = '21.3-Omega_devel_20261128084424'
 BOARD = 'gxlx2_p291_1g_e900v21c'
 MASK = 0xff000088
 WANT = 0x01000080
+SOURCE_CONTRACT = dict(schema=1, board=BOARD, os_version='21.3',
+    coreelec_revision='fc61125e8900ab0c2593a29b615980ed0cd5b939',
+    linux_revision='50c8e8154c5aba3c7cd8438d04dd5fdd51733e41',
+    kernel_release='4.9.269', layout='rdma-v1-ch3', dma_page='0x34e10000')
+CONTRACT_FILE = '/usr/lib/e900-boot/source-contract.json'
+
+
+def supported_image(device, version):
+    if ('VERSION="' + BUILD + '"') in version.splitlines():
+        return True  # original, independently verified runtime installation
+    try:
+        contract = json.loads(device.text(CONTRACT_FILE))
+    except (OSError, ValueError):
+        return False
+    expected = ['ID="coreelec"', 'VERSION_ID="21.3"',
+                'BUILD_ID="' + SOURCE_CONTRACT['coreelec_revision'] + '"']
+    return contract == SOURCE_CONTRACT and all(line in version.splitlines() for line in expected)
 
 
 class Device:
@@ -45,7 +62,7 @@ class Device:
 def recover(device, record, check=False):
     # A new image must opt in explicitly after a fresh register-map audit.
     version = device.text('/etc/os-release')
-    if ('VERSION="' + BUILD + '"') not in version.splitlines():
+    if not supported_image(device, version):
         record['result'] = 'skipped-other-build'
         return
     if device.text('/proc/device-tree/coreelec-dt-id').rstrip('\0') != BOARD:
