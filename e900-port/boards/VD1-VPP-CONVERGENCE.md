@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**TF卡启用（2026-11-28，用户另行要求）**：源码启用SD_EMMC_B，核对P291 CARD_6检测/3.3V配置；现机旧293H仅改原DTB status，备份后软件重启。新boot91eb4cd5，status=okay、meson_mmc_probe成功且driver绑定，SSH恢复；没有mmc卡枚举，待用户确认插卡后做文件读写。未升级内核/SYSTEM、未改显示寄存器、未写eMMC。详见[配置与原始证据](TF-CARD-20261128.md)。
+
 **无线接入（2026-11-28，用户另行要求）**：基于491fb30742复用CE pinned UWE5621 SDIO Wi-Fi/BT包，启用本板SDIO A及参考GPIO，配套修复可选BT host-wake和隐藏构建目录漏装模块，未操作设备网络/电源。主机与DTB检查通过，ARM构建/无线实测待验；不改变HEVC DMC/legacy显示基准结论。见[无线接入及待验项](UWE5621-WIRELESS-20261128.md)。
 
 **本次整屏黑恢复（2026-11-28，单bit因果验证）**：用户允许后，同b6444de0/旧293H、无活动player，只将DMC_REQ_CTRL deef→dfef（仅bit8），不重启/播放/唤醒屏保。OSD/普通/共享IRQ恢复推进，STATUS读请求回Idle/pending清零，watchdog reset_count停19927；后续REQ仍dfef、IRQ持续增长。用户确认“恢复了”。确认本现场准入位的恢复因果，源码HEVCB错分支与之吻合；原EOF清位瞬间未录，不混同旧SDR/CSC故障。media0004已修防清位但未编译/部署，旧293H再放HEVC可能复发。下一项最新decoder/image构建，部署前保存基准，首播前核对bit8，再验EOF/Stop/replay及菜单；当前不再操作播放。见[原包与验收边界](HEVC-DMC-BIT8-20261128.md)。

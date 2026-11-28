@@ -1,0 +1,23 @@
+BOOT
+91eb4cd5-4503-414a-aaad-97c041639c8b
+SD_STATUS
+okay
+PARTITIONS
+major minor  #blocks  name
+
+   7        0     166796 loop0
+   8        0   30412800 sda
+   8        1     524288 sda1
+   8        2   29884416 sda2
+MMC_LOG
+[    0.000000@0]d amlogic_init_sdemmc: register amlogic sdemmc clk
+[    0.000000@0]d amlogic_init_sdemmc: register amlogic sdemmc clk
+[    3.394533@2]- meson-mmc: mmc driver version: 3.02, 2017-05-15: New Emmc Host Controller
+[    3.401572@2]- meson-mmc: gpio_cd = 1c1
+[    3.442171@2]- meson-mmc: meson_mmc_probe() : success!
+CARD_DEVICES
+DRIVER
+lrwxrwxrwx    1 root     root             0 Nov 28 11:35 /sys/bus/platform/devices/d0072000.sd/driver -> ../../../bus/platform/drivers/meson-aml-mmc
+FREE
+Filesystem                Size      Used Available Use% Mounted on
+/dev/sda1               511.7M    467.1M     44.6M  91% /flash

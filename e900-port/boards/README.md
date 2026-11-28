@@ -18,7 +18,8 @@
 | 有线网 | 内部 RMII PHY；不使用 P212 的外部 PHY 复位与 RGMII 引脚 |
 | HDMI | 保留 GXL PHY 配置 `ic_type=3`，独立启用 GXLX2 直接寄存器访问候选补丁 |
 | Mali 用户库 | 保留大小写敏感的 `amlogic, Gxl` 兼容项供 CE 选择 Mali-450 库，真实 CPU 仍标识为 GXLX2 |
-| eMMC / SD / GPIO 外设 | 仍禁用；不能安装到 eMMC |
+| eMMC / GPIO 外设 | 仍禁用；不能安装到 eMMC |
+| TF / SD 卡槽 | 已启用SD_EMMC_B/CARD_6检测，见[TF验证记录](TF-CARD-20261128.md) |
 | SDIO / Wi-Fi / 蓝牙 | 已接入 UWE5621 驱动、固件及 P291 板级配置，待 ARM 构建和实机验收，见[无线适配](UWE5621-WIRELESS-20261128.md) |
 
 `validate-board.py` 检查编译后的 DTB 属性和上述保留区的相互独立性。它不能验证实机总线时序、PHY 电源、HDMI PLL、显示、声音或视频解码。

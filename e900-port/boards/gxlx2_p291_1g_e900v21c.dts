@@ -67,9 +67,10 @@
 	portnum = <0>;
 };
 
-/* Keep internal storage and the SD socket outside this USB-only image. */
+/* Keep internal eMMC untouched; enable the removable TF/SD slot. */
 &sd_emmc_c { status = "disabled"; };
-&sd_emmc_b { status = "disabled"; };
+/* P291: CARD_0..5 bus, CARD_6 card detect, 3.3V SD high-speed. */
+&sd_emmc_b { status = "okay"; };
 &sd_emmc_a {
 	status = "okay";
 	#address-cells = <1>;

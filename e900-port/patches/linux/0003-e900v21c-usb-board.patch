@@ -17,7 +17,7 @@ diff --git a/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
 new file mode 100644
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/coreelec-gxl/gxlx2_p291_1g_e900v21c.dts
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,115 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/* Experimental E900V21C 5800-2ATA411, GXLX2, 1GB. USB boot only. */
 +#include "gxl_p212_1g.dts"
@@ -87,9 +87,10 @@ new file mode 100644
 +	portnum = <0>;
 +};
 +
-+/* Keep internal storage and the SD socket outside this USB-only image. */
++/* Keep internal eMMC untouched; enable the removable TF/SD slot. */
 +&sd_emmc_c { status = "disabled"; };
-+&sd_emmc_b { status = "disabled"; };
++/* P291: CARD_0..5 bus, CARD_6 card detect, 3.3V SD high-speed. */
++&sd_emmc_b { status = "okay"; };
 +&sd_emmc_a {
 +	status = "okay";
 +	#address-cells = <1>;

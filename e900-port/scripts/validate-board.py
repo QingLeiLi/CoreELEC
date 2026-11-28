@@ -86,11 +86,19 @@ def validate(path):
     assert nodes["/meson-fb"]["logo_addr"] == b"0x3dc00000\0"
     assert cells(nodes["/usb2phy@d0078000"]["portnum"]) == [2]
     assert cells(nodes["/usb3phy@d0078080"]["portnum"]) == [0]
-    for name in ["emmc@d0074000", "sd@d0072000",
+    for name in ["emmc@d0074000",
                  "gpioleds", "gpio_keypad", "openvfd"]:
         assert nodes["/" + name]["status"] == b"disabled\0", name
-    for name in ["sdio@d0070000", "wifi", "bt-dev"]:
+    for name in ["sd@d0072000", "sdio@d0070000", "wifi", "bt-dev"]:
         assert nodes["/" + name]["status"] == b"okay\0", name
+    sd = nodes["/sd@d0072000"]
+    slot = nodes["/sd@d0072000/sd"]
+    assert cells(sd["bus-width"]) == [4]
+    assert "non-removable" not in sd
+    assert cells(slot["gpio_cd"])[1:] == [48, 0]  # CARD_6, active-low in vendor driver
+    assert cells(slot["card_type"]) == [5]  # SD/MMC, not SDIO
+    assert cells(slot["f_max"]) == [100000000]
+    assert b"MMC_CAP_UHS_" not in slot["caps"]  # no unverified 1.8V switch
     wifi, bt = nodes["/wifi"], nodes["/bt-dev"]
     assert cells(wifi["interrupt_pin"])[1:] == [86, 0]  # GPIOX_7
     assert cells(wifi["power_on_pin"])[1:] == [85, 0]  # GPIOX_6
