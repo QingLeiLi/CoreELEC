@@ -55,7 +55,8 @@ PROFILES["decoder"] = PROFILES["hdmi"] + ["media/0002-gxlx2-experimental-clock-r
                                          "linux/0043-gxlx2-live-playback-windows.patch",
                                          "linux/0044-gxlx2-legacy-sdr-csc-routing.patch",
                                          "linux/0045-gxlx2-all-output-legacy-csc-pq.patch",
-                                         "linux/0046-gxlx2-idle-diagnostic-fast-paths.patch"]
+                                         "linux/0046-gxlx2-idle-diagnostic-fast-paths.patch",
+                                         "linux/0047-aml-bt-optional-host-wake.patch"]
 BOARD = "gxlx2_p291_1g_e900v21c"
 HOST_CODEGEN = dict(schema=1, cflags="-march=x86-64 -mtune=generic",
                     upstream_optimize_sha256="8291f139ca78f0d949cc85e6f94b6d48c946fd28485c8ba12d5c810aaec61429")
@@ -153,6 +154,8 @@ def invalidated_packages(previous, state):
     if (previous.get("build_options") != state.get("build_options") or
             previous.get("capture_config") != state.get("capture_config")):
         packages.update(["linux", "media_modules-aml"])
+    if "linux" in packages and "uwe5631-aml" in new_install:
+        packages.add("uwe5631-aml")
     return sorted(packages)
 
 
@@ -382,6 +385,33 @@ def media_module_install_fix(repo):
     return relative, content, metadata
 
 
+def uwe_module_install_fix(repo):
+    """Keep the pinned CE driver, fixing discovery below a hidden work root."""
+    relative = "projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk"
+    original = (repo / relative).read_text()
+    old = r"""  find $PKG_BUILD/ -name \*.ko -not -path '*/\.*' \
+    -exec cp {} ${INSTALL}/$(get_full_module_dir)/${PKG_NAME} \;"""
+    new = r"""  (
+    cd "$PKG_BUILD" || exit 1
+    find . -path '*/.*' -prune -o -type f -name \*.ko -exec cp {} "$INSTALL/$(get_full_module_dir)/$PKG_NAME" \;
+  )
+  local module
+  for module in uwe5621_bsp_sdio sprdwl_ng sprdbt_tty; do
+    if [ ! -s "$INSTALL/$(get_full_module_dir)/$PKG_NAME/$module.ko" ]; then
+      echo "Missing Unisoc module: $module.ko" >&2
+      return 1
+    fi
+  done"""
+    normalized = original.replace(new, old)
+    if (hashlib.sha256(normalized.encode()).hexdigest() != "30fcfca1f15776b3d5fbc89ef1ca23394462233611b36944f7ec87d16ca7daae"
+            or normalized.count(old) != 1):
+        raise RuntimeError("Unexpected Unisoc package recipe; refusing local edits")
+    content = normalized.replace(old, new)
+    metadata = dict(package="uwe5631-aml", policy="required-sdio-modules-v1", destination=relative,
+                    file_sha256=hashlib.sha256(content.encode()).hexdigest())
+    return relative, content, metadata
+
+
 def install(repo, profile):
     if profile not in PROFILES:
         raise ValueError("Unknown profile")
@@ -396,6 +426,7 @@ def install(repo, profile):
     validate_packages(repo)
     host_path, host_content, host_metadata = host_codegen_fix(repo)
     media_path, media_content, media_metadata = media_module_install_fix(repo)
+    uwe_fix = uwe_module_install_fix(repo) if profile == "decoder" else None
     source_fixes = [f for f in [keyutils_download_fix(repo), usbutils_download_fix(repo), connman_download_fix(repo),
                     wireguard_download_fix(repo), wireguard_tools_download_fix(repo),
                     u_boot_tools_download_fix(repo), megatools_download_fix(repo)] if f is not None]
@@ -413,7 +444,7 @@ def install(repo, profile):
     state = dict(profile=profile, pins=PINS, patches=entries,
                  capture_config=capture_fix[2] if capture_fix else None,
                  source_downloads=[entry[2] for entry in source_fixes],
-                 package_install_fixes=[media_metadata],
+                 package_install_fixes=[media_metadata] + ([uwe_fix[2]] if uwe_fix else []),
                  host_codegen=host_metadata,
                  build_options=option_metadata, board_dtb=BOARD if profile == "decoder" else None,
                  status="experimental-unvalidated")
@@ -454,6 +485,8 @@ def install(repo, profile):
         (repo / source_path).write_text(source_content)
     (repo / host_path).write_text(host_content)
     (repo / media_path).write_text(media_content)
+    if uwe_fix:
+        (repo / uwe_fix[0]).write_text(uwe_fix[1])
     if capture_fix:
         (repo / capture_fix[0]).write_text(capture_fix[1])
     if option_content:

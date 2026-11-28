@@ -1,5 +1,5 @@
-# E900V21C USB test image: generic boot files and wired networking.
+# E900V21C USB test image: generic boot files, Ethernet and UWE5621 SDIO Wi-Fi/Bluetooth.
 # These options affect selected image packages, not the cross-toolchain ABI.
 SUBDEVICES=""
-ADDITIONAL_DRIVERS="gpu-aml media_modules-aml"
+ADDITIONAL_DRIVERS="gpu-aml media_modules-aml uwe5631-aml"
 FIRMWARE=""

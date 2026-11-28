@@ -158,6 +158,7 @@ void hdmitx_wr_reg_normal(unsigned int a, unsigned int d) { (void)a; (void)d; ro
     checkout = work / "CoreELEC"
     for relative in ["projects/Amlogic-ce/packages/linux/package.mk",
                      "projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk",
+                     "projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk",
                      "packages/sysutils/keyutils/package.mk",
                      "packages/sysutils/usbutils/package.mk",
                      "packages/network/connman/package.mk",

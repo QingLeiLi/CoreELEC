@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
   subprocess.run([sys.executable,str(PORT/'tests/vdin'/check)],env=env,check=True)
  # Real installer transitions and compatible-cache retention.
  repo=root/'repo';repo.mkdir()
- paths=['projects/Amlogic-ce/packages/linux/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk','packages/sysutils/keyutils/package.mk','packages/sysutils/usbutils/package.mk','packages/network/connman/package.mk','packages/network/wireguard-linux-compat/package.mk','packages/network/wireguard-tools/package.mk','projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk','packages/tools/megatools/package.mk','config/optimize']
+ paths=['projects/Amlogic-ce/packages/linux/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/media_modules-aml/package.mk','projects/Amlogic-ce/packages/linux-drivers/amlogic/uwe5631-aml/package.mk','packages/sysutils/keyutils/package.mk','packages/sysutils/usbutils/package.mk','packages/network/connman/package.mk','packages/network/wireguard-linux-compat/package.mk','packages/network/wireguard-tools/package.mk','projects/Amlogic-ce/packages/tools/u-boot-tools/package.mk','packages/tools/megatools/package.mk','config/optimize']
  for path in paths:
   dest=repo/path;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(REFERENCE/path,dest)
  baseline=installer.capture_config_fix(REFERENCE,False)[1]
@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
   assert len(state['patches'])==len(installer.PROFILES['decoder'])+len(installer.CAPTURE_PATCHES) and state['capture_config']
   assert all(line in config.read_text().splitlines() for line in ['CONFIG_AMLOGIC_MEDIA_VIN=y','CONFIG_AMLOGIC_MEDIA_TVIN=y','CONFIG_AMLOGIC_MEDIA_VDIN=y','CONFIG_AMLOGIC_MEDIA_VIUIN=y'])
   assert all('CONFIG_'+name+'=y' in config.read_text().splitlines() for name in installer.CAPTURE_BUILTIN_DEPS)
-  assert json.loads((repo/'.e900-invalidate.json').read_text())==['linux','media_modules-aml'] and sentinel.read_text()=='compiler'
+  assert json.loads((repo/'.e900-invalidate.json').read_text())==['linux','media_modules-aml','uwe5631-aml'] and sentinel.read_text()=='compiler'
   # A failed older run may have left the exact formerly managed module config.
   new_config=config.read_text()
   legacy_config=baseline.replace('# CONFIG_AMLOGIC_MEDIA_VIN is not set','CONFIG_AMLOGIC_MEDIA_VIN=y',1)+installer.CAPTURE_CONFIG_LEGACY_EXTRA
@@ -60,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix='e900-vdin-capture-') as d:
   (repo/'.e900-profile.json').write_text(json.dumps(old_state))
   installer.install(repo,'decoder')
   assert config.read_text()==new_config and sentinel.read_text()=='compiler'
-  assert json.loads((repo/'.e900-invalidate.json').read_text())==['linux','media_modules-aml']
+  assert json.loads((repo/'.e900-invalidate.json').read_text())==['linux','media_modules-aml','uwe5631-aml']
   print('PASS: failed module-build cache migrates to built-in capture without discarding the toolchain',flush=True)
   before=config.read_text();config.write_text(before+'\n# local edit\n')
   for enabled in ['0','1']:

@@ -39,8 +39,24 @@
 	gpioleds { status = "disabled"; };
 	gpio_keypad { status = "disabled"; };
 	openvfd { status = "disabled"; };
-	wifi { status = "disabled"; };
-	bt-dev { status = "disabled"; };
+	/* P291 reference DT; old unit's Android log confirms X6/X7 and HIGH IRQ.
+	 * Runtime chip 0x56630001 uses UWE5621 SDIO, not Broadcom buffers.
+	 * Keep the reference 32k pinmux, without P212's unverified PWM programming.
+	 */
+	wifi {
+		status = "okay";
+		interrupt_pin = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
+		irq_trigger_type = "GPIO_IRQ_HIGH";
+		power_on_pin = <&gpio GPIOX_6 GPIO_ACTIVE_HIGH>;
+		/delete-property/ dhd_static_buf;
+		/delete-property/ pwm_config;
+	};
+	bt-dev {
+		status = "okay";
+		gpio_reset = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
+		/* P291 has no dedicated host-wake GPIO. SDIO carries BT traffic. */
+		/delete-property/ gpio_btwakeup;
+	};
 };
 
 &usb2_phy {
@@ -51,10 +67,19 @@
 	portnum = <0>;
 };
 
-/* Prevent Linux from probing internal storage or unverified SDIO wiring. */
+/* Keep internal storage and the SD socket outside this USB-only image. */
 &sd_emmc_c { status = "disabled"; };
 &sd_emmc_b { status = "disabled"; };
-&sd_emmc_a { status = "disabled"; };
+&sd_emmc_a {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	/* Match CE's Unisoc udev rule and the sprdwl OF driver. */
+	wifi@1 {
+		reg = <1>;
+		compatible = "sprd,unisoc-wifi";
+	};
+};
 
 &amhdmitx {
 	/* GXL PHY/clock profile, separate direct DWC/TOP register transport. */

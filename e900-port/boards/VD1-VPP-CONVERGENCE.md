@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**无线接入（2026-11-28，用户另行要求）**：基于491fb30742复用CE pinned UWE5621 SDIO Wi-Fi/BT包，启用本板SDIO A及参考GPIO，配套修复可选BT host-wake和隐藏构建目录漏装模块，未操作设备网络/电源。主机与DTB检查通过，ARM构建/无线实测待验；不改变HEVC DMC/legacy显示基准结论。见[无线接入及待验项](UWE5621-WIRELESS-20261128.md)。
+
 **本次整屏黑恢复（2026-11-28，单bit因果验证）**：用户允许后，同b6444de0/旧293H、无活动player，只将DMC_REQ_CTRL deef→dfef（仅bit8），不重启/播放/唤醒屏保。OSD/普通/共享IRQ恢复推进，STATUS读请求回Idle/pending清零，watchdog reset_count停19927；后续REQ仍dfef、IRQ持续增长。用户确认“恢复了”。确认本现场准入位的恢复因果，源码HEVCB错分支与之吻合；原EOF清位瞬间未录，不混同旧SDR/CSC故障。media0004已修防清位但未编译/部署，旧293H再放HEVC可能复发。下一项最新decoder/image构建，部署前保存基准，首播前核对bit8，再验EOF/Stop/replay及菜单；当前不再操作播放。见[原包与验收边界](HEVC-DMC-BIT8-20261128.md)。
 
 **HEVC DMC bit8候选收敛（2026-11-28）**：只读STATUS9b0a/FIFO2020/pending0，按相近GXL文档解为OSD通道3的AXI读请求未服务；RDMA gate位开、表地址在RAM范围。发现media0003只修VLD，HEVC enable/disable仍因CPU>=G12给GXLX2加bit8，而GXL表bit8是VPU读0。实机运行DT基址核对后REQ_CTRL=deef，bit4/8/13均关，与HEVC EOF及共享取表停滞吻合。新增默认media0004仅排除GXLX2 HEVCB、保留bit8，真实C函数及相关主机检查通过；ARM/实际恢复仍待证。下一项准备仅OR bit8（deef→dfef）的恢复试验，尚未获这一写入授权，不重启/播放。见[源码、状态、修正与判据](HEVC-DMC-BIT8-20261128.md)。

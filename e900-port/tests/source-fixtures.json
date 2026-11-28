@@ -646,5 +646,13 @@
     "git_blob_sha1": "dc31a344ce0e048865de357f4643211bb8e80897",
     "sha256": "d8449c23ec2dc1492f3210a5c491ca8691e1b927a980ad95396452be4a4f15e3",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/bluetooth/bt_device.c",
+    "git_blob_sha1": "f5093615b21f485b144b2dcd2dc1ed150967be5f",
+    "sha256": "9772a7b3068f1ee3dc07f14fc18f16255a8403c263531a9576217171052f4f49",
+    "verified": true
   }
 ]
