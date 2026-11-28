@@ -1,0 +1,113 @@
+Subject: [PERF] bypass idle E900 diagnostics before CPU dispatch and logging
+
+GEN3 hooks run on register-write hot paths even when their budget is zero.
+Use an inline register/budget filter before the existing out-of-line emitter.
+Check recorder state before CPU identity for inactive trace fast paths.
+Keep active logger bodies, budgets, hardware calls and write order unchanged.
+No LUT cache, CSC policy, RDMA mode or display timing changes.
+
+--- a/include/linux/amlogic/media/registers/e900_debug.h
++++ b/include/linux/amlogic/media/registers/e900_debug.h
+@@ -26,8 +26,8 @@
+ static noinline void e900_debug_event(const char *event, u32 a, u32 b, u32 c, u32 d) \
+ { \
+  unsigned int n; \
+- if (!is_meson_gxlx2_cpu()) return; \
+  n = READ_ONCE(gxlx2_debug_events); \
++ if (!n || !is_meson_gxlx2_cpu()) return; \
+  while (n) { \
+   unsigned int seen = cmpxchg(&gxlx2_debug_events, n, n - 1); \
+   if (seen == n) break; \
+--- a/include/linux/amlogic/media/registers/e900_gen3_debug.h
++++ b/include/linux/amlogic/media/registers/e900_gen3_debug.h
+@@ -10,7 +10,7 @@
+ static unsigned int gxlx2_gen3_rmw_events; \
+ module_param_cb(gxlx2_gen3_rmw_events, &e900_debug_ops, &gxlx2_gen3_rmw_events, 0600); \
+ MODULE_PARM_DESC(gxlx2_gen3_rmw_events, "E900 fixed GEN3 RMW log budget 0..512; default off"); \
+-static noinline void e900_gen3_rmw(u32 reg, int handle, int mode, u32 start, u32 len, \
++static noinline void e900_gen3_emit(u32 reg, int handle, int mode, u32 start, u32 len, \
+  u32 hardware, u32 base, u32 result, int source, void *caller) \
+ { \
+  unsigned int n; \
+@@ -24,5 +24,12 @@
+  if (!n) return; \
+  pr_info("e900-gen3 channel=" channel " handle=%d mode=%d start=%u len=%u hardware=%x base=%x result=%x source=%d caller=%pS\n", \
+  handle, mode, start, len, hardware, base, result, source, caller); \
++} \
++/* Filter before the out-of-line ten-argument logger on every register write. */ \
++static inline void e900_gen3_rmw(u32 reg, int handle, int mode, u32 start, u32 len, \
++ u32 hardware, u32 base, u32 result, int source, void *caller) \
++{ \
++ if (reg != 0x1aa7 || !READ_ONCE(gxlx2_gen3_rmw_events)) return; \
++ e900_gen3_emit(reg, handle, mode, start, len, hardware, base, result, source, caller); \
+ }
+ #endif
+--- a/drivers/amlogic/media/common/rdma/e900_playback_trace.h
++++ b/drivers/amlogic/media/common/rdma/e900_playback_trace.h
+@@ -56,7 +56,7 @@
+ {
+ 	unsigned long flags;
+ 
+-	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1)
++	if (READ_ONCE(e900_playback_status) != 1 || !is_meson_gxlx2_cpu())
+ 		return;
+ 	spin_lock_irqsave(&e900_playback_lock, flags);
+ 	if (batch && batch <= e900_playback_batch_floor)
+@@ -78,7 +78,7 @@
+ 	unsigned long flags;
+ 	u32 batch = 0;
+ 
+-	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1)
++	if (READ_ONCE(e900_playback_status) != 1 || !is_meson_gxlx2_cpu())
+ 		return 0;
+ 	spin_lock_irqsave(&e900_playback_lock, flags);
+ 	if (e900_playback_status == 1) {
+@@ -100,8 +100,8 @@
+ 
+ bool e900_playback_active(void)
+ {
+-	return is_meson_gxlx2_cpu() &&
+-		READ_ONCE(e900_playback_status) == 1;
++	return READ_ONCE(e900_playback_status) == 1 &&
++		is_meson_gxlx2_cpu();
+ }
+ EXPORT_SYMBOL(e900_playback_active);
+ 
+@@ -142,7 +142,7 @@
+ 	u32 batch, old;
+ 	unsigned int i, selected = 0;
+ 
+-	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1 ||
++	if (READ_ONCE(e900_playback_status) != 1 || !is_meson_gxlx2_cpu() ||
+ 	    handle <= 0 || handle >= RDMA_NUM || count <= 0)
+ 		return;
+ 	for (i = 0; i < (unsigned int)count; i++)
+@@ -174,7 +174,7 @@
+ {
+ 	u32 batch;
+ 
+-	if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_playback_status) != 1 ||
++	if (READ_ONCE(e900_playback_status) != 1 || !is_meson_gxlx2_cpu() ||
+ 	    handle <= 0 || handle >= RDMA_NUM)
+ 		return;
+ 	batch = xchg(&e900_playback_normal_pending[handle], 0);
+--- a/drivers/amlogic/media/common/rdma/e900_submit_trace.h
++++ b/drivers/amlogic/media/common/rdma/e900_submit_trace.h
+@@ -38,7 +38,7 @@
+  unsigned int selected = 0, i;
+  u32 batch;
+  e900_playback_normal_table(handle, trigger, table, count);
+- if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_submit_status) != 1 ||
++ if (READ_ONCE(e900_submit_status) != 1 || !is_meson_gxlx2_cpu() ||
+      handle <= 0 || handle >= RDMA_NUM || count <= 0) return;
+  spin_lock_irqsave(&e900_submit_lock, flags);
+  if (e900_submit_status != 1) goto out;
+@@ -71,7 +71,7 @@
+  unsigned long flags;
+  u32 batch;
+  e900_playback_normal_end(handle, status, kind);
+- if (!is_meson_gxlx2_cpu() || READ_ONCE(e900_submit_status) != 1 ||
++ if (READ_ONCE(e900_submit_status) != 1 || !is_meson_gxlx2_cpu() ||
+      handle <= 0 || handle >= RDMA_NUM) return;
+  spin_lock_irqsave(&e900_submit_lock, flags);
+  if (e900_submit_status != 1) goto out;

@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**性能第一轮（2026-11-28）**：基于d47662d38c，默认decoder新增0046，只减少关闭态诊断开销：GEN3 inline地址/预算过滤，debug及playback/submit先看开关再查CPU。保留硬件写入/CSC/RDMA和活动采集语义；未加LUT缓存。主机20万组关闭态调用CPU查询400000→0，活动日志/预算保持，O2内联确认；现有38项+新增1项检查通过。无设备动作，不能宣称实机CPU/流畅度已改善。下一项ARM image构建及全legacy画面回归，再在采集关闭条件建立性能基线。详见[性能记录](PERFORMANCE-20261128.md)。
+
 **全legacy复核（2026-11-28）**：未发现59eaf0b682生产补丁的新错误；纠正主机测试“多输出组合”原为空循环的覆盖表述，改为执行video_process/matrix_update两段真实输出尾部。73728种LCD/HDMI/dummy、帧/格式/路径/range/BS/3DLUT组合在gnu89/gnu99通过：GXLX2无G12尾部调用，其余CPU调用参数与基准相同。生产补丁未改，未操作盒子，完整ARM/颜色验收仍待完成。详见[复核记录](ALL-OUTPUT-LEGACY-BASELINE-20261128.md)。
 
 **全输出legacy切换（2026-11-28，用户指定）**：切换前基准e5cefe4d9b，基准清单独立提交51e67ef98e。默认decoder新增0045，49处CSC/PQ/CM/VADJ选择回落pre-G12，覆盖五格式helper、idle/动态更新和LCD尾部，不按HDMI限定；14个HDR2入口及直接histogram初始化对GXLX2早退，防止旁路。其它CPU谓词/写体保持，CPU身份不变。新增实际谓词/guard主机测试通过；本轮未访问已关机盒子。下一项完整ARM image构建，之后从SDR正常参考做无隔离开关回归，再分别验HDR10/HLG颜色；非HDMI硬件能力仍未验证。见[基准、范围、回退与验收](ALL-OUTPUT-LEGACY-BASELINE-20261128.md)。

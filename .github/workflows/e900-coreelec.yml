@@ -192,6 +192,7 @@ jobs:
           python3 "$PORT_ROOT/tests/check-video-pipeline.py"
           python3 "$PORT_ROOT/tests/check-legacy-csc-routing.py"
           python3 "$PORT_ROOT/tests/check-all-output-legacy.py"
+          python3 "$PORT_ROOT/tests/check-idle-diagnostics.py"
           python3 "$PORT_ROOT/tests/check-video-init-order.py"
           python3 "$PORT_ROOT/tests/check-netconsole.py"
           python3 "$PORT_ROOT/tests/check-display-stage-hooks.py"
