@@ -1,0 +1,89 @@
+OBSERVED
+Sat Nov 28 12:33:04 UTC 2026
+366.21 1368.44
+2a016423-613c-402f-b41f-9bd02954b476
+MODE
+1080p60hz
+EDID
+480p60hz
+576p50hz
+720p60hz
+1080i60hz
+1080p60hz
+720p50hz
+1080i50hz
+1080p50hz
+640x480p60hz
+800x600p60hz
+1024x768p60hz
+1280x960p60hz
+1280x1024p60hz
+1440x900p60hz
+1680x1050p60hz
+2560x1440p60hz
+DISPLAY_EVENTS
+[    1.269268@2]- hdmitx: video: already init VIC = 0  Now VIC = 16
+[    1.269273@2]- hdmitx: hw: div40: 0
+[    1.298415@2]- hdmitx: E: ddc w1b 0x54 0x20 0x00
+[    1.298423@2]- hdmitx: frac_rate = 0
+[    1.298428@2]- hdmitx: config HPLL = 5940000 frac_rate = 0
+[    1.298483@2]- hdmitx: HPLL: 0xc000027b
+[    1.298485@2]- hdmitx: config HPLL done
+[    1.298493@2]- hdmitx: set_hpll_od3_clk_div[687] div = 6
+[    1.298500@2]- hdmitx: j = 4  vid_clk_div = 1
+[    1.298522@2]- hdmitx: set enc for VIC: 16
+[    1.344461@2]- hdmitx: hw:  config hdmitx IP vic = 16 cd:4 cs: 2
+[    1.354572@2]- hdmitx: video: Sink is HDMI device
+[    1.354612@2]- hdmitx: hw: set audio
+[    1.354623@2]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[    1.354636@2]- hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+[    1.354639@2]- hdmitx: hw: aud_n_para = 6144
+[    1.354647@2]- hdmitx: hw: set channel status
+[    1.354662@2]- hdmitx: hw: [0x10e3] = 0x1f
+[    1.354681@2]- hdmitx: audio: Audio Type: PCM
+[    1.354685@2]- hdmitx: system: update rx hdr info 0
+[    1.354687@2]- hdmitx: hw: set audio
+[    1.354690@2]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[    1.354702@2]- hdmitx: fs = 3, cd = 4, tmds_clk = 148500
+[    1.354704@2]- hdmitx: hw: aud_n_para = 6144
+[    1.354712@2]- hdmitx: hw: set channel status
+[    1.354725@2]- hdmitx: hw: [0x10e3] = 0x1f
+[    1.354744@2]- hdmitx: audio: Audio Type: PCM
+[    1.393286@3]- fb: malloc_osd_memory, cma:ffffff800acf57f8
+[    1.393296@3]- fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+[    1.393333@3]- fb: malloc_osd_memory, 1255, fb_index=0,fb_rmem_size=25165824
+[    1.394072@3]- fb: malloc_osd_memory, cma mem
+[    1.394094@3]- fb: logo_index=0,fb_index=0
+[    1.394145@3]- fb: osd[0] canvas.idx =0x40
+[    1.394147@3]- fb: osd[0] canvas.addr=0x3e400000
+[    1.394149@3]- fb: osd[0] canvas.width=7680
+[    1.394150@3]- fb: osd[0] canvas.height=3240
+[    1.394152@3]- fb: osd[0] frame.width=1920
+[    1.394153@3]- fb: osd[0] frame.height=1080
+[    1.394155@3]- fb: osd[0] out_addr_id =0x0
+[    2.412697@3]- fb: osd_release now.index=0,open_count=1
+[    2.414530@1]- fb: malloc_osd_memory, cma:ffffff800acf57f8
+[    2.414539@1]- fb: malloc_osd_memory, 1224, base:0x000000003dc00000, size:37748736
+[    2.414543@1]- fb: malloc_osd_memory, 1255, fb_index=1,fb_rmem_size=1048576
+[    2.414817@1]- fb: malloc_osd_memory, cma mem
+[    2.414833@1]- fb: logo_index=0,fb_index=1
+[    2.415254@1]- fb: osd[1] canvas.idx =0x43
+[    2.415256@1]- fb: osd[1] canvas.addr=0x3fc00000
+[    2.415258@1]- fb: osd[1] canvas.width=128
+[    2.415260@1]- fb: osd[1] canvas.height=32
+[    2.415262@1]- fb: osd[1] frame.width=32
+[    2.415264@1]- fb: osd[1] frame.height=32
+[    2.415267@1]- fb: osd[1] out_addr_id =0x0
+[    3.436700@1]- fb: osd_release now.index=1,open_count=1
+[    4.460962@2]- fb: osd[0] enable: 1 (platform_init)
+[    5.484648@2]- fb: osd[1] enable: 0 (platform_init)
+[   19.335019@3]- fb: osd_release now.index=0,open_count=1
+[   24.328445@3]- hdmitx: hw: set audio
+[   24.328451@3]- hdmitx: hw: hdmitx tx_aud_src = 0, audio_param->channel_num = 1, hdev->aud_output_ch = 0
+[   24.328465@3]- hdmitx: fs = 2, cd = 4, tmds_clk = 148500
+[   24.328473@3]- hdmitx: hw: aud_n_para = 6272
+[   24.328481@3]- hdmitx: hw: set channel status
+[   24.328495@3]- hdmitx: hw: [0x10e3] = 0x1f
+[   24.328515@3]- hdmitx: audio: Audio Type: PCM
+[   24.328517@3]- hdmitx: audio: set audio param
+[  268.867080@0]d fb: update_table_item overflow!vsync_cnt=16090, rdma_cnt=0

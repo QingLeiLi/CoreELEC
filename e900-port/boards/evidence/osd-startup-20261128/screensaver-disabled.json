@@ -1,0 +1,23 @@
+{
+  "wall": 1795868747.097958,
+  "physical_result": "single direction key immediately restored normal brightness",
+  "previous": {
+    "id": 1,
+    "jsonrpc": "2.0",
+    "result": {
+      "value": "screensaver.xbmc.builtin.dim"
+    }
+  },
+  "set": {
+    "id": 1,
+    "jsonrpc": "2.0",
+    "result": true
+  },
+  "after": {
+    "id": 1,
+    "jsonrpc": "2.0",
+    "result": {
+      "value": ""
+    }
+  }
+}

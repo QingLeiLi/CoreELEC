@@ -1,0 +1,8 @@
+2a016423-613c-402f-b41f-9bd02954b476
+boot=LABEL=COREELEC disk=LABEL=STORAGE console=ttyS0,115200 console=tty0 no_console_suspend vout=1080p60hz,en logo=osd0,loaded,0x3dc00000 frac_rate_policy=0 hdr_policy=1 amvideo.gxlx2_hw_init_wait=0 SYSTEM_IMAGE=SYSTEM294 BOOT_IMAGE=e900-Image294 ssh panic=10 loglevel=4 systemd.show_status=auto
+Startup finished in 9.164s (kernel) + 45.338s (userspace) = 54.502s 
+kodi.target reached after 7.853s in userspace.
+[    1.338117@0]- e900-hw-init: step=13 read.end reg=1d1e value=1000
+[    1.338120@0]- e900-hw-init: complete fifo=fff00fff vd1=1000 vd2=1000 hold=8
+[    1.338122@0]- e900-hw-init: notify.exit ret=0
+active

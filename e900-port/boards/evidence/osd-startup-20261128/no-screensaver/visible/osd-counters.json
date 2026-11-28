@@ -1,0 +1,22 @@
+[
+  {
+    "mono": 3855.485208139,
+    "/sys/module/fb/parameters/rdma_irq_count": "0",
+    "/sys/module/fb/parameters/rdma_lost_count": "0",
+    "/sys/module/fb/parameters/rdma_recovery_count": "0",
+    "/sys/module/fb/parameters/disable_osd_rdma_reset": "0",
+    "/sys/module/rdma/parameters/irq_count": "231247,0",
+    "/sys/module/rdma/parameters/vsync_cfg_count": "231249,0",
+    "/sys/module/rdma/parameters/enable": "1,0"
+  },
+  {
+    "mono": 3856.489454923,
+    "/sys/module/fb/parameters/rdma_irq_count": "0",
+    "/sys/module/fb/parameters/rdma_lost_count": "0",
+    "/sys/module/fb/parameters/rdma_recovery_count": "0",
+    "/sys/module/fb/parameters/disable_osd_rdma_reset": "0",
+    "/sys/module/rdma/parameters/irq_count": "231307,0",
+    "/sys/module/rdma/parameters/vsync_cfg_count": "231309,0",
+    "/sys/module/rdma/parameters/enable": "1,0"
+  }
+]
