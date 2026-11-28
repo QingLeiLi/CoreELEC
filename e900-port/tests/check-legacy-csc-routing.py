@@ -45,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix='e900-legacy-csc-') as directory:
     for patch in sorted((P/'patches/linux').glob('*.patch')):
         if patch.name==PATCH:old=(root/FILE).read_text()
         subprocess.run(['git','apply',str(patch)],cwd=root,check=True)
+        if patch.name==PATCH:break  # Isolate the original five-selector regression.
     new=(root/FILE).read_text()
     # This formal patch is EXACTLY the successful binary trial's source model.
     candidate=(P/'candidates/0045-gxlx2-legacy-sdr-csc-route.patch').read_text()

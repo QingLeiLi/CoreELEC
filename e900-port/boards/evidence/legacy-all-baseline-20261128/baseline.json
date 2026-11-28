@@ -54,7 +54,23 @@
     "hlg_mode": 5,
     "user_report": "仍然偏灰，但是感觉比上次好一些",
     "trace": "65536 rows; overflow=1; incomplete",
-    "device": "user powered off; not contacted for this baseline"
+    "device": "user powered off; not contacted for this baseline",
+    "boot_image": "e900-Image293H",
+    "kernel_sha256_from_saved_provenance": "9a2f77e3e31fc8e3d6d9f27e3af93415f9a8145f50272335bcd893d9f6f52a34",
+    "original_build293_kernel_sha256": "8c87b17cead380b6cb23d1a334ec8d5372a3c8d1824d6a259666d2200f01fac8",
+    "userspace_and_boot_files": "SYSTEM/initrd/DTB retained from Build293; no replacement during 293H experiment",
+    "saved_kernel_provenance": "e900-port/boards/evidence/build293/hdr-formats/293H-hlg-auto2-01/provenance.json",
+    "saved_capture": "e900-port/boards/evidence/build293/hdr-formats/293H-hlg-auto2-01",
+    "saved_samples": "e900-port/boards/evidence/build293/hdr-formats/samples.json",
+    "runtime_parameters_last_read": {
+      "hdr_mode": 2,
+      "hdr_process_mode": "5,0",
+      "hlg_process_mode": "5,0",
+      "csc_en": 7,
+      "disable_flush_flag": 0,
+      "input_signal_type": "0x35091209",
+      "sink_output": "SDR/BT709; sink EDID reports no HDR/HLG"
+    }
   },
   "validated_scope": "293L H264 SDR first play and one Stop/replay normal; HDR10/HLG color validation not passed",
   "rollback": "checkout source_commit for source baseline; original Build293, 293L, 293H retained locally and original kernel copies on USB per previous deployment records; no live device verification"

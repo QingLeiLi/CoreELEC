@@ -622,5 +622,29 @@
     "git_blob_sha1": "6e31a7a70f21b1644dacc350dc036421a640eeb6",
     "sha256": "d392a6c997e56a27c1b597d97641174979f0a7bde4fad0527de7536e85bc66ba",
     "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/amvecm.c",
+    "git_blob_sha1": "99e4769f9a3e39cac9100b58bd2475ed2a9416c7",
+    "sha256": "6bd54571dd4acbf17a8d7bd3aab91590b508029f5b56019d839af93fe1251227",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/amve.c",
+    "git_blob_sha1": "9b048e6cfedc3d3ef5031df692583df7562bfd8c",
+    "sha256": "da2d0937dc997f69f26b54e075c7b482ecd89b26c52dc13f885c1e971f1b338c",
+    "verified": true
+  },
+  {
+    "repo": "CoreELEC/linux-amlogic",
+    "revision": "50c8e8154c5aba3c7cd8438d04dd5fdd51733e41",
+    "path": "drivers/amlogic/media/enhancement/amvecm/amcm.c",
+    "git_blob_sha1": "dc31a344ce0e048865de357f4643211bb8e80897",
+    "sha256": "d8449c23ec2dc1492f3210a5c491ca8691e1b927a980ad95396452be4a4f15e3",
+    "verified": true
   }
 ]

@@ -21,14 +21,19 @@ with tempfile.TemporaryDirectory(prefix='e900-hdr-helper-audit-') as td:
         if r['repo']=='CoreELEC/linux-amlogic':
             dst=root/r['path'];dst.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(A/'sources'/r['path'].replace('/','__'),dst)
+    baseline = None
     for patch in sorted((P/'patches/linux').glob('*.patch')):
+        if patch.name.startswith('0045-'):baseline=(root/FILE).read_text()
         subprocess.run(['git','apply',str(patch)],cwd=root,check=True)
-    s=(root/FILE).read_text();predicates=[]
+    assert baseline is not None
+    current=(root/FILE).read_text()
+    assert current.count('get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()') >= 5
+    s=baseline;predicates=[]
     for name in ('hdr_process','hdr10p_process','hlg_process','hlg_hdr_process','sdr_hdr_process'):
         f=function(s,name)
         match=re.search(r'if \((get_cpu_type\(\) >= MESON_CPU_MAJOR_ID_G12A)\) \{',f)
         assert match,name+' no longer has the audited unguarded entry; revise scope/evidence table'
-        predicates.append(match[1]);print('remaining G12 entry:',name)
+        predicates.append(match[1]);print('pre-0045 baseline G12 entry:',name)
     code='''#include <assert.h>
 #define MESON_CPU_MAJOR_ID_G12A 0x28
 static unsigned cpu;
@@ -56,5 +61,5 @@ int main(void){
     assert [(r['reg'],r['handle'],r['value']) for r in calls]==[(8,1,0x10),(9,1,0x10),(8,3,1),(9,3,0x20000001)]
     words=[r for r in rows if r['source'] in(2,3,4) and r['kind']==4 and r['reg']==0x3800]
     assert [(r['index'],r['value']) for r in words]==[(146,0xe05f)]
-print('PASS: current five-selector SDR fix STILL selects G12 in five HDR helpers on GXLX2; production HLG call pair matches real auto2 capture and CTRL=e05f')
+print('PASS: historical pre-0045 five-selector baseline selects G12 in five HDR helpers; old HLG call pair matches saved auto2 capture and CTRL=e05f; current full legacy predicates are tested by check-all-output-legacy.py')
 print('LIMIT: no pixel-stage proof or proof of unsupported silicon; HDR10 helper execution not observed in the bypass trial')

@@ -27,7 +27,10 @@ with tempfile.TemporaryDirectory(prefix='e900-hdr-evidence-') as td:
     stripped = stripped.replace('#include <linux/amlogic/media/registers/e900_debug.h>\n', '')
     stripped = stripped.replace('/* Default-off bounded software events; submitted is not hardware completion. */\nE900_DEBUG_CHANNEL("hdr")\n\n', '')
     stripped = stripped.replace('\tif (disable_flush_flag) {\n\t\treturn hdr_process_select;\n\t}', '\tif (disable_flush_flag)\n\t\treturn hdr_process_select;')
-    assert stripped == before, 'Non-diagnostic HDR policy changes'
+    # 0045 independently tests the new legacy gate; remove only those explicit
+    # guards here to retain the earlier diagnostic-only equivalence check.
+    stripped = re.sub(r'\t/\* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2\. \*/\n\tif \(is_meson_gxlx2_cpu\(\)\)\n\t\treturn(?: hdr_process_select| 0)?;\n\n', '', stripped)
+    assert stripped == before, 'Unexpected non-diagnostic changes beyond tested legacy guards'
     func = after.split('enum hdr_process_sel hdr_func(', 1)[1].split('\nu32 hdr_set(', 1)[0]
     entry = func[func.index('\tif (disable_flush_flag)'):func.index('\tmemset(&hdr_mtx_param')]
     wrap = func[func.index('\tif ((module_sel == OSD1_HDR)'):func.index('\tif (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))')]

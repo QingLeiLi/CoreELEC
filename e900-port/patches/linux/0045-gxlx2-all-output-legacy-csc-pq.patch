@@ -1,0 +1,648 @@
+Subject: [EXPERIMENT] use legacy CSC/PQ for GXLX2 on all outputs
+
+Supersedes the five-selector-only scope. Keep other SoCs and CPU identity
+unchanged. Route format helpers, idle policy, PQ/CM/VADJ and LCD tails
+through their existing pre-G12 implementations. Reject residual HDR2
+writers, including exported/DV/PIP and histogram paths.
+
+This is the user-requested full legacy comparison, not HDR color validation.
+Baseline: e5cefe4d9b; recorded by 51e67ef98e. ARM/hardware pending.
+
+--- a/drivers/amlogic/media/enhancement/amvecm/amcsc.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcsc.c
+@@ -19,6 +19,7 @@
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/amlogic/media/registers/e900_debug.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
+@@ -5078,7 +5079,7 @@
+ 	};
+ 	int i, j;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
+ 		eo_clip_proc(master_info, 0);
+ 		hdr_func(OSD1_HDR, HDR_BYPASS | hdr_ex, vinfo, NULL);
+@@ -5314,7 +5315,7 @@
+ 		1
+ 	};
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
+ 		hdr_func(OSD1_HDR, HDR_BYPASS | hdr_ex, vinfo, NULL);
+ 		if (vd_path == VD1_PATH)
+@@ -5379,7 +5380,7 @@
+ 	};
+ 	int i, j;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
+ 		if (vd_path == VD1_PATH)
+ 			hdr_func(VD1_HDR, HLG_SDR | hdr_ex, vinfo, &m);
+@@ -6302,7 +6303,7 @@
+ 	};
+ 	int i, j;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		if (vd_path == VD1_PATH)
+ 			hdr_func(VD1_HDR, HLG_HDR | hdr_ex, vinfo, NULL);
+ 		else if (vd_path == VD2_PATH)
+@@ -6550,7 +6551,7 @@
+ 	enum hdr_type_e *source_type)
+ {
+ 	if (!vinfo_lcd_support()) {
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 			if (vd_path == VD1_PATH)
+ 				hdr_func(VD1_HDR,
+ 					 SDR_HDR | hdr_ex, vinfo, NULL);
+@@ -7827,7 +7828,7 @@
+ 		}
+ 	}
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		if (!vinfo_lcd_support())
+ 			mtx_setting(POST2_MTX, MATRIX_NULL, MTX_OFF);
+ 		else {
+@@ -8204,7 +8205,7 @@
+ 
+ 	if (is_dolby_vision_on() &&
+ 	    ((vd_path == VD1_PATH) ||
+-	    !cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)))
++	    (!cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) || is_meson_gxlx2_cpu())))
+ 		{ /* e900-csc-return 3 */
+ 			if (vd_path == VD1_PATH)
+ 				e900_playback_note(1, 2, e900_hdr_recovery_video_session(),
+@@ -8266,7 +8267,7 @@
+ 		    (csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_CUVA)) {
+ 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
+ 				get_hist(vd_path, HIST_E_RGBMAX);
+-			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
++			else if ((cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) && !is_meson_gxlx2_cpu()))
+ 				get_hist(vd_path, HIST_E_RGBMAX);
+ 		}
+ 	}
+@@ -8360,7 +8361,7 @@
+ 		cur_primary_policy = get_primary_policy();
+ 	}
+ 
+-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
++	if ((cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) && !is_meson_gxlx2_cpu())) {
+ 		if ((hdr_process_mode[vd_path] == PROC_HDR_TO_SDR) &&
+ 		    (csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB) &&
+ 			!(get_hdr_type() & HLG_FLAG))
+@@ -8371,12 +8372,12 @@
+ 			hdr10_plus_process_update(0, vd_path);
+ 	}
+ 
+-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++	if ((cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) && !is_meson_gxlx2_cpu()) &&
+ 		(csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_CUVA) &&
+ 		(cuva_hdr_process_mode[vd_path] == PROC_CUVA_TO_SDR))
+ 		cuva_hdr_process_update(vd_path);
+ 
+-	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) &&
++	if (((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) &&
+ 	    (signal_change_flag & (SIG_RANGE_CHG | SIG_BS_CHG))) {
+ 		if (vinfo->mode != VMODE_LCD) {
+ 			mtx_setting(POST2_MTX, MATRIX_NULL, MTX_OFF);
+@@ -8698,7 +8699,7 @@
+ 
+ 		/* gxl handle sdr_mode change bug fix. */
+ 		if ((sink_hdr_support(vinfo) & HDR_SUPPORT) &&
+-		    !cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) &&
++		    (!cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) || is_meson_gxlx2_cpu()) &&
+ 		    !vinfo_lcd_support()) {
+ 			if (sdr_mode != cur_sdr_mode) {
+ 				force_fake = true;
+@@ -8713,7 +8714,7 @@
+ 		    (sink_hdr_support(vinfo) & HDR_SUPPORT) &&
+ 		    ((cpu_after_eq(MESON_CPU_MAJOR_ID_GXL)) &&
+ 		     (!vinfo_lcd_support()))) {
+-			if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
++			if ((cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) && !is_meson_gxlx2_cpu())) {
+ 				if (sdr_mode != cur_sdr_mode) {
+ 					null_vf_cnt[vd_path] = 0;
+ 					cur_sdr_mode = sdr_mode;
+--- a/drivers/amlogic/media/enhancement/amvecm/amvecm.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amvecm.c
+@@ -19,6 +19,7 @@
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/kernel.h>
+ #include <linux/fs.h>
+ #include <linux/device.h>
+@@ -380,7 +381,7 @@
+ 
+ 	if (vecm_latch_flag & FLAG_VADJ_EN) {
+ 		vecm_latch_flag &= ~FLAG_VADJ_EN;
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 			cur_vadj1_en = READ_VPP_REG_BITS(VPP_VADJ1_MISC, 0, 1);
+ 			cur_vadj2_en = READ_VPP_REG_BITS(VPP_VADJ2_MISC, 0, 1);
+ 			if (cur_vadj1_en != vadj1_en) {
+@@ -428,7 +429,7 @@
+ static int amvecm_set_contrast2(int val)
+ {
+ 	val += 0x80;
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		WRITE_VPP_REG_BITS(
+ 			VPP_VADJ2_Y_2,
+ 			val, 0, 8);
+@@ -449,7 +450,7 @@
+ 		WRITE_VPP_REG_BITS(
+ 			VPP_VADJ2_Y,
+ 			val, 8, 9);
+-	else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	else if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG_BITS(
+ 			VPP_VADJ2_Y_2,
+ 			val, 8, 11);
+@@ -458,7 +459,7 @@
+ 			VPP_VADJ2_Y,
+ 			val >> 1, 8, 10);
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG_BITS(VPP_VADJ2_MISC, 1, 0, 1);
+ 	else
+ 		WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 2, 1);
+@@ -492,7 +493,7 @@
+ 		val = (val << 23) >> 23;
+ 
+ 		return sprintf(buf, "%d\n", val);
+-	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	} else if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		val = (READ_VPP_REG(VPP_VADJ1_Y_2) >> 8) & 0x7ff;
+ 		val = (val << 21) >> 21;
+ 
+@@ -517,12 +518,12 @@
+ 
+ 	if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB)
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y, val, 8, 9);
+-	else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	else if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y_2, val, 8, 11);
+ 	else
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y, val >> 1, 8, 10);
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+ 	else
+ 		WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
+@@ -533,7 +534,7 @@
+ static ssize_t video_adj1_contrast_show(struct class *cla,
+ 			struct class_attribute *attr, char *buf)
+ {
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		return sprintf(buf, "%d\n",
+ 			(int)(READ_VPP_REG(VPP_VADJ1_Y_2) & 0xff) - 0x80);
+ 	else
+@@ -554,7 +555,7 @@
+ 
+ 	val += 0x80;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y_2, val, 0, 8);
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+ 	} else {
+@@ -576,7 +577,7 @@
+ 		val = (val << 23) >> 23;
+ 
+ 		return sprintf(buf, "%d\n", val);
+-	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	} else if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		val = (READ_VPP_REG(VPP_VADJ2_Y_2) >> 8) & 0x7ff;
+ 		val = (val << 21) >> 21;
+ 
+@@ -605,7 +606,7 @@
+ static ssize_t video_adj2_contrast_show(struct class *cla,
+ 			struct class_attribute *attr, char *buf)
+ {
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		return sprintf(buf, "%d\n",
+ 			(int)(READ_VPP_REG(VPP_VADJ2_Y_2) & 0xff) - 0x80);
+ 	else
+@@ -861,7 +862,7 @@
+ 	unsigned int hist_height, hist_width, i;
+ 	u64 divid;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		/*TL1 remove VPP_IN_H_V_SIZE register*/
+ 		hist_width = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 0, 13);
+ 		hist_height = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 16, 13);
+@@ -1638,7 +1639,7 @@
+ 		mb = -512;
+ 	mab =  ((ma & 0x3ff) << 16) | (mb & 0x3ff);
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG(VPP_VADJ1_MA_MB_2, mab);
+ 	else
+ 		WRITE_VPP_REG(VPP_VADJ1_MA_MB, mab);
+@@ -1652,7 +1653,7 @@
+ 	md = (s16)((mab<<6)>>22);  /* md =  ma; */
+ 	mab = ((mc&0x3ff)<<16)|(md&0x3ff);
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		WRITE_VPP_REG(VPP_VADJ1_MC_MD_2, mab);
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+ 	} else {
+@@ -1706,7 +1707,7 @@
+ 	mab =  ((ma & 0x3ff) << 16) | (mb & 0x3ff);
+ 	pr_info("\n[amvideo..] saturation_post:%d hue_post:%d mab:%x\n",
+ 			saturation_post, hue_post, mab);
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG(VPP_VADJ2_MA_MB_2, mab);
+ 	else
+ 		WRITE_VPP_REG(VPP_VADJ2_MA_MB, mab);
+@@ -1718,7 +1719,7 @@
+ 		mc = -512;
+ 	md = (s16)((mab<<6)>>22);  /* md =	ma; */
+ 	mab = ((mc&0x3ff)<<16)|(md&0x3ff);
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		WRITE_VPP_REG(VPP_VADJ2_MC_MD_2, mab);
+ 		WRITE_VPP_REG_BITS(VPP_VADJ2_MISC, 1, 0, 1);
+ 	} else {
+@@ -3445,7 +3446,7 @@
+ static ssize_t amvecm_saturation_hue_show(struct class *cla,
+ 		struct class_attribute *attr, char *buf)
+ {
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		return sprintf(buf, "0x%x\n",
+ 			READ_VPP_REG(VPP_VADJ1_MA_MB_2));
+ 	else
+@@ -3506,7 +3507,7 @@
+ 	if (mb < -512)
+ 		mb = -512;
+ 	mab =  ((ma & 0x3ff) << 16) | (mb & 0x3ff);
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		VSYNC_WRITE_VPP_REG(VPP_VADJ1_MA_MB_2, mab);
+ 	else
+ 		VSYNC_WRITE_VPP_REG(VPP_VADJ1_MA_MB, mab);
+@@ -3519,7 +3520,7 @@
+ 	md = (s16)((mab<<6)>>22);  /* md =	ma; */
+ 	mab = ((mc&0x3ff)<<16)|(md&0x3ff);
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		VSYNC_WRITE_VPP_REG(VPP_VADJ1_MC_MD_2, mab);
+ 		VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+ 	} else {
+@@ -4453,7 +4454,7 @@
+ 	int len = 0, val1 = 0, val2 = 0;
+ 
+ 	val1 = READ_VPP_REG(VPP_MATRIX_PROBE_COLOR);
+-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
++	if ((cpu_after_eq(MESON_CPU_MAJOR_ID_G12A) && !is_meson_gxlx2_cpu())) {
+ 		len += sprintf(buf+len,
+ 		"VPP_MATRIX_PROBE_COLOR %d, %d, %d\n",
+ 		(val1 >> 20) & 0x3ff,
+@@ -5717,7 +5718,7 @@
+ 		white_balance_adjust(0, 1);
+ 
+ 		vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+ 		else
+ 			WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
+@@ -5841,7 +5842,7 @@
+ 
+ 		vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
+ 
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 0, 0, 1);
+ 		else
+ 			WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 0, 0, 1);
+@@ -6389,7 +6390,7 @@
+ {
+ 	int i, j, reg;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		am_set_regmap(&cm_default);
+ 	else
+ 		am_set_regmap(&cm_default_legacy);
+@@ -8318,6 +8319,10 @@
+ 
+ void hdr_hist_config_int(void)
+ {
++	/* No HDR2 histogram writes on the all-output legacy path. */
++	if (is_meson_gxlx2_cpu())
++		return;
++
+ 	VSYNC_WRITE_VPP_REG(VD1_HDR2_HIST_CTRL, 0x5510);
+ 	VSYNC_WRITE_VPP_REG(VD1_HDR2_HIST_H_START_END, 0x10000);
+ 	VSYNC_WRITE_VPP_REG(VD1_HDR2_HIST_V_START_END, 0x0);
+@@ -8418,7 +8423,7 @@
+ 	}
+ 
+ 	/* enable vadj1 by default */
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+ 	else
+ 		VSYNC_WRITE_VPP_REG(VPP_VADJ_CTRL, 0xd);
+--- a/drivers/amlogic/media/enhancement/amvecm/amve.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amve.c
+@@ -546,7 +546,7 @@
+ 				m[i] = -1024;
+ 		}
+ 
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 			WRITE_VPP_REG_BITS(VPP_POST_MATRIX_EN_CTRL,
+ 					   p->en, 0, 1);
+ 			WRITE_VPP_REG(VPP_POST_MATRIX_PRE_OFFSET0_1,
+@@ -1201,7 +1201,7 @@
+ 				VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 0, 1, 1);
+ 		}
+ 	}
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		vd1_contrast = (READ_VPP_REG(VPP_VADJ1_Y_2) & 0x7ff00) |
+ 						(cont_val << 0);
+ 		//VSYNC_WRITE_VPP_REG(VPP_VADJ1_Y_2, vd1_contrast);
+@@ -1236,7 +1236,7 @@
+ 	if (bri_val > 1023 || bri_val < -1024)
+ 		return;
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		vd1_brightness = (READ_VPP_REG(VPP_VADJ1_Y_2) & 0xff) |
+ 			(bri_val << 8);
+ 
+@@ -2213,7 +2213,7 @@
+ 		cm_en = 0;
+ 	}
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		VSYNC_WRITE_VPP_REG_BITS(
+ 			VPP_VADJ1_MISC,
+ 			pq_cfg.vadj1_en, 0, 1);
+@@ -2226,7 +2226,7 @@
+ 		VPP_VD1_RGB_CTRST,
+ 		pq_cfg.vd1_ctrst_en, 1, 1);
+ 
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 		VSYNC_WRITE_VPP_REG_BITS(
+ 			VPP_VADJ2_MISC,
+ 			pq_cfg.vadj2_en, 0, 1);
+@@ -2298,7 +2298,7 @@
+ 
+ 	if (!cfg.cm_en) {
+ 		if (p->addr == 0x208) {
+-			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
++			if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 				ret |= 1 << 0;
+ 			else
+ 				ret |= 1 << 1;
+@@ -2307,7 +2307,7 @@
+ 	}
+ 
+ 	if (!cfg.vadj1_en) {
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 			if (p->addr == VPP_VADJ1_MISC) {
+ 				ret |= 1 << 0;
+ 				return ret;
+@@ -2328,7 +2328,7 @@
+ 	}
+ 
+ 	if (!cfg.vadj2_en) {
+-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++		if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 			if (p->addr == VPP_VADJ2_MISC) {
+ 				ret |= 1 << 0;
+ 				return ret;
+--- a/drivers/amlogic/media/enhancement/amvecm/amcm.c
++++ b/drivers/amlogic/media/enhancement/amvecm/amcm.c
+@@ -17,6 +17,7 @@
+ 
+ /* #include <mach/am_regs.h> */
+ #include <linux/module.h>
++#include <linux/amlogic/cpu_version.h>
+ #include <linux/kernel.h>
+ 
+ #include <linux/amlogic/media/amvecm/cm.h>
+@@ -172,8 +173,8 @@
+ 
+ 			if (!cm_en) {
+ 				if (p->am_reg[i].addr == 0x208) {
+-					if (get_cpu_type() >=
+-						MESON_CPU_MAJOR_ID_G12A)
++					if ((get_cpu_type() >=
++						MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 						p->am_reg[i].val =
+ 						p->am_reg[i].val & 0xfffffffc;
+ 					else
+@@ -183,8 +184,8 @@
+ 				pr_amcm_dbg("[amcm]:%s REG_TYPE_INDEX_VPPCHROMA addr:0x%x",
+ 					    __func__, p->am_reg[i].addr);
+ 			} else if (p->am_reg[i].addr == 0x208) {
+-				if (get_cpu_type() >=
+-					MESON_CPU_MAJOR_ID_G12A)
++				if ((get_cpu_type() >=
++					MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu()))
+ 					p->am_reg[i].val =
+ 						p->am_reg[i].val & 0xfffffffd;
+ 				else
+@@ -336,7 +337,7 @@
+ 
+ 	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x208);
+ 	temp = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		if (temp & 0x1) {
+ 			VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+ 					    0x208);
+@@ -363,7 +364,7 @@
+ 		WRITE_VPP_REG_BITS(VPP_MISC, 1, 28, 1);
+ 	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x208);
+ 	temp = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
++	if ((get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A && !is_meson_gxlx2_cpu())) {
+ 		if (!(temp & 0x1)) {
+ 			VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+ 					    0x208);
+--- a/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
++++ b/drivers/amlogic/media/enhancement/amvecm/set_hdr2_v0.c
+@@ -949,6 +949,10 @@
+ 	unsigned int clip_index;
+ 	unsigned int max_luma;
+ 	int i;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
+ 
+ 	if (hdr10_clip_disable) {
+ 		if (hdr10_pr & 0x1)
+@@ -1137,6 +1141,10 @@
+ 		0, 0, 0,
+ 		0
+ 	};
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
+ 
+ 	if (module_sel == VD1_HDR) {
+ 		MATRIXI_COEF00_01 = VD1_HDR2_MATRIXI_COEF00_01;
+@@ -1816,6 +1824,10 @@
+ 	unsigned int hdr_ctrl = 0;
+ 	unsigned int i = 0;
+ 
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
++
+ 	if (module_sel == VD1_HDR) {
+ 		eotf_lut_addr_port = VD1_EOTF_LUT_ADDR_PORT;
+ 		eotf_lut_data_port = VD1_EOTF_LUT_DATA_PORT;
+@@ -1865,6 +1877,10 @@
+ 	unsigned int hdr_ctrl = 0;
+ 	unsigned int i = 0;
+ 
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
++
+ 	if (module_sel == VD1_HDR) {
+ 		ootf_lut_addr_port = VD1_OGAIN_LUT_ADDR_PORT;
+ 		ootf_lut_data_port = VD1_OGAIN_LUT_DATA_PORT;
+@@ -1917,6 +1933,10 @@
+ 	unsigned int hdr_ctrl = 0;
+ 	unsigned int i = 0;
+ 
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
++
+ 	if (module_sel == VD1_HDR) {
+ 		oetf_lut_addr_port = VD1_OETF_LUT_ADDR_PORT;
+ 		oetf_lut_data_port = VD1_OETF_LUT_DATA_PORT;
+@@ -1978,6 +1998,10 @@
+ 	unsigned int hdr_ctrl = 0;
+ 	unsigned int cgain_coef1 = 0;
+ 	unsigned int i = 0;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
+ 
+ 	if (module_sel == VD1_HDR) {
+ 		cgain_lut_addr_port = VD1_CGAIN_LUT_ADDR_PORT;
+@@ -2074,6 +2098,10 @@
+ {
+ 	unsigned int hist_ctrl_port = 0;
+ 
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
++
+ 	if (module_sel == VD1_HDR)
+ 		hist_ctrl_port = VD1_HDR2_HIST_CTRL;
+ 	else
+@@ -2100,6 +2128,10 @@
+ 	int k = 0;
+ 	enum hdr_module_sel module_sel = VD1_HDR;
+ 	unsigned int hdr2_hist_rd;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
+ 
+ 	if (vd_path == VD1_PATH)
+ 		module_sel = VD1_HDR;
+@@ -2224,6 +2256,10 @@
+ 	unsigned int hist_hs_he;
+ 	unsigned int hist_vs_ve;
+ 
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return;
++
+ 	if (module_sel == VD1_HDR) {
+ 		hist_ctrl = VD1_HDR2_HIST_CTRL;
+ 		hist_hs_he = VD1_HDR2_HIST_H_START_END;
+@@ -2282,6 +2318,10 @@
+ 	int *oft_pre_out = bypass_pre;
+ 	int *oft_post_out = bypass_pos;
+ 	bool always_full_func = false;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return hdr_process_select;
+ 
+ 	pr_csc(16, "hdr func: hdr module=%d, select=%x\n",
+ 	       module_sel,
+@@ -3241,6 +3281,10 @@
+ 	struct hdr_proc_mtx_param_s hdr_mtx_param;
+ 	bool eo_gmt_bit_mode = false;
+ 
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return 0;
++
+ 	if (disable_flush_flag)
+ 		return hdr_process_select;
+ 
+@@ -3325,6 +3369,10 @@
+ 	int bit_depth;
+ 	unsigned int i = 0;
+ 	struct hdr_proc_mtx_param_s hdr_mtx_param;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return 0;
+ 
+ 	if (is_meson_g12a_cpu() ||
+ 		is_meson_g12b_cpu())
+@@ -3377,6 +3425,10 @@
+ 	int *coeff_in = bypass_coeff;
+ 	int *oft_pre_in = bypass_pre;
+ 	int *oft_post_in = bypass_pos;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return hdr_process_select;
+ 
+ 	if (disable_flush_flag)
+ 		return hdr_process_select;
+@@ -3591,6 +3643,10 @@
+ 	int bit_depth;
+ 	unsigned int i = 0;
+ 	struct aml_gain_reg *cuva_gain;
++
++	/* GXLX2 uses legacy CSC/LUTs on every output; never program HDR2. */
++	if (is_meson_gxlx2_cpu())
++		return 0;
+ 
+ 	if (disable_flush_flag)
+ 		return 0;

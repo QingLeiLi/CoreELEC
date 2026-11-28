@@ -6,6 +6,8 @@
 
 ## 当前状态与下一项
 
+**全输出legacy切换（2026-11-28，用户指定）**：切换前基准e5cefe4d9b，基准清单独立提交51e67ef98e。默认decoder新增0045，49处CSC/PQ/CM/VADJ选择回落pre-G12，覆盖五格式helper、idle/动态更新和LCD尾部，不按HDMI限定；14个HDR2入口及直接histogram初始化对GXLX2早退，防止旁路。其它CPU谓词/写体保持，CPU身份不变。新增实际谓词/guard主机测试通过；本轮未访问已关机盒子。下一项完整ARM image构建，之后从SDR正常参考做无隔离开关回归，再分别验HDR10/HLG颜色；非HDMI硬件能力仍未验证。见[基准、范围、回退与验收](ALL-OUTPUT-LEGACY-BASELINE-20261128.md)。
+
 **legacy覆盖续审（2026-11-28）**：默认0044只覆盖五个SDR入口；五个格式helper仍选G12，293H额外覆盖其中HDR10/HLG两个。新增确认`get_hist`旁路可能配置HDR2/写读取索引，不能叫纯读；动态HDR更新、idle SDR策略及相邻PQ/VADJ仍有独立G12选择。POST2非LCD尾部已有底层guard，不重复报遗漏。OSD legacy缓存的消费者受reset/osd_ver/shadow条件控制，不能以缓存已写证明硬件已提交。仅源码审查，无设备动作/内核改动。下一项按293H真实legacy VIDEO矩阵/LUT/mux事务建立预期写序及有界采集，先解释偏灰；不批量替换CPU判断。见[完整覆盖清单](LEGACY-ROUTING-COVERAGE-20261128.md)。
 
 **293H HLG仍偏灰（2026-11-28，当前结果）**：两额外helper分支切换后，用户确认可见彩条但仍偏灰、主观稍改善。mode2/csc_en7，HDR2请求和区域word在已保存前缀均0，legacy矩阵/LUT写者出现，支持路径切换但颜色未通过。65536条overflow1，三legacy LUT端口52446条为主体，不能当完整窗口。只读归档完成，未再操作播放/参数；HDR10在293H未测。下一步先查legacy LUT使能/矩阵路由和配置调用来源，解决有界观测，不调饱和度掩盖结果。见[293H结果](BUILD293H-HDR-HELPER-TRIAL-20261128.md)。
