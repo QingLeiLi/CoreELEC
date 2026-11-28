@@ -5,7 +5,10 @@ adds bit8 on GXLX2, although the legacy map assigns bit8 to VPU read0.
 Fault evidence: HEVC EOF, DMC_REQ_CTRL=deef (bit8 off), pending RDMA
 read requests and empty read FIFO, with both completion channels stalled.
 Exclude GXLX2 from HEVCB in both directions; preserve all other CPUs.
-Hardware recovery/cause confirmation and full ARM/module build pending.
+On the same 293H boot, restoring only bit8 (deef -> dfef) resumed both
+completion channels and the shared IRQ, stopped the watchdog reset loop,
+and restored the menu as confirmed by the user. Full ARM/module build
+and source-built HEVC EOF/Stop/replay regression remain pending.
 
 --- a/drivers/frame_provider/decoder/utils/vdec.c
 +++ b/drivers/frame_provider/decoder/utils/vdec.c

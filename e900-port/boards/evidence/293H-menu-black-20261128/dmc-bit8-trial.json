@@ -1,0 +1,99 @@
+{
+  "boot_id": "b6444de0-97a3-4293-a642-1339c2be896a",
+  "old_req": 57071,
+  "new_req": 57327,
+  "players_before": {
+    "id": 91,
+    "jsonrpc": "2.0",
+    "result": []
+  },
+  "before": {
+    "uptime": "7984.86 31036.66",
+    "req": 57071,
+    "osd_irq": 80643,
+    "vsync": 479054,
+    "rdma": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=0 force=0 irq=80634 configured=100548\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0",
+    "reset_count": 19920,
+    "interrupts": "CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:     942865     291806    1926979     939769     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:       4896          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:       2461          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:       7801          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         16          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         12          0       2273          0     GIC-0  40 Edge      eth0\n 25:       5920          0          0      12393     GIC-0  62 Level     xhci-hcd:usb1\n 27:     479055          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          2          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0       1545          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0      72477          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       1709          0     GIC-0  76 Edge      vdec-1\n 35:     161267          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0       3280     GIC-0 228 Edge      ir-meson\nIPI0:     37244      69166     191186      62078       Rescheduling interrupts\nIPI1:       401        400        352        370       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:     19377          7          9          6       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0"
+  },
+  "before_regs": {
+    "reset_before": "19921",
+    "reset_after": "19926",
+    "values": {
+      "1115": {
+        "stamp": "7984.936214",
+        "value": 0
+      },
+      "1116": {
+        "stamp": "7984.936643",
+        "value": 8224
+      },
+      "1117": {
+        "stamp": "7984.936943",
+        "value": 0
+      }
+    }
+  },
+  "scope": "one DMC bit8 restore only; no playback/reboot/screensaver action",
+  "samples": [
+    {
+      "uptime": "7986.68 31042.02",
+      "req": 57327,
+      "osd_irq": 80643,
+      "vsync": 479164,
+      "rdma": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=0 force=0 irq=80634 configured=100554\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0",
+      "reset_count": 19926,
+      "interrupts": "CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:     942958     292270    1927728     939901     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:       4902          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:       2464          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:       7802          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         16          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         12          0       2273          0     GIC-0  40 Edge      eth0\n 25:       5920          0          0      12395     GIC-0  62 Level     xhci-hcd:usb1\n 27:     479164          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          2          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0       1545          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0      72477          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       1709          0     GIC-0  76 Edge      vdec-1\n 35:     161267          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0       3280     GIC-0 228 Edge      ir-meson\nIPI0:     37280      69285     191203      62087       Rescheduling interrupts\nIPI1:       401        400        352        370       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:     19382          7          9          6       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0"
+    },
+    {
+      "uptime": "7986.89 31042.76",
+      "req": 57327,
+      "osd_irq": 80644,
+      "vsync": 479176,
+      "rdma": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=0 force=0 irq=80634 configured=100554\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0",
+      "reset_count": 19927,
+      "interrupts": "CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:     943014     292275    1927778     939928     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:       4902          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:       2464          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:       7803          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         16          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         12          0       2273          0     GIC-0  40 Edge      eth0\n 25:       5920          0          0      12395     GIC-0  62 Level     xhci-hcd:usb1\n 27:     479176          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          2          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0       1545          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0      72477          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       1709          0     GIC-0  76 Edge      vdec-1\n 35:     161268          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0       3280     GIC-0 228 Edge      ir-meson\nIPI0:     37281      69287     191208      62088       Rescheduling interrupts\nIPI1:       401        400        352        370       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:     19383          7          9          6       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0"
+    },
+    {
+      "uptime": "7987.40 31044.38",
+      "req": 57327,
+      "osd_irq": 80675,
+      "vsync": 479207,
+      "rdma": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=1 force=0 irq=80657 configured=100578\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0",
+      "reset_count": 19927,
+      "interrupts": "CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:     943126     292286    1927897     939954     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:       4902          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:       2464          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:       7803          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         16          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         12          0       2273          0     GIC-0  40 Edge      eth0\n 25:       5920          0          0      12395     GIC-0  62 Level     xhci-hcd:usb1\n 27:     479207          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          2          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0       1545          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0      72477          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       1709          0     GIC-0  76 Edge      vdec-1\n 35:     161330          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0       3280     GIC-0 228 Edge      ir-meson\nIPI0:     37281      69288     191211      62090       Rescheduling interrupts\nIPI1:       401        400        352        370       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:     19383          7          9          6       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0"
+    }
+  ],
+  "write_readback": 57327,
+  "osd_irq_delta": 32,
+  "shared_irq_delta": 63,
+  "completion_resumed": true,
+  "restored_old_req": false,
+  "after_regs": {
+    "reset_before": "19927",
+    "reset_after": "19927",
+    "values": {
+      "1115": {
+        "stamp": "7987.473815",
+        "value": 6912
+      },
+      "1116": {
+        "stamp": "7987.474076",
+        "value": 8224
+      },
+      "1117": {
+        "stamp": "7987.474335",
+        "value": 0
+      }
+    }
+  },
+  "final": {
+    "uptime": "7989.16 31049.44",
+    "req": 57327,
+    "osd_irq": 80780,
+    "vsync": 479312,
+    "rdma": "channel=0 handle=1 requested=1 current=1 previous=1 first=1 done=1 force=0 irq=80762 configured=100683\nchannel=1 handle=0 requested=0 current=0 previous=0 first=0 done=0 force=0 irq=0 configured=0",
+    "reset_count": 19927,
+    "interrupts": "CPU0       CPU1       CPU2       CPU3       \n  2:          0          0          0          0     GIC-0  29 Level     arch_timer\n  3:     943623     292358    1928518     940088     GIC-0  30 Level     arch_timer\n  6:          0          0          0          0     GIC-0  92 Edge      Meson TimerF\n  7:       4902          0          0          0     GIC-0 192 Level     Mali_GP\n  8:          0          0          0          0     GIC-0 193 Level     Mali_GP_MMU\n  9:       2464          0          0          0     GIC-0 194 Level     Mali_PP_Broadcast\n 11:          0          0          0          0     GIC-0 196 Level     Mali_PP0\n 12:          0          0          0          0     GIC-0 197 Level     Mali_PP0_MMU\n 13:          0          0          0          0     GIC-0 198 Level     Mali_PP1\n 14:          0          0          0          0     GIC-0 199 Level     Mali_PP1_MMU\n 16:       7805          0          0          0     GIC-0 241 Edge    \n 17:          5          0          0          0     GIC-0 242 Edge    \n 18:         16          0          0          0     GIC-0 225 Edge      meson_uart\n 19:          0          0          0          0     GIC-0  58 Edge      meson_uart\n 20:          0          0          0          0     GIC-0 220 Edge      aml-aes, aml-tdes\n 24:         12          0       2273          0     GIC-0  40 Edge      eth0\n 25:       5920          0          0      12397     GIC-0  62 Level     xhci-hcd:usb1\n 27:     479312          0          0          0     GIC-0  35 Edge      osd-vsync, vsync\n 28:          2          0          0          0     GIC-0  89 Level     hdmitx\n 29:          0       1545          0          0     GIC-0 231 Edge      hdmi_aocec\n 32:          0      72477          0          0     GIC-0  75 Edge      vdec-0\n 33:          0          0       1709          0     GIC-0  76 Edge      vdec-1\n 35:     161540          0          0          0     GIC-0 121 Edge      rdma\n 36:          0          0          0          0     GIC-0 182 Edge      ge2d\n 39:          0          0          0          0     GIC-0  78 Edge      pre_di\n 43:          1          0          0       3280     GIC-0 228 Edge      ir-meson\nIPI0:     37335      69294     191329      62104       Rescheduling interrupts\nIPI1:       401        400        352        370       Function call interrupts\nIPI2:         0          0          0          0       CPU stop interrupts\nIPI3:         0          0          0          0       Timer broadcast interrupts\nIPI4:     19383          7          9          6       IRQ work interrupts\nIPI5:         0          0          0          0       CPU wake-up interrupts\nErr:          0"
+  }
+}

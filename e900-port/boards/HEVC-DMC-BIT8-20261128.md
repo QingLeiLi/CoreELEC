@@ -49,3 +49,18 @@ S905X厂商端口表将bit4定义为HEVC，bit8定义为VPU读接口0。于是�
 - 恢复成功只支持准入位与本整屏黑的因果联系；源码修正还需新构建、正常首播、HEVC结束/Stop/replay及菜单回归，不能据此替代之前SDR重播黑的独立结论。
 
 需用户明确允许这一次DMC写入后才执行。目前CTRL已回原值0、REQ仍只读观测的deef，未操作恢复。
+
+## 用户允许后的单bit恢复：中断及菜单恢复
+
+原包：[dmc-bit8-trial.json](evidence/293H-menu-black-20261128/dmc-bit8-trial.json)、[稳定性读回](evidence/293H-menu-black-20261128/dmc-bit8-stable.txt)、[结果摘要](evidence/293H-menu-black-20261128/dmc-bit8-result.json)。同boot、旧293H，Player.GetActivePlayers=[]，运行DT映射再次核对，REQ仍deef。
+
+只写REQ=`old|0x100`，读回dfef，XOR差值严格100，其它位保持。没有重启、播放、唤醒屏保、CTRL或复位写入。驱动本来运行的watchdog仍存在，恢复初期又自然复位一次；这是恢复过程的背景，不描述为完全无复位的独立环境。
+
+- 短窗OSD IRQ80643→80675，共享IRQ+63；普通完成也恢复增长。首个50ms采样仍未恢复，后续自然watchdog复位后完成链开始推进，不写成置位立即同周期恢复。
+- 最后原包OSD IRQ80780、普通IRQ80762，done=1；reset_count停在19927。后续只读OSD82895、普通82877仍推进，REQ保持dfef，reset_count仍19927，日志未再出现新复位。
+- 完成恢复后的STATUS=1b00，对比之前稳定9b0a，读地址状态从Req回Idle、pending清零；仍是相近GXL文档解释，不能替代像素证据。
+- 用户明确回复“恢复了”，提供菜单恢复的物理端验收。没有再重复关闭bit8制造故障。
+
+由此确认：**本次整屏黑与VPU/DMC bit8关闭具有直接恢复因果证据**，共享RDMA取表停滞的现场已恢复。源码HEVCB数值判断会清同一位，修正方向得到支持；由于此前未录到EOF写入边沿，仍区分“现场准入位因果已证”与“原始关闭瞬间的写者未录制”。这也不替代旧SDR/CSC黑屏的独立结论。
+
+当前旧293H仍含该HEVC停止路径，下次HEVC/相关target释放可能再次清bit8；本轮不继续播放。新增media0004只防止错误清位，不会主动修复已经清位的旧运行内核。下一步构建最新decoder/image，部署后先核对首播前REQ bit8，再验HEVC正常播放、自然结束、Stop/replay及菜单，多轮通过才完成永久修复验收。

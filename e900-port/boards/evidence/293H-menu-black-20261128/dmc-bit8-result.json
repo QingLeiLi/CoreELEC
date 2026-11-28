@@ -1,0 +1,14 @@
+{
+  "boot_id": "b6444de0-97a3-4293-a642-1339c2be896a",
+  "trial": "single DMC_REQ_CTRL bit8 restore",
+  "old_req": "0xdeef",
+  "new_req": "0xdfef",
+  "changed_mask": "0x100",
+  "completion_resumed": true,
+  "user_confirmation": "恢复了",
+  "reboot": false,
+  "playback_started": false,
+  "screensaver_action": false,
+  "kernel": "old 293H; source media patch 0004 not yet built/deployed",
+  "limitation": "recovery validates this fault boundary; source-built HEVC EOF/Stop/replay regression pending"
+}
